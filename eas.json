@@ -7,68 +7,29 @@
   },
 
   "build": {
-    "base": {
-      "env": {
-        "EXPO_PUBLIC_SUPABASE_URL":      "https://bourwlahxdqaotvwrvce.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "REPLACE_WITH_ANON_KEY"
-      }
-    },
-
     "development": {
-      "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "development",
       "ios": {
         "simulator": true
-      },
-      "env": {
-        "EXPO_PUBLIC_SUPABASE_URL":      "https://bourwlahxdqaotvwrvce.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "REPLACE_WITH_ANON_KEY",
-        "EXPO_PUBLIC_SENTRY_DSN":        ""
       }
     },
 
     "preview": {
-      "extends": "base",
-      "distribution": "internal",
-      "channel": "preview",
-      "ios": {
-        "simulator": false
-      },
-      "env": {
-        "EXPO_PUBLIC_SUPABASE_URL":      "https://bourwlahxdqaotvwrvce.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "REPLACE_WITH_ANON_KEY",
-        "EXPO_PUBLIC_POSTHOG_KEY":       "REPLACE_WITH_POSTHOG_KEY",
-        "EXPO_PUBLIC_POSTHOG_HOST":      "https://app.posthog.com",
-        "EXPO_PUBLIC_SENTRY_DSN":        "REPLACE_WITH_SENTRY_DSN"
-      }
+      "distribution": "internal"
     },
 
     "production": {
-      "extends": "base",
-      "autoIncrement": true,
-      "channel": "production",
-      "env": {
-        "EXPO_PUBLIC_SUPABASE_URL":      "https://bourwlahxdqaotvwrvce.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "REPLACE_WITH_ANON_KEY",
-        "EXPO_PUBLIC_POSTHOG_KEY":       "REPLACE_WITH_POSTHOG_KEY",
-        "EXPO_PUBLIC_POSTHOG_HOST":      "https://app.posthog.com",
-        "EXPO_PUBLIC_SENTRY_DSN":        "REPLACE_WITH_SENTRY_DSN"
-      }
+      "autoIncrement": true
     }
   },
 
   "submit": {
     "production": {
       "ios": {
-        "appleId":               "your@apple.com",
-        "ascAppId":              "YOUR_ASC_APP_ID",
-        "appleTeamId":           "YOUR_APPLE_TEAM_ID"
-      },
-      "android": {
-        "serviceAccountKeyPath": "./google-play-key.json",
-        "track":                 "internal"
+        "appleId":     "your@apple.com",
+        "ascAppId":    "YOUR_ASC_APP_ID",
+        "appleTeamId": "YOUR_APPLE_TEAM_ID"
       }
     }
   }

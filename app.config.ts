@@ -71,13 +71,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     'expo-sqlite',
-    [
-      'expo-build-properties',
-      {
-        ios:     { deploymentTarget: '16.0' },
-        android: { compileSdkVersion: 35, targetSdkVersion: 35, minSdkVersion: 24 },
-      },
-    ],
     // Uncomment after installing @sentry/react-native:
     // [
     //   '@sentry/react-native/expo',
@@ -98,7 +91,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // projectId is set by `eas init` — fill in after running it
   extra: {
     eas: {
-      projectId: process.env.EAS_PROJECT_ID ?? 'YOUR_EAS_PROJECT_ID',
+      projectId: '69da7227-57fa-43b3-a20f-552e5e24ae15',
     },
 
     // Supabase (EXPO_PUBLIC_ prefix makes these available in the client bundle)
@@ -115,7 +108,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   // ── Updates (EAS Update) ──────────────────────────────────────────────────
   updates: {
-    url: 'https://u.expo.dev/' + (process.env.EAS_PROJECT_ID ?? 'YOUR_EAS_PROJECT_ID'),
+    url: 'https://u.expo.dev/69da7227-57fa-43b3-a20f-552e5e24ae15',
   },
   runtimeVersion: {
     policy: 'appVersion',
