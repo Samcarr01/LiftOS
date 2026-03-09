@@ -20,6 +20,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   scheme:      'liftos',
   version:     '1.0.0',
   orientation: 'portrait',
+  owner:       'csam190s-organization',
 
   // ── Assets ────────────────────────────────────────────────────────────────
   icon:               './assets/images/icon.png',
