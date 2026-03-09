@@ -1,0 +1,49 @@
+{
+  "projectName": "LiftOS",
+  "version": "1.0.0-mvp",
+  "language": "typescript",
+  "framework": "react-native-expo",
+  "webFramework": "nextjs",
+  "database": "supabase-postgresql",
+  "authProvider": "supabase-auth",
+  "aiProvider": "claude-haiku",
+  "deployment": {
+    "mobile": "expo-eas",
+    "web": "vercel",
+    "functions": "supabase-edge-functions"
+  },
+  "promptPacks": [
+    "db-schema",
+    "auth",
+    "api",
+    "ui-screens",
+    "ai-engine",
+    "offline-sync",
+    "billing"
+  ],
+  "buildChain": [
+    "001-project-scaffold",
+    "002-database-schema",
+    "003-auth-flow",
+    "004-exercise-crud",
+    "005-template-crud",
+    "006-start-workout-payload",
+    "007-active-workout-screen",
+    "008-set-logging-offline",
+    "009-workout-completion",
+    "010-history-progress",
+    "011-ai-suggestions",
+    "012-plateau-detection",
+    "013-weekly-summary",
+    "014-billing-gate",
+    "015-marketing-site",
+    "016-deploy-pipeline"
+  ],
+  "conventions": {
+    "units": "canonical-kg-seconds-metres",
+    "componentLibrary": "react-native-paper or nativewind",
+    "validation": "zod",
+    "stateManagement": "zustand",
+    "offlineQueue": "watermelondb or custom-sqlite"
+  }
+}
