@@ -17,7 +17,10 @@ import {
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
-import { ExerciseSelector } from '@/components/exercise-selector';
+import {
+  ExerciseSelector,
+  type ExerciseSelectionOptions,
+} from '@/components/exercise-selector';
 import { useTemplateExercises, type TemplateExerciseWithDetails } from '@/hooks/use-template-exercises';
 import { useTemplates } from '@/hooks/use-templates';
 import { useStartWorkout } from '@/hooks/use-start-workout';
@@ -232,9 +235,14 @@ export default function TemplateEditorPage() {
     void reorderExercises(id, reordered.map((e) => e.id));
   }
 
-  async function handleAddExercise(exercise: ExerciseWithSchema) {
+  async function handleAddExercise(
+    exercise: ExerciseWithSchema,
+    options: ExerciseSelectionOptions,
+  ) {
     try {
-      await addExercise(id, exercise);
+      await addExercise(id, exercise, {
+        default_set_count: options.defaultSetCount,
+      });
     } catch {
       toast.error('Failed to add exercise');
     }
@@ -338,7 +346,7 @@ export default function TemplateEditorPage() {
         <div className="mb-4 rounded-2xl border border-dashed border-border px-4 py-8 text-center">
           <p className="text-sm font-semibold">This workout is empty</p>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Add your first exercise below. Weight and reps, laps, time, or distance all work.
+            Add your first exercise below. Weight and reps, weight and laps, laps, time, or distance all work.
           </p>
         </div>
       )}

@@ -44,11 +44,18 @@ export const DISTANCE: TrackingSchema = {
   ],
 };
 
-/** Lap-based swimming / circuit */
+/** Weighted lap-based work like sled pushes or loaded carries */
+export const WEIGHT_LAPS: TrackingSchema = {
+  fields: [
+    { key: 'weight', label: 'Weight', type: 'number', unit: 'kg', optional: false },
+    { key: 'laps',   label: 'Laps',   type: 'number',             optional: false },
+  ],
+};
+
+/** Lap-based swimming / circuit without a timer field */
 export const LAPS: TrackingSchema = {
   fields: [
-    { key: 'laps',     label: 'Laps', type: 'number',                  optional: false },
-    { key: 'duration', label: 'Time', type: 'number', unit: 'seconds', optional: true  },
+    { key: 'laps', label: 'Laps', type: 'number', optional: false },
   ],
 };
 
@@ -57,6 +64,7 @@ export const TRACKING_PRESETS = {
   BODYWEIGHT_REPS,
   TIME,
   DISTANCE,
+  WEIGHT_LAPS,
   LAPS,
 } as const;
 
@@ -68,5 +76,6 @@ export const TRACKING_PRESET_LABELS: Record<TrackingPresetKey, string> = {
   BODYWEIGHT_REPS: 'Bodyweight + Reps',
   TIME:            'Time',
   DISTANCE:        'Distance',
+  WEIGHT_LAPS:     'Weight + Laps',
   LAPS:            'Laps',
 };

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
+import { invokeAuthedFunction } from '@/lib/supabase/invoke-authed-function';
 import { useAuthStore } from '@/store/auth-store';
 import { useUnitStore } from '@/store/unit-store';
 import { usePwaInstall } from '@/hooks/use-pwa-install';
@@ -37,7 +38,7 @@ function DeleteAccountDialog({
     try {
       const supabase = createClient();
       // Call Edge Function to purge all user data + delete auth user
-      const { error } = await supabase.functions.invoke('delete-account', { body: {} });
+      const { error } = await invokeAuthedFunction(supabase, 'delete-account', {});
       if (error) throw error;
       await signOut();
     } catch (err: unknown) {

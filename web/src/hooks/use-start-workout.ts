@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
+import { invokeAuthedFunction } from '@/lib/supabase/invoke-authed-function';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import type { StartWorkoutResponse, StartWorkoutExercise } from '@/types/app';
 import type { WorkoutSessionRow, SessionExerciseRow } from '@/types/database';
@@ -68,9 +69,11 @@ export function useStartWorkout() {
   async function startWorkout(templateId: string | null) {
     const supabase = createClient();
     try {
-      const { data, error } = await supabase.functions.invoke('start-workout', {
-        body: { template_id: templateId },
-      });
+      const { data, error } = await invokeAuthedFunction<RawStartWorkoutResponse>(
+        supabase,
+        'start-workout',
+        { template_id: templateId },
+      );
 
       if (error) throw error;
       if (!data) throw new Error('Empty response from start-workout');

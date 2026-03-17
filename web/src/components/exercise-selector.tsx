@@ -8,21 +8,63 @@ import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import { useExercises } from '@/hooks/use-exercises';
 import type { ExerciseWithSchema, ExerciseCreate } from '@/types/app';
 import { ExerciseCreateSchema } from '@/lib/validation';
-import { TRACKING_PRESETS, type TrackingPresetKey } from '@/types/tracking';
+import {
+  TRACKING_PRESETS,
+  TRACKING_PRESET_LABELS,
+  type TrackingPresetKey,
+} from '@/types/tracking';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const ALL_MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Quads', 'Hamstrings', 'Glutes', 'Core', 'Calves', 'Cardio', 'Forearms'];
 const PRESET_KEYS = Object.keys(TRACKING_PRESETS) as TrackingPresetKey[];
-const PRESET_LABELS: Record<TrackingPresetKey, string> = {
-  WEIGHT_REPS: 'Weight + Reps', BODYWEIGHT_REPS: 'Bodyweight + Reps',
-  TIME: 'Time', DISTANCE: 'Distance', LAPS: 'Laps',
-};
+
+export interface ExerciseSelectionOptions {
+  defaultSetCount: number;
+}
 
 interface Props {
-  onSelect: (exercise: ExerciseWithSchema) => void;
+  onSelect: (exercise: ExerciseWithSchema, options: ExerciseSelectionOptions) => void;
   trigger: React.ReactNode;
   defaultMode?: 'browse' | 'create';
+}
+
+function SetCountPicker({
+  value,
+  onChange,
+  description,
+}: {
+  value: number;
+  onChange: (next: number) => void;
+  description: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold">Starting sets</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onChange(Math.max(1, value - 1))}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-border text-lg hover:bg-muted"
+          >
+            −
+          </button>
+          <div className="flex min-w-14 items-center justify-center text-lg font-bold">{value}</div>
+          <button
+            type="button"
+            onClick={() => onChange(Math.min(20, value + 1))}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-border text-lg hover:bg-muted"
+          >
+            +
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function ExerciseSelector({
@@ -43,6 +85,7 @@ export function ExerciseSelector({
   const [newMuscles, setNewMuscles] = useState<string[]>([]);
   const [newPreset, setNewPreset] = useState<TrackingPresetKey>('WEIGHT_REPS');
   const [newNotes, setNewNotes] = useState('');
+  const [defaultSetCount, setDefaultSetCount] = useState(3);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -54,6 +97,7 @@ export function ExerciseSelector({
     setNewMuscles([]);
     setNewPreset('WEIGHT_REPS');
     setNewNotes('');
+    setDefaultSetCount(3);
   }, [open, defaultMode]);
 
   const filtered = useMemo(() => {
@@ -69,8 +113,11 @@ export function ExerciseSelector({
     return list;
   }, [exercises, search, muscleFilter]);
 
-  function handleSelect(exercise: ExerciseWithSchema) {
-    onSelect(exercise);
+  function handleSelect(
+    exercise: ExerciseWithSchema,
+    options: ExerciseSelectionOptions = { defaultSetCount },
+  ) {
+    onSelect(exercise, options);
     setOpen(false);
     setMode(defaultMode);
     setSearch('');
@@ -94,7 +141,7 @@ export function ExerciseSelector({
       });
       const exercise = await createExercise(data);
       toast.success(`"${exercise.name}" created`);
-      handleSelect(exercise);
+      handleSelect(exercise, { defaultSetCount });
       // Reset create form
       setNewName(''); setNewMuscles([]); setNewPreset('WEIGHT_REPS'); setNewNotes('');
     } catch (err: unknown) {
@@ -136,7 +183,7 @@ export function ExerciseSelector({
             <div className="mx-4 mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
               <p className="text-sm font-semibold">Prefer your own exercise names?</p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Create an exercise from scratch for weight and reps, time, distance, or laps. You only need the library if you want it.
+                Create an exercise from scratch for weight and reps, weight and laps, time, distance, or laps. You only need the library if you want it.
               </p>
               <button
                 onClick={() => openCreate(search)}
@@ -144,6 +191,14 @@ export function ExerciseSelector({
               >
                 Create Custom Exercise
               </button>
+            </div>
+
+            <div className="px-4 pt-4">
+              <SetCountPicker
+                value={defaultSetCount}
+                onChange={setDefaultSetCount}
+                description={`The next exercise you add to this workout will start with ${defaultSetCount} set${defaultSetCount !== 1 ? 's' : ''}.`}
+              />
             </div>
 
             {/* Search */}
@@ -275,9 +330,9 @@ export function ExerciseSelector({
                         ? 'border-primary bg-primary/10 text-primary'
                         : 'border-border bg-card text-foreground hover:bg-muted',
                     )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>{PRESET_LABELS[key]}</span>
+                    >
+                      <div className="flex items-center justify-between">
+                      <span>{TRACKING_PRESET_LABELS[key]}</span>
                       {newPreset === key && <Check className="h-3.5 w-3.5" />}
                     </div>
                   </button>
@@ -285,20 +340,35 @@ export function ExerciseSelector({
               </div>
             </div>
 
+            <SetCountPicker
+              value={defaultSetCount}
+              onChange={setDefaultSetCount}
+              description={`This exercise will be added to the workout with ${defaultSetCount} starting set${defaultSetCount !== 1 ? 's' : ''}.`}
+            />
+
             {/* Set preview */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Set preview</label>
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
-                <span className="text-xs text-muted-foreground w-4">1</span>
-                {previewFields.map((f) => (
-                  <div key={f.key} className="flex items-center gap-1">
-                    <span className="rounded border border-input bg-card px-2 py-0.5 text-xs text-muted-foreground">
-                      {f.unit ?? f.type}
-                    </span>
-                    <span className="text-xs text-muted-foreground">{f.label}</span>
+              <div className="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-3">
+                {Array.from({ length: Math.min(defaultSetCount, 3) }, (_, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="w-4 text-xs text-muted-foreground">{i + 1}</span>
+                    {previewFields.map((f) => (
+                      <div key={f.key} className="flex items-center gap-1">
+                        <span className="rounded border border-input bg-card px-2 py-0.5 text-xs text-muted-foreground">
+                          {f.unit ?? f.type}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{f.label}</span>
+                      </div>
+                    ))}
+                    <Check className="ml-auto h-4 w-4 text-muted-foreground/30" />
                   </div>
                 ))}
-                <Check className="ml-auto h-4 w-4 text-muted-foreground/30" />
+                {defaultSetCount > 3 && (
+                  <p className="text-xs text-muted-foreground">
+                    + {defaultSetCount - 3} more set{defaultSetCount - 3 !== 1 ? 's' : ''}
+                  </p>
+                )}
               </div>
             </div>
 

@@ -284,7 +284,7 @@ export default function HomePage() {
           <section className="rounded-2xl border border-dashed border-border bg-card px-4 py-4">
             <p className="text-sm font-semibold">New here?</p>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              Start by creating a workout with the exercises and tracking style you actually use: weight and reps, time, distance, or laps.
+              Start by creating a workout with the exercises and tracking style you actually use: weight and reps, weight and laps, time, distance, or laps.
             </p>
             <button
               onClick={() => router.push('/templates?create=1')}

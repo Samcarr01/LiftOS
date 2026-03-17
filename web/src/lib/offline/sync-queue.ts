@@ -10,6 +10,7 @@
  */
 import { db, type QueuedMutation } from './indexed-db';
 import { createClient } from '@/lib/supabase/client';
+import { invokeAuthedFunction } from '@/lib/supabase/invoke-authed-function';
 
 const MAX_RETRIES  = 5;
 const MAX_QUEUE    = 1000;
@@ -94,9 +95,13 @@ export async function processQueue(): Promise<boolean> {
   let invokeErr: unknown = null;
 
   try {
-    const { data, error } = await supabase.functions.invoke('sync-offline-queue', {
-      body: { mutations },
-    });
+    const { data, error } = await invokeAuthedFunction<{
+      results?: Array<{ client_id: string; status: string }>;
+    }>(
+      supabase,
+      'sync-offline-queue',
+      { mutations },
+    );
     responseData = data;
     invokeErr    = error;
   } catch (err) {

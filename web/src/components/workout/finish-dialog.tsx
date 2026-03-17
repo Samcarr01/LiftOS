@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
+import { invokeAuthedFunction } from '@/lib/supabase/invoke-authed-function';
 import { addToQueue } from '@/lib/offline';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { useCompletionStore } from '@/store/completion-store';
@@ -92,9 +93,11 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
       }
 
       // 2. Call complete-workout Edge Function
-      const { data, error: compErr } = await supabase.functions.invoke('complete-workout', {
-        body: { session_id: workout.session.id },
-      });
+      const { data, error: compErr } = await invokeAuthedFunction(
+        supabase,
+        'complete-workout',
+        { session_id: workout.session.id },
+      );
 
       if (compErr) throw compErr;
 

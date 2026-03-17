@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { invokeAuthedFunction } from '@/lib/supabase/invoke-authed-function';
 import type { WeeklySummaryData } from '@/types/app';
 
 export function useWeeklySummary() {
@@ -15,9 +16,11 @@ export function useWeeklySummary() {
     setError(null);
     const supabase = createClient();
 
-    const { data, error: err } = await supabase.functions.invoke('generate-weekly-summary', {
-      body: {},
-    });
+    const { data, error: err } = await invokeAuthedFunction<WeeklySummaryData>(
+      supabase,
+      'generate-weekly-summary',
+      {},
+    );
 
     if (err) {
       setError(err.message);
