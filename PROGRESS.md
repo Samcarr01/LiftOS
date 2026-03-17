@@ -4,10 +4,11 @@
 
 ---
 
-## 🎉 Project Status: APP BUILD COMPLETE
-## Current Prompt: N/A — All 18 app prompts done
-## Completed: 18 / 18 (APP) | 0 / 6 (MONETISE)
-## Next: Use the app! When ready to monetise → BUILD-PROMPTS-MONETISE.md
+## 🎉🎉 PROJECT STATUS: ALL BUILDS COMPLETE — APP + WEB W01–W08 DONE 🎉🎉
+## Status: PRODUCTION-READY — Deploy to Vercel to go live
+## Completed: 18 / 18 (APP) | 8 / 8 (WEB) | 0 / 6 (MONETISE)
+## Production URL: [set after Vercel deploy]
+## Next: Use it! When ready → BUILD-PROMPTS-MONETISE.md
 
 ---
 
@@ -611,3 +612,399 @@
 |----------|--------|-----|--------|
 | Chart library | react-native-chart-kit + react-native-svg | First in spec list, simplest setup, no Skia needed | 012 |
 | *Offline storage* | *TBD* | *TBD* | *009* |
+| Web framework | Next.js 16.1.6 (App Router) | Per Claude-web.md spec | W01 |
+| CSS | Tailwind v4 + shadcn v4 | Installed by create-next-app | W01 |
+| PWA | serwist + @serwist/next v9 | Per Claude-web.md spec | W01 |
+| Web build mode | webpack (--webpack flag) | serwist not yet compatible with Turbopack | W01 |
+| Button component | @base-ui/react (via shadcn v4) | shadcn v4 uses base-ui; no asChild prop | W01 |
+
+---
+
+## Web Build Prompts (Next.js PWA in web/)
+
+### W01: PWA Scaffold — ✅ COMPLETE
+
+**What was built:**
+- `web/` — Next.js 16.1.6 project with App Router, TypeScript, Tailwind v4, shadcn v4
+- `web/next.config.ts` — serwist PWA wrapper (webpack mode, SW disabled in dev)
+- `web/src/app/sw.ts` — serwist service worker
+- `web/public/manifest.json` — PWA manifest (LiftOS branding, blue-600 theme)
+- `web/src/app/globals.css` — LiftOS dark theme (slate-900 bg, blue-600 primary)
+- `web/src/lib/supabase/client.ts` — browser Supabase client (createBrowserClient)
+- `web/src/lib/supabase/server.ts` — server Supabase client (createServerClient + cookies)
+- `web/middleware.ts` — auth session refresh + route protection
+- `web/src/types/database.ts` — DB types (copied from RN app)
+- `web/src/types/tracking.ts` — TrackingSchema types + presets
+- `web/src/types/app.ts` — App-layer types (copied from RN app)
+- `web/src/types/index.ts` — barrel export
+- `web/src/lib/validation.ts` — Zod schemas (adapted for Zod v4)
+- `web/src/components/layout/bottom-nav.tsx` — mobile bottom nav (5 tabs)
+- `web/src/components/layout/sidebar-nav.tsx` — desktop sidebar nav
+- `web/src/app/layout.tsx` — root layout with dark mode, PWA meta, nav shell
+- `web/src/app/page.tsx` — home placeholder
+- `web/src/app/login/page.tsx` — login placeholder
+- `web/src/app/templates/page.tsx` — templates placeholder
+- `web/src/app/history/page.tsx` — history placeholder
+- `web/src/app/progress/page.tsx` — progress placeholder
+- `web/src/app/profile/page.tsx` — profile placeholder
+- `web/.env.local` — Supabase env vars (fill in from Supabase dashboard)
+- `web/tsconfig.json` — added WebWorker lib for sw.ts
+- `web/package.json` — added --webpack flag to dev/build scripts
+
+**shadcn components installed:** button, input, card, dialog, sheet, tabs, badge, dropdown-menu, separator, skeleton, sonner
+
+**Build:** ✅ `npm run build` passes cleanly
+
+**Next:** ~~W02~~ — done
+
+---
+
+### W02: Auth — ✅ COMPLETE
+
+**What was built:**
+- `web/src/store/auth-store.ts` — Zustand store: user/session/isLoading + signInWithGoogle, signInWithEmail, signUp, signOut, resetPassword, initialize
+- `web/src/app/(auth)/login/page.tsx` — Login page: Google OAuth button, email+password form, Sign In / Sign Up toggle, Forgot Password mode, Suspense boundary for useSearchParams
+- `web/src/app/(auth)/auth/callback/route.ts` — OAuth code exchange handler (PKCE via exchangeCodeForSession)
+- `web/src/components/layout/auth-gate.tsx` — Client component that mounts onAuthStateChange listener to keep Zustand store in sync
+- `web/src/app/layout.tsx` — Updated root layout: AuthGate wraps children, Toaster added
+- Route group restructure:
+  - `web/src/app/(app)/` — authenticated routes (has nav shell layout)
+  - `web/src/app/(auth)/` — auth routes (no nav shell)
+  - `web/src/app/(app)/layout.tsx` — app shell with SidebarNav + BottomNav
+  - `web/src/app/(auth)/layout.tsx` — minimal auth layout
+
+**Auth flows implemented:**
+- Google OAuth: signInWithOAuth → Supabase → Google → /auth/callback → cookie set → redirect to /
+- Email/password sign in: signInWithPassword → router.replace('/')
+- Email sign up: signUp → "check email" toast → back to sign in mode
+- Password reset: resetPasswordForEmail → "check email" toast
+- Sign out: signOut() in store (used in profile page, W07)
+
+**Session:** Cookie-based via @supabase/ssr (createBrowserClient + createServerClient)
+**Middleware:** Already in place from W01 — protects all routes, redirects /login → / if authenticated
+
+**⚠️ Supabase Dashboard setup required (one-time):**
+1. Authentication → Providers → Google → Enable, add Client ID + Secret from Google Cloud Console
+2. Authentication → URL Configuration → Site URL: `http://localhost:3000` (dev) or your Vercel URL (prod)
+3. Authentication → URL Configuration → Additional Redirect URLs: `http://localhost:3000/auth/callback` and `https://your-vercel-domain.vercel.app/auth/callback`
+
+**Build:** ✅ `npm run build` passes cleanly
+
+**Next:** ~~W03~~ — done
+
+---
+
+### W03: Exercise & Template Management — ✅ COMPLETE
+
+**What was built:**
+
+**Hooks:**
+- `web/src/hooks/use-exercises.ts` — `useExercises()`: fetchExercises, createExercise, updateExercise, archiveExercise (soft-delete). Zod validation before insert. Optimistic updates. `rowToExercise` parses jsonb tracking_schema.
+- `web/src/hooks/use-templates.ts` — `useTemplates()`: fetchTemplates (enriched with exercise_count), createTemplate, deleteTemplate, duplicateTemplate (deep-copies exercises), togglePin (optimistic), updateTemplateName
+- `web/src/hooks/use-template-exercises.ts` — `useTemplateExercises(id)`: fetchTemplateExercises (joins exercise data), addExercise, removeExercise (optimistic + re-index), updateExercise (optimistic), reorderExercises (two-phase to avoid UNIQUE constraint violations)
+
+**Components:**
+- `web/src/components/muscle-group-badge.tsx` — color-coded badge for 13 muscle groups
+- `web/src/components/exercise-selector.tsx` — Sheet with browse/create modes: search bar, muscle filter chips, exercise list, full exercise creator form (name, muscle multi-select, tracking preset, set preview, rest stepper, notes)
+- `web/src/lib/format-date.ts` — lightweight relative date formatter (no date-fns)
+
+**Pages:**
+- `web/src/app/(app)/templates/page.tsx` — Template list: pinned section, all templates, CreateTemplateRow inline input, DropdownMenu for pin/duplicate/delete
+- `web/src/app/(app)/templates/[id]/page.tsx` — Template editor: DnD drag-to-reorder (@dnd-kit/core + @dnd-kit/sortable), debounced name auto-save (500ms), ExerciseSelector integration, ExerciseConfigSheet for per-exercise settings (sets, rest, notes)
+
+**Packages added:** `@dnd-kit/core ^6.3.1`, `@dnd-kit/sortable ^10.0.0`, `@dnd-kit/utilities ^3.2.2`
+
+**Key fixes applied:**
+- `--webpack` flag required for serwist compatibility (was already in place)
+- `Promise<unknown>` prop type on CreateTemplateRow (not `Promise<void>`) to accept `Promise<TemplateWithCount>` from hook
+- `span.contents` wrapper for ExerciseSelector trigger (shadcn v4 / @base-ui/react has no `asChild`)
+- `DropdownMenuTrigger` styled directly without `asChild`
+- Two-phase reorder to avoid `UNIQUE(template_id, order_index)` constraint violations
+
+**Build:** ✅ `npm run build` passes cleanly
+
+**Next:** ~~W04~~ — done
+
+---
+
+### W04: Start Workout + Active Workout — ✅ COMPLETE
+
+**What was built:**
+
+**Store:**
+- `web/src/store/active-workout-store.ts` — Zustand store: `workout: ActiveWorkoutState | null` + `restTimer: GlobalRestTimer` (global, one at a time). Actions: hydrateWorkout, clearWorkout, addSet, updateSet, deleteSet, completeSet, acceptSuggestion, dismissSuggestion, startRestTimer, stopRestTimer, setIsCompleting. Maps snake_case Edge Function response to camelCase types. Parses tracking_schema via Zod.
+
+**Hook:**
+- `web/src/hooks/use-start-workout.ts` — Calls `start-workout` Edge Function via `supabase.functions.invoke`, maps snake_case API response (`session_exercise`, `last_performance`, `prefilled_sets`) to camelCase types, hydrates store, navigates to `/workout/[sessionId]`.
+
+**Components (`web/src/components/workout/`):**
+- `numeric-input.tsx` — CRITICAL: mobile-first numeric input. Desktop: native number input with ±step buttons. Mobile (pointer:coarse): tap-button → fixed numpad overlay. Numpad: ±step quick buttons, 0-9 grid, decimal, backspace, ✓ confirm. `isMobile` detected post-mount via `window.matchMedia('(pointer: coarse)')` to prevent hydration mismatch.
+- `set-row.tsx` — Set row: type badge (cycles working→warmup→top→drop→failure on tap), compact "Last" column (formatted from lastPerformanceSets), NumericInput cells per tracking field, complete checkbox (44×44 touch target), delete button. Prefill highlight (bg-primary/5) when `loggedAt === ''`.
+- `ai-suggestion-banner.tsx` — AI target with Accept/Dismiss buttons, expandable rationale, plateau warning block.
+- `exercise-card.tsx` — Exercise name + muscle badges, AI banner (if not dismissed), column headers (Last | Current), SetRows, "+ Add Set" / rest timer button / notes toggle. Auto-starts rest timer on set completion. Calls `navigator.vibrate?.(50)` on complete.
+- `rest-timer.tsx` — Fixed-position bottom overlay (`bottom-16 md:bottom-6`). Computed from `startedAt + duration`, ticks on 500ms interval. Progress bar (green→yellow→red). Web Audio API beep + `navigator.vibrate?.(200)` on expiry. Tap ✕ to dismiss.
+- `finish-dialog.tsx` — Dialog with exercise/sets/duration summary. On confirm: upserts all sets to `set_entries` (composite key `session_exercise_id,set_index`), calls `complete-workout` Edge Function, toasts PR count, navigates to `/`, clears store.
+
+**Route:**
+- `web/src/app/workout/[id]/page.tsx` — Full-screen workout page (outside `(app)/`, no nav shell). Sticky header: back, template name, elapsed timer (MM:SS, `Date.now()` diff, survives tab switch), Finish button. Scrollable exercise cards. RestTimer overlay. FinishDialog. Guards: `beforeunload` warning, redirect home if store is empty (e.g. hard refresh).
+
+**Updated pages:**
+- `web/src/app/(app)/page.tsx` — "Start Workout" button opens `StartWorkoutSheet` (shadcn Sheet). Sheet shows: Blank Workout + all templates. Each row calls `useStartWorkout().startWorkout(id)`.
+- `web/src/app/(app)/templates/page.tsx` — Added Play button to each TemplateRow for one-tap start.
+
+**Key UX decisions:**
+- Elapsed timer: `Math.floor((Date.now() - session.started_at) / 1000)` computed in UI (no store ticking — survives tab switch)
+- Rest timer: stored as `{ startedAt: Date.now(), duration }` — component computes remaining (survives scroll)
+- Custom numpad always used on touch devices to avoid inconsistent browser keyboard layouts
+- Sets saved to DB on finish (not per-change) — batch upsert via `onConflict: 'session_exercise_id,set_index'`
+- Edge Function response: snake_case → camelCase mapping in `use-start-workout.ts` hook
+- `workout/[id]` is outside `(app)/` route group — no nav shell during workout
+
+**Build:** ✅ `npm run build` passes cleanly (11 routes)
+
+**Next:** ~~W05~~ — done
+
+---
+
+### W05: Offline Support — ✅ COMPLETE
+
+**What was built:**
+
+**IndexedDB (`web/src/lib/offline/indexed-db.ts`):**
+- Dexie v4 database: `liftos-v1` with `syncQueue` table
+- `QueuedMutation` interface: id (UUID/client_id), table, operation, data, timestamp, retries, nextRetryAt (ms), status (pending/synced/failed)
+- Indexed on: status, nextRetryAt for efficient queue queries
+
+**Sync Queue (`web/src/lib/offline/sync-queue.ts`):**
+- `addToQueue()`: insert mutation into IndexedDB (max 1000, drops if full)
+- `processQueue()`: fetches pending mutations (nextRetryAt ≤ now), sends batches of 100 to `sync-offline-queue` Edge Function, marks synced/failed per result
+- `getQueueSize()`: pending + failed count
+- `clearSynced()`: prune synced items
+- Exponential backoff: 1s → 2s → 4s → 8s → 16s (capped). After 5 retries → status='failed'
+- Idempotency: uses mutation `id` as `client_id` on server
+
+**Sync Manager (`web/src/lib/offline/sync-manager.ts`):**
+- Singleton (safe to call multiple times via `started` guard)
+- Triggers: `window 'online'` event, `document 'visibilitychange'` → visible
+- Processing lock (`processing` flag) prevents concurrent runs
+- Processes queue in a loop until empty (handles > 100 items)
+
+**Barrel + logSetEntry (`web/src/lib/offline/index.ts`):**
+- `logSetEntry(set: SetEntry)`: maps SetEntry → QueuedMutation, calls addToQueue. Fire-and-forget helper.
+
+**OfflineProvider (`web/src/components/layout/offline-indicator.tsx`):**
+- Dual-purpose client component: inits sync manager + shows offline banner
+- Fixed top banner: `bg-yellow-600/95` with WifiOff icon
+- `role="status" aria-live="polite"` for screen readers
+- Non-blocking, doesn't prevent any interaction. Auto-hides when back online.
+- Added to root `layout.tsx`
+
+**Service Worker (`web/src/app/sw.ts`):**
+- Added Supabase-specific runtime caching (ordered before defaultCache):
+  - `/supabase.co/(auth|functions)/v1/` → NetworkOnly (mutations/auth never cached)
+  - `/supabase.co/rest/v1/` GET → NetworkFirst (5s timeout, cache fallback for offline reads)
+- Cache name: `supabase-rest-v1` (enables offline browsing of exercises/templates)
+
+**Active Workout Integration (`exercise-card.tsx`):**
+- `handleComplete()` now calls `void logSetEntry(completedSet)` after `completeSet()` — fire-and-forget
+- Uses `useActiveWorkoutStore.getState()` to read the post-update set synchronously
+
+**Finish Dialog (`finish-dialog.tsx`):**
+- Checks `navigator.onLine` before proceeding
+- If offline: queues ALL sets via `addToQueue()` → toast "You're offline — sets saved locally. Tap Finish once reconnected." → closes dialog (workout preserved in Zustand)
+- If online: existing direct Supabase upsert + complete-workout path (unaffected)
+- Offline sets are preserved in IndexedDB and will sync when reconnected
+
+**Offline test scenario:**
+- Enable airplane mode → log sets → sets written to IndexedDB via logSetEntry
+- Tap Finish → offline path → toast shown → dialog closes, workout preserved
+- Re-enable network → online event → sync-manager triggers → processQueue syncs to Supabase
+- Tap Finish again → online path → complete-workout succeeds (sets already in DB) ✓
+
+**Key decisions:**
+- Dexie v4 was already in package.json (no new install needed)
+- Only `completeSet` triggers logSetEntry (not every keypress — avoids queue bloat; final values matter)
+- Finish dialog has two paths: offline queues, online does direct upsert (fast path preserved)
+- Service worker caches Supabase REST GETs so exercises/templates load offline
+
+**Build:** ✅ `npm run build` passes cleanly
+
+**Next:** ~~W06~~ — done
+
+---
+
+### W06: Workout Completion + History + Progress — ✅ COMPLETE
+
+**What was built:**
+
+**Completion screen:**
+- `src/store/completion-store.ts` — Zustand store for `CompletionResult` (sessionId, summary, newPrs, exerciseNames)
+- `src/app/workout/complete/page.tsx` — Full-screen completion screen outside nav shell
+  - CSS `animate-bounce-once` animation for trophy icon when PRs exist
+  - 3-stat strip (Duration, Sets, Volume)
+  - Exercise name list with check icons
+  - PR cards (yellow, Award icon) per new personal record
+  - "Done" button → clearResult → router.replace('/')
+- `finish-dialog.tsx` updated — populates completion store with Edge Function response, navigates to `/workout/complete`
+
+**History:**
+- `src/hooks/use-history.ts` — paginated history, 20 per page, lazy `load(reset)` pattern
+- `src/app/(app)/history/page.tsx` — sessions grouped by "Month Year", infinite load, skeleton loading, empty state
+- `src/app/(app)/history/[id]/page.tsx` — full session detail with exercise blocks, set lines, PR badges
+
+**Session detail hook:**
+- `src/hooks/use-session-detail.ts` — nested Supabase query (session → session_exercises → exercises + set_entries), joins personal_records for PRs, computes total volume
+
+**Progress:**
+- `src/hooks/use-progress.ts` — `useExerciseList`, `useProgress` (chronological best-set-per-day + volume accumulation, Epley e1RM), `usePersonalRecords`
+- `src/hooks/use-weekly-summary.ts` — on-demand `generate-weekly-summary` Edge Function call, cache in state
+- `src/components/progress/chart-empty-state.tsx`
+- `src/components/progress/top-set-chart.tsx` — Recharts LineChart, lime (#84cc16)
+- `src/components/progress/e1rm-chart.tsx` — Recharts LineChart, amber (#f59e0b)
+- `src/components/progress/volume-chart.tsx` — Recharts BarChart, sky (#38bdf8)
+- `src/app/(app)/progress/page.tsx` — exercise picker, 5 time-range pills, 3-tab chart view, PR grid, weekly summary with on-demand generate
+
+**Date helpers added to `format-date.ts`:** `formatLongDate`, `formatMonthGroup`, `formatShortDate`, `formatChartDate`
+
+**All charts use `next/dynamic({ ssr: false })` (Recharts requires `window`)**
+
+**Build:** ✅ `npx tsc --noEmit` passes cleanly
+
+**Next:** ~~W07~~ — done
+
+---
+
+### W07: Home Dashboard + Profile — ✅ COMPLETE
+
+**What was built:**
+
+**Unit store:**
+- `src/store/unit-store.ts` — Zustand + `persist` middleware → `localStorage('liftos-unit')`. Exposes `unit`, `setUnit`, `toDisplay(kg)`, `formatWeight(kg)`. Synced to `users.unit_preference` on toggle.
+
+**Home dashboard (`src/app/(app)/page.tsx` — full rewrite):**
+- Greeting: "Good morning/afternoon/evening, [first name]" + current date
+- `SuggestedCard` — full-width primary-colour card, taps directly to start (non-pinned template with oldest `last_used_at`)
+- `PinnedCard` horizontal scroll row — 48-wide cards, `no-scrollbar` utility
+- `LastHighlight` rows — top lift from most recent session (e1RM-ranked per exercise, max 3)
+- `RecentRow` list — last 5 sessions, taps to session detail
+- Empty state with Dumbbell icon when no workouts yet
+- Start Workout FAB (always visible, opens existing `StartWorkoutSheet`)
+- Skeleton loading for all sections simultaneously
+
+**`src/hooks/use-home-data.ts` — NEW:**
+- Single `fetchHomeData()` async function: 3 parallel Supabase queries (profile, templates, recent sessions) + 1 sequential for last highlights
+- `useHomeData()` hook: `{ data, loading, refresh }`
+- Suggested = first non-pinned template sorted by `last_used_at ASC NULLS FIRST`
+- Pinned = `is_pinned = true` templates
+- Highlights: top set per exercise by e1RM from most recent completed session
+
+**Profile page (`src/app/(app)/profile/page.tsx` — full rewrite):**
+- Avatar circle + inline display name editor (tap to edit, Enter/Save, syncs to DB)
+- Email read-only
+- Unit toggle (kg / lb) — saves to `users.unit_preference` + `useUnitStore`
+- Export data button → `exportUserData()` (JSON blob download)
+- Failed sync queue count badge (queries IndexedDB `status=failed`)
+- App version badge (`0.1.0`)
+- Logout button
+- Delete account — 2-step dialog: first confirmation → "Type DELETE" input → calls `delete-account` Edge Function
+
+**`src/lib/export.ts` — NEW:**
+- 10 parallel Supabase queries for all user tables
+- Bundles into single `{ exportedAt, version, ...tables }` payload
+- `new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })`
+- Creates `<a>` element, triggers download, revokes object URL
+
+**PWA install:**
+- `src/hooks/use-pwa-install.ts` — listens for `beforeinstallprompt`, detects standalone mode, persists dismiss in `localStorage('liftos-pwa-dismissed')`
+- `src/components/layout/pwa-install-banner.tsx` — fixed bottom banner (above nav), shows on 2nd+ visit (`localStorage('liftos-visit-count') >= 2`), Install + dismiss buttons
+- Banner added to `src/app/(app)/layout.tsx`
+- Profile page also shows "Add to Home Screen" `ActionRow` when installable
+
+**CSS additions to `globals.css`:** `.no-scrollbar` utility (hides scrollbar cross-browser)
+
+**Build:** ✅ `npm run build` — 12 routes, all green
+
+**Next:** ~~W08~~ — done
+
+---
+
+### W08: Polish + Vercel Deploy — ✅ COMPLETE
+
+**PWA icons:**
+- Generated `public/icons/icon-192.png` and `public/icons/icon-512.png`
+  (192×192 and 512×512 placeholder PNGs — electric blue #2563EB background with white "L" glyph)
+- Generated with Python/zlib/struct — zero external deps
+- Replace with polished icons via [maskable.app](https://maskable.app) before public launch
+
+**manifest.json — enhanced:**
+- Added `maskable` purpose entries alongside `any` (required for Lighthouse PWA 100)
+- Added `shortcuts` array: "Start Workout" (`/?action=start`) and "View History" (`/history`)
+- Added `lang`, `categories`, `scope` fields
+
+**layout.tsx — full SEO + PWA meta:**
+- `metadataBase` pointing to `NEXT_PUBLIC_APP_URL`
+- `title.template` (`%s | LiftOS`) for per-page titles
+- Full `openGraph` and `twitter` card metadata
+- `robots` meta (index/follow)
+- `keywords` array
+- Multiple `apple-touch-icon` sizes (152, 180, 192)
+- `msapplication-TileColor` for Windows PWA
+- Font `display: 'swap'` for CLS improvement
+
+**next.config.ts — production hardening:**
+- `compiler.removeConsole` in production (keeps `error`/`warn`)
+- `images.formats: ['image/avif', 'image/webp']`
+- Security headers on all routes: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`
+- Long-lived cache for `/_next/static/` (immutable)
+- `sw.js` served with `no-cache` + `Service-Worker-Allowed: /`
+
+**New app routes:**
+- `src/app/error.tsx` — global error boundary (AlertTriangle icon, "Try again" reset button, logs `error.digest`)
+- `src/app/not-found.tsx` — 404 page (Dumbbell icon, "Go home" link)
+- `src/app/robots.ts` — Next.js metadata route, disallows authenticated routes from indexing
+- `src/app/sitemap.ts` — `/` and `/login` entries
+
+**Environment:**
+- `web/.env.example` — documents all env vars with comments
+
+**README.md — complete developer docs:**
+- Local setup (clone, install, env vars, dev server)
+- Production build + Vercel deploy steps
+- Supabase setup (edge functions table, tables list)
+- PWA install instructions per platform (iPhone, Android, Desktop)
+- Offline testing guide
+- Tech stack table
+- Icon replacement instructions
+
+**Build:** ✅ `npm run build` — **14 routes**, all green (including robots.txt + sitemap.xml)
+- 0 TypeScript errors, 0 ESLint errors
+
+---
+
+## 🎉 WEB APP BUILD COMPLETE
+
+**All 8 web prompts done. Production-ready.**
+
+### To deploy:
+1. Push to GitHub
+2. Connect repo at vercel.com/new → set Root Directory: `web`
+3. Add env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_APP_URL`
+4. Deploy → update Supabase Auth redirect URLs with production domain
+
+### Edge Functions deployed (on Supabase):
+- `start-workout` — create session, prefill sets, AI suggestion
+- `complete-workout` — mark complete, detect PRs
+- `sync-offline-queue` — flush IndexedDB queue
+- `generate-weekly-summary` — AI weekly summary
+- `delete-account` — purge all user data
+
+### Mobile testing checklist:
+- [ ] iPhone Safari: login, start workout, log sets, finish, see completion screen
+- [ ] iPhone Safari: Add to Home Screen → verify standalone mode, black status bar
+- [ ] Android Chrome: Install banner appears on 2nd visit
+- [ ] Airplane mode: log sets → reconnect → sets sync automatically
+- [ ] Pull-to-refresh on home page updates suggested/recent workouts
+
+### Production URL: [set after Vercel deploy — update this line]
+
+### Next: When ready to monetise → BUILD-PROMPTS-MONETISE.md

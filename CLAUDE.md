@@ -12,10 +12,13 @@ User taps Start → workout opens with sets already prefilled → logs first set
 - **UI Screens** – see [Claude-ui.md](Claude-ui.md)
 - **AI Engine** – see [Claude-ai.md](Claude-ai.md)
 - **Offline & Sync** – see [Claude-offline.md](Claude-offline.md)
+- **Web / PWA** – see [Claude-web.md](Claude-web.md)
 - **Billing** – see [Claude-billing.md](Claude-billing.md)
 
 ## Build Prompts
-- Sequential execution prompts – see [BUILD-PROMPTS.md](BUILD-PROMPTS.md)
+- **App (React Native)** – 18 prompts → [BUILD-PROMPTS-APP.md](BUILD-PROMPTS-APP.md) ✅ COMPLETE
+- **Web (Next.js PWA)** – 8 prompts → [BUILD-PROMPTS-WEB.md](BUILD-PROMPTS-WEB.md) ← CURRENT
+- **Monetise (Later)** – 6 prompts → [BUILD-PROMPTS-MONETISE.md](BUILD-PROMPTS-MONETISE.md)
 
 ## Global Constraints
 1. **All data is per-user. Strict RLS on every table: `auth.uid() = user_id`**
@@ -30,18 +33,38 @@ User taps Start → workout opens with sets already prefilled → logs first set
 ## Tech Stack
 - **Mobile:** React Native (Expo) – iOS + Android
 - **Backend:** Supabase (Postgres + Auth + RLS + Edge Functions)
-- **AI:** Claude Haiku via Edge Functions (strict JSON output)
+- **AI:** OpenAI GPT-5 or GPT-5.2 via Edge Functions (strict JSON output)
 - **Marketing/Web:** Next.js on Vercel
 - **Charts:** react-native-chart-kit or Victory Native
 - **Crash reporting:** Sentry
 - **Analytics:** PostHog or Mixpanel (events: start_workout, set_logged, suggestion_applied)
+
+## Claude Code Environment
+
+### Supabase MCP
+**Supabase MCP server is installed and active.** Use it for all database operations:
+- Creating/altering tables and columns
+- Running migrations
+- Managing RLS policies
+- Testing queries and inspecting data
+- Managing Edge Functions
+- **Prefer MCP tools over raw SQL files or Supabase CLI where possible**
+
+### PROGRESS.md (Persistent Context)
+**Claude Code must read PROGRESS.md at the start of every session and update it after completing each prompt.** This file is Claude's persistent memory across sessions. It tracks:
+- Which prompts have been completed
+- What files/folders were created or modified
+- Key decisions made during the build
+- Current state of the app
+- What's next
 
 ## Metadata
 ```json
 {
   "projectName": "LiftOS",
   "version": "1.0.0-mvp",
-  "stack": "React Native (Expo) + Supabase + Claude Haiku + Vercel",
+  "stack": "React Native (Expo) + Supabase + OpenAI GPT-5/5.2 + Vercel",
+  "mcpServers": ["supabase"],
   "environments": ["local", "staging", "prod"],
   "platforms": ["ios", "android", "web-marketing"]
 }
