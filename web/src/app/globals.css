@@ -124,21 +124,17 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-image:
-      radial-gradient(circle at top left, color-mix(in oklch, var(--primary) 28%, transparent) 0%, transparent 33%),
-      radial-gradient(circle at top right, rgba(73, 174, 255, 0.12) 0%, transparent 26%),
-      radial-gradient(circle at bottom center, rgba(255, 184, 77, 0.08) 0%, transparent 22%),
-      linear-gradient(180deg, rgba(6, 11, 23, 0.98) 0%, rgba(12, 20, 38, 0.94) 55%, rgba(8, 15, 28, 1) 100%);
-    background-attachment: fixed;
   }
   html {
     @apply font-sans;
+    /* Prevent rubber-band overscroll showing white flash */
+    overscroll-behavior: none;
   }
 }
 
 @layer components {
   .page-shell {
-    @apply relative min-h-screen overflow-hidden pb-28;
+    @apply relative min-h-[100dvh] overflow-x-hidden;
   }
 
   .page-shell::before {
@@ -156,13 +152,13 @@
   }
 
   .page-hero {
-    @apply relative overflow-hidden rounded-[28px] border border-white/10 p-5 shadow-[0_24px_80px_-40px_rgba(2,10,28,0.95)] backdrop-blur-xl md:p-7;
+    @apply relative overflow-hidden rounded-[28px] border border-white/10 p-5 backdrop-blur-sm md:p-7;
     background:
       linear-gradient(135deg, rgba(16, 28, 55, 0.95), rgba(13, 21, 39, 0.72)),
       radial-gradient(circle at top right, rgba(91, 163, 255, 0.22), transparent 38%);
-    animation: fade-up 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation: fade-up 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
     box-shadow:
-      0 24px 80px -40px rgba(2, 10, 28, 0.95),
+      0 8px 24px -8px rgba(2, 10, 28, 0.6),
       inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 
@@ -190,7 +186,7 @@
   }
 
   .section-shell {
-    animation: fade-up 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation: fade-up 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 
   .section-heading {
@@ -202,37 +198,69 @@
   }
 
   .premium-card {
-    @apply rounded-[28px] border border-white/10 bg-card/82 shadow-[0_24px_80px_-40px_rgba(2,10,28,0.95)] backdrop-blur-xl;
+    @apply rounded-[28px] border border-white/10 bg-card/82 backdrop-blur-sm;
     box-shadow:
-      0 24px 80px -40px rgba(2, 10, 28, 0.95),
+      0 8px 24px -8px rgba(2, 10, 28, 0.6),
       inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 
   .glass-panel {
-    @apply rounded-[24px] border border-white/10 bg-white/5 backdrop-blur-xl;
+    @apply rounded-[24px] border border-white/10 bg-white/5 backdrop-blur-sm;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
   }
 
   .elevated-surface {
-    @apply rounded-[28px] border border-white/10 bg-card/82 shadow-[0_24px_80px_-40px_rgba(2,10,28,0.95)] backdrop-blur-xl transition-[transform,border-color,background-color,box-shadow] duration-300 ease-out hover:-translate-y-0.5 hover:border-primary/25;
+    @apply rounded-[28px] border border-white/10 bg-card/82 backdrop-blur-sm transition-[border-color,background-color] duration-200 ease-out;
     box-shadow:
-      0 24px 80px -40px rgba(2, 10, 28, 0.95),
+      0 8px 24px -8px rgba(2, 10, 28, 0.6),
       inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  @media (hover: hover) {
+    .elevated-surface:hover {
+      transform: translateY(-2px);
+      border-color: oklch(0.69 0.185 254 / 25%);
+    }
   }
 
   .premium-button {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-[0_18px_42px_-18px_rgba(91,163,255,0.8)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-[0_8px_20px_-8px_rgba(91,163,255,0.6)] transition-[background-color,box-shadow] duration-200 ease-out active:brightness-90;
+    touch-action: manipulation;
+  }
+
+  @media (hover: hover) {
+    .premium-button:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
   }
 
   .premium-button-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-semibold text-foreground transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-primary/25 hover:bg-white/9 active:translate-y-0;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-semibold text-foreground transition-[border-color,background-color] duration-200 ease-out active:bg-white/12;
+    touch-action: manipulation;
+  }
+
+  @media (hover: hover) {
+    .premium-button-secondary:hover {
+      transform: translateY(-2px);
+      border-color: oklch(0.69 0.185 254 / 25%);
+      background: rgba(255, 255, 255, 0.09);
+    }
   }
 
   .quick-action-card {
-    @apply flex min-h-[116px] flex-col items-start justify-between gap-4 rounded-[28px] border border-white/10 bg-card/82 p-4 text-left shadow-[0_24px_80px_-40px_rgba(2,10,28,0.95)] backdrop-blur-xl transition-[transform,border-color,background-color,box-shadow] duration-300 ease-out hover:-translate-y-0.5 hover:border-primary/25;
+    @apply flex min-h-[116px] flex-col items-start justify-between gap-4 rounded-[28px] border border-white/10 bg-card/82 p-4 text-left backdrop-blur-sm transition-[border-color,background-color] duration-200 ease-out;
     box-shadow:
-      0 24px 80px -40px rgba(2, 10, 28, 0.95),
+      0 8px 24px -8px rgba(2, 10, 28, 0.6),
       inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    touch-action: manipulation;
+  }
+
+  @media (hover: hover) {
+    .quick-action-card:hover {
+      transform: translateY(-2px);
+      border-color: oklch(0.69 0.185 254 / 25%);
+    }
   }
 
   .status-pill {
@@ -240,7 +268,7 @@
   }
 
   .page-reveal {
-    animation: fade-up 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation: fade-up 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 
   .delay-1 { animation-delay: 0.07s; }
@@ -279,7 +307,7 @@
 @keyframes fade-up {
   0% {
     opacity: 0;
-    transform: translateY(22px);
+    transform: translateY(8px);
   }
   100% {
     opacity: 1;

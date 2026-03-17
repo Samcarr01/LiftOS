@@ -41,7 +41,7 @@ export default function WorkoutCompletePage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-background px-4 pb-8 pt-12">
+    <div className="flex min-h-[100dvh] flex-col items-center bg-background px-4 pb-8 pt-12">
       {/* Hero */}
       <div
         className={`

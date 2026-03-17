@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { HistorySessionSummary } from '@/types/app';
 import { fetchSessionPreviews } from '@/lib/workout/session-previews';
@@ -16,12 +16,13 @@ export function useHistory() {
   const [sessions, setSessions]   = useState<HistorySessionSummary[]>([]);
   const [loading, setLoading]     = useState(false);
   const [hasMore, setHasMore]     = useState(true);
-  const [page, setPage]           = useState(0);
+  const pageRef                   = useRef(0);
 
   const load = useCallback(async (reset = false) => {
     setLoading(true);
     const supabase = createClient();
-    const offset   = reset ? 0 : page * PAGE_SIZE;
+    const currentPage = reset ? 0 : pageRef.current;
+    const offset   = currentPage * PAGE_SIZE;
 
     const { data, error } = await supabase
       .from('workout_sessions')
@@ -79,15 +80,15 @@ export function useHistory() {
 
     if (reset) {
       setSessions(mapped);
-      setPage(1);
+      pageRef.current = 1;
     } else {
       setSessions((prev) => [...prev, ...mapped]);
-      setPage((p) => p + 1);
+      pageRef.current = currentPage + 1;
     }
 
     setHasMore(data.length === PAGE_SIZE);
     setLoading(false);
-  }, [page]);
+  }, []);
 
   const refresh = useCallback(() => load(true), [load]);
   const loadMore = useCallback(() => { if (!loading && hasMore) load(false); }, [load, loading, hasMore]);

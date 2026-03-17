@@ -32,7 +32,7 @@ export default function WorkoutPage() {
 
   if (!workout) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-[100dvh] items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
@@ -50,7 +50,7 @@ export default function WorkoutPage() {
   return (
     <div className="page-shell">
       <div className="page-content py-4 md:py-6">
-        <header className="sticky top-0 z-30 rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,34,0.94),rgba(10,18,34,0.88))] px-4 py-4 backdrop-blur-xl shadow-[0_30px_80px_-50px_rgba(2,10,28,1)]">
+        <header className="sticky top-0 z-30 rounded-[30px] border border-white/10 bg-[rgba(10,18,34,0.96)] px-4 py-4 backdrop-blur-md shadow-[0_8px_24px_-8px_rgba(2,10,28,0.6)]">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex items-start gap-3">
               <button

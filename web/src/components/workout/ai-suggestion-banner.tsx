@@ -18,7 +18,7 @@ export function AISuggestionBanner({
   const decisionLabel = progressing ? 'Increase Next Time' : 'Hold Next Time';
 
   return (
-    <div className="relative overflow-hidden rounded-[28px] border border-primary/20 bg-[linear-gradient(135deg,rgba(54,114,255,0.18),rgba(11,20,37,0.92))] px-4 py-4 shadow-[0_30px_70px_-40px_rgba(91,163,255,0.8)]">
+    <div className="relative overflow-hidden rounded-[28px] border border-primary/20 bg-[linear-gradient(135deg,rgba(54,114,255,0.18),rgba(11,20,37,0.92))] px-4 py-4 shadow-[0_8px_24px_-8px_rgba(91,163,255,0.4)]">
       <div className="absolute right-0 top-0 h-24 w-24 bg-[radial-gradient(circle_at_center,rgba(91,163,255,0.22),transparent_70%)]" />
 
       <div className="relative flex items-start gap-3">
@@ -52,7 +52,7 @@ export function AISuggestionBanner({
 
         <button
           onClick={onDismiss}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
           aria-label="Hide suggestion"
         >
           <X className="h-4 w-4" />

@@ -1,8 +1,10 @@
 // @ts-nocheck — Deno runtime
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN') ?? 'https://lift-os.vercel.app';
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': allowedOrigin,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
@@ -253,7 +255,7 @@ Deno.serve(async (req: Request) => {
         Promise.allSettled(
           exerciseIds.map((eid: string) =>
             supabase.functions.invoke('generate-ai-suggestion', {
-              body: { user_id: user.id, exercise_id: eid },
+              body: { exercise_id: eid },
             }).catch(() => { /* ignore */ }),
           ),
         ),

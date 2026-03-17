@@ -3,7 +3,7 @@ import { Dumbbell } from 'lucide-react';
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-5 bg-background px-6 text-center">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-5 bg-background px-6 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/15">
         <Dumbbell className="h-8 w-8 text-primary" />
       </div>

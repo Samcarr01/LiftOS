@@ -226,7 +226,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="relative flex min-h-screen items-center overflow-hidden px-4 py-10">
+    <div className="relative flex min-h-[100dvh] items-center overflow-hidden px-4 py-10">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(91,163,255,0.18),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(38,208,124,0.12),transparent_30%)]" />
       <div className="page-content relative grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
         <section className="page-reveal hidden lg:block">

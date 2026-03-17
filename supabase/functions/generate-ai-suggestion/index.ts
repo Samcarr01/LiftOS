@@ -2,8 +2,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import OpenAI from 'npm:openai';
 
+const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN') ?? 'https://lift-os.vercel.app';
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': allowedOrigin,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
@@ -635,14 +637,29 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const { user_id: userId, exercise_id: exerciseId } = body as Record<string, string>;
+    // ── Authenticate the calling user ───────────────────────────────────────
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) return json({ error: 'Unauthorized' }, 401);
 
-    if (!userId || !exerciseId) {
-      return json({ error: 'user_id and exercise_id required' }, 400);
+    const authClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
+    if (authError || !user) return json({ error: 'Unauthorized' }, 401);
+
+    const userId = user.id;
+
+    const body = await req.json().catch(() => ({}));
+    const { exercise_id: exerciseId } = body as Record<string, string>;
+
+    if (!exerciseId) {
+      return json({ error: 'exercise_id required' }, 400);
     }
 
-    // Internal function — called by complete-workout via service role
+    // Service-role client for data operations (writes to ai_suggestions etc.)
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,

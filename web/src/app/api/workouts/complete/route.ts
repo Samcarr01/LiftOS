@@ -169,8 +169,11 @@ function detectPersonalRecords(
 
     const existing = existingByExercise.get(exercise.exercise_id) ?? new Map<PersonalRecordType, number>();
     const maxWeight = Math.max(...weightedSets.map((set) => Number(set.values.weight ?? 0)));
-    const topWeightSet = weightedSets.find((set) => Number(set.values.weight ?? 0) === maxWeight);
-    const repsAtWeight = Number(topWeightSet?.values.reps ?? 0);
+    const repsAtWeight = Math.max(
+      ...weightedSets
+        .filter((set) => Number(set.values.weight ?? 0) === maxWeight)
+        .map((set) => Number(set.values.reps ?? 0)),
+    );
     const maxE1rm = Math.max(...weightedSets.map((set) =>
       epley(Number(set.values.weight ?? 0), Number(set.values.reps ?? 0)),
     ));
@@ -641,7 +644,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid workout payload' }, { status: 400 });
     }
 
-    const message = error instanceof Error ? error.message : 'Failed to save workout';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to save workout' }, { status: 500 });
   }
 }

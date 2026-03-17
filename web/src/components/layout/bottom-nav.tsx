@@ -17,7 +17,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-3 z-50 px-4 md:hidden">
-      <div className="mx-auto flex h-[68px] max-w-md items-center justify-around rounded-[26px] border border-white/10 bg-[rgba(9,16,31,0.84)] px-2 shadow-[0_28px_60px_-32px_rgba(2,10,28,0.95)] backdrop-blur-2xl safe-area-pb">
+      <div className="mx-auto flex h-[68px] max-w-md items-center justify-around rounded-[26px] border border-white/10 bg-[rgba(9,16,31,0.92)] px-2 shadow-[0_8px_24px_-8px_rgba(2,10,28,0.6)] backdrop-blur-md" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const isActive = href === '/'
             ? pathname === '/'

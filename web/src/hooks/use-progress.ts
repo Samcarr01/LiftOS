@@ -94,7 +94,7 @@ function buildTrendNote(points: ProgressPoint[], schema: TrackingSchema): string
     const previousReps = getMetricValue(previous.values, 'reps');
 
     if (latestWeight > previousWeight) {
-      return `Top load is up from ${previousWeight}kg to ${latestWeight}kg.`;
+      return `Top load is up from ${previousWeight} to ${latestWeight}.`;
     }
 
     if (latestWeight === previousWeight && latestReps > previousReps) {
@@ -111,7 +111,7 @@ function buildTrendNote(points: ProgressPoint[], schema: TrackingSchema): string
     const previousLaps = getMetricValue(previous.values, 'laps');
 
     if (latestWeight > previousWeight) {
-      return `Loaded work is up from ${previousWeight}kg to ${latestWeight}kg.`;
+      return `Loaded work is up from ${previousWeight} to ${latestWeight}.`;
     }
 
     if (latestWeight === previousWeight && latestLaps > previousLaps) {

@@ -101,7 +101,7 @@ export default function RootLayout({
         {/* Splash screens — iOS 15+ uses the manifest theme_color; older devices */}
         <meta name="msapplication-TileColor" content="#2563EB" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} min-h-screen antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} min-h-[100dvh] antialiased`}>
         <OfflineProvider />
         <AuthGate>
           {children}

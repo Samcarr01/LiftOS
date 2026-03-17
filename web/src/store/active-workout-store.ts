@@ -130,6 +130,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()((set, get) => 
             id:          crypto.randomUUID(),
             setIndex:    ex.sets.length,
             isCompleted: false,
+            notes:       null,
             loggedAt:    '',
           }
         : makeEmptySet(ex.sessionExercise.id, ex.sets.length);

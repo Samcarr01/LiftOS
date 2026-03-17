@@ -73,13 +73,16 @@ function mapResponse(raw: RawStartWorkoutResponse): StartWorkoutResponse {
 
 function buildPrefilledSets(
   count: number,
-  _lastPerformance: LastPerformanceSet[] | null,
+  lastPerformance: LastPerformanceSet[] | null,
 ): PrefilledSet[] {
-  return Array.from({ length: count }, (_, index) => ({
-    setIndex: index,
-    values: {},
-    setType: 'working',
-  }));
+  return Array.from({ length: count }, (_, index) => {
+    const lastSet = lastPerformance?.find((s) => s.set_index === index);
+    return {
+      setIndex: index,
+      values: lastSet?.values ?? {},
+      setType: (lastSet?.set_type as PrefilledSet['setType']) ?? 'working',
+    };
+  });
 }
 
 export function useStartWorkout() {
