@@ -65,6 +65,9 @@ export function ExerciseCard({ state, exerciseIndex, isSuggestionDismissed }: Ex
             <p className="mt-2 text-xs text-muted-foreground/80">
               Log: {fieldSummary}
             </p>
+            <p className="mt-1 text-xs text-muted-foreground/60">
+              Fill in each box, then tap Save on the right for that set.
+            </p>
           </div>
           {/* Collapse indicator */}
           {allComplete && (

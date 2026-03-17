@@ -119,29 +119,31 @@ export function SetRow({ set, setNumber, lastValues, fields, onUpdate, onComplet
         ))}
       </div>
 
-      {/* Complete checkbox */}
-      <button
-        type="button"
-        onClick={onComplete}
-        disabled={set.isCompleted}
-        className={cn(
-          'flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-xl border-2 transition-colors',
-          set.isCompleted
-            ? 'border-primary bg-primary/20 text-primary'
-            : 'border-border bg-card hover:border-primary/50 hover:bg-primary/10',
-        )}
-      >
-        {set.isCompleted && <Check className="h-5 w-5" />}
-      </button>
+      <div className="flex shrink-0 flex-col gap-1">
+        <button
+          type="button"
+          onClick={onComplete}
+          disabled={set.isCompleted}
+          className={cn(
+            'flex h-[44px] min-w-[78px] items-center justify-center gap-1 rounded-xl border-2 px-3 text-xs font-semibold transition-colors',
+            set.isCompleted
+              ? 'border-primary bg-primary/20 text-primary'
+              : 'border-border bg-card hover:border-primary/50 hover:bg-primary/10',
+          )}
+        >
+          <Check className="h-4 w-4" />
+          <span>{set.isCompleted ? 'Saved' : 'Save'}</span>
+        </button>
 
-      {/* Delete */}
-      <button
-        type="button"
-        onClick={onDelete}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground/50 hover:bg-destructive/10 hover:text-destructive"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          className="flex h-8 min-w-[78px] items-center justify-center gap-1 rounded-lg text-[11px] font-medium text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          <span>Remove</span>
+        </button>
+      </div>
     </div>
   );
 }

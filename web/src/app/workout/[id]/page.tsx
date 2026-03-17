@@ -71,17 +71,17 @@ export default function WorkoutPage() {
         <div className="flex flex-1 flex-col">
           <h1 className="truncate text-base font-bold leading-tight">{templateName}</h1>
           <p className="text-xs text-muted-foreground">
-            Log the sets that matter. AI suggestions show up when available.
+            Fill in each set, tap Save on the right, then save the workout when you are done.
           </p>
         </div>
 
         <button
           onClick={() => setFinishOpen(true)}
           disabled={workout.isCompleting || workout.exercises.length === 0}
-          className="flex h-9 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className="flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
           {workout.isCompleting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          Finish
+          Save Workout
         </button>
       </header>
 
