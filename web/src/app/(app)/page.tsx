@@ -50,12 +50,12 @@ function StartWorkoutSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="bottom" className="h-[80dvh] rounded-t-2xl p-0">
-        <SheetHeader className="border-b border-border px-4 pb-3 pt-5">
+      <SheetContent side="bottom" className="flex h-[80dvh] flex-col overflow-hidden rounded-t-2xl p-0">
+        <SheetHeader className="shrink-0 border-b border-border px-4 pb-3 pt-5">
           <SheetTitle>Start Workout</SheetTitle>
         </SheetHeader>
 
-        <div className="overflow-y-auto px-4 py-4 space-y-4">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
             <p className="text-sm font-semibold">Pick a saved workout to begin</p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
