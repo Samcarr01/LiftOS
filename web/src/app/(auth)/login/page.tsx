@@ -1,15 +1,13 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useEffect, useState, type FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Eye, EyeOff, Loader2, Sparkles, Zap } from 'lucide-react';
 import { toast } from 'sonner';
-import { Zap, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/store/auth-store';
 
 type Mode = 'signin' | 'signup' | 'forgot';
-
-// ── Inner form (uses useSearchParams, must be inside Suspense) ────────────────
 
 function LoginForm() {
   const router = useRouter();
@@ -22,7 +20,6 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Surface errors from OAuth callback redirect (?error=...)
   useEffect(() => {
     const error = searchParams.get('error');
     if (error) toast.error(decodeURIComponent(error));
@@ -35,82 +32,95 @@ function LoginForm() {
       toast.error(error);
       setIsSubmitting(false);
     }
-    // On success the browser navigates away — no cleanup needed
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim()) { toast.error('Email is required'); return; }
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!email.trim()) {
+      toast.error('Email is required');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       if (mode === 'forgot') {
         const { error } = await resetPassword(email.trim());
-        if (error) { toast.error(error); return; }
-        toast.success('Password reset email sent — check your inbox.');
+        if (error) {
+          toast.error(error);
+          return;
+        }
+        toast.success('Password reset email sent. Check your inbox.');
         setMode('signin');
         return;
       }
 
       if (mode === 'signup') {
         const { error } = await signUp(email.trim(), password);
-        if (error) { toast.error(error); return; }
-        toast.success(
-          'Account created! Check your email to verify before signing in.',
-          { duration: 6000 },
-        );
+        if (error) {
+          toast.error(error);
+          return;
+        }
+        toast.success('Account created. Check your email before signing in.', { duration: 6000 });
         setMode('signin');
         return;
       }
 
-      // Sign in
       const { error } = await signInWithEmail(email.trim(), password);
-      if (error) { toast.error(error); return; }
+      if (error) {
+        toast.error(error);
+        return;
+      }
       router.replace('/');
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  const title   = mode === 'forgot' ? 'Reset password'   : mode === 'signup' ? 'Create account' : 'Sign in';
-  const btnText = mode === 'forgot' ? 'Send reset email' : mode === 'signup' ? 'Create account' : 'Sign in';
+  const title = mode === 'forgot' ? 'Reset your password' : mode === 'signup' ? 'Create your account' : 'Sign in to LiftOS';
+  const subtitle = mode === 'forgot'
+    ? 'Enter your email and we will send a reset link.'
+    : mode === 'signup'
+      ? 'Start tracking your own workouts with a cleaner, simpler flow.'
+      : 'Keep training simple and log the workouts you actually do.';
+  const buttonLabel = mode === 'forgot' ? 'Send Reset Email' : mode === 'signup' ? 'Create Account' : 'Sign In';
 
   return (
-    <div className="w-full max-w-sm space-y-6 rounded-2xl border border-border bg-card p-8">
-      {/* Logo */}
-      <div className="flex flex-col items-center gap-2">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-          <Zap className="h-6 w-6 text-primary" />
+    <div className="w-full max-w-md premium-card px-6 py-7 sm:px-8">
+      <div className="flex items-center gap-3">
+        <div className="flex h-14 w-14 items-center justify-center rounded-[22px] bg-primary/14 text-primary shadow-[0_24px_60px_-30px_rgba(91,163,255,0.8)]">
+          <Zap className="h-6 w-6" />
         </div>
-        <h1 className="text-xl font-bold tracking-tight">LiftOS</h1>
-        <p className="text-sm text-muted-foreground">{title}</p>
+        <div>
+          <p className="hero-kicker">LiftOS</p>
+          <h1 className="font-display text-3xl font-semibold">{title}</h1>
+        </div>
       </div>
 
-      {/* Google button — signin / signup only */}
+      <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
+
       {mode !== 'forgot' && (
         <>
           <button
             type="button"
             onClick={handleGoogleSignIn}
             disabled={isSubmitting}
-            className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+            className="premium-button-secondary mt-6 w-full justify-center disabled:opacity-60"
           >
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon />}
-            Continue with Google
+            Continue With Google
           </button>
 
-          <div className="relative flex items-center gap-3">
-            <div className="h-px flex-1 bg-border" />
-            <span className="text-xs text-muted-foreground">or</span>
-            <div className="h-px flex-1 bg-border" />
+          <div className="my-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">or</span>
+            <div className="h-px flex-1 bg-white/10" />
           </div>
         </>
       )}
 
-      {/* Email / password form */}
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="space-y-1.5">
-          <label htmlFor="email" className="text-xs font-medium text-muted-foreground">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <label htmlFor="email" className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
             Email
           </label>
           <Input
@@ -119,15 +129,15 @@ function LoginForm() {
             placeholder="you@example.com"
             autoComplete="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(event) => setEmail(event.target.value)}
             required
-            className="h-10"
+            className="h-12 rounded-2xl border-white/10 bg-black/15"
           />
         </div>
 
         {mode !== 'forgot' && (
-          <div className="space-y-1.5">
-            <label htmlFor="password" className="text-xs font-medium text-muted-foreground">
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
               Password
             </label>
             <div className="relative">
@@ -137,15 +147,15 @@ function LoginForm() {
                 placeholder={mode === 'signup' ? 'At least 6 characters' : '••••••••'}
                 autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(event) => setPassword(event.target.value)}
                 required
                 minLength={6}
-                className="h-10 pr-10"
+                className="h-12 rounded-2xl border-white/10 bg-black/15 pr-12"
               />
               <button
                 type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowPassword((value) => !value)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -157,32 +167,31 @@ function LoginForm() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+          className="premium-button mt-2 w-full justify-center disabled:opacity-60"
         >
           {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-          {btnText}
+          {buttonLabel}
         </button>
       </form>
 
-      {/* Footer links */}
-      <div className="space-y-2 text-center text-sm">
+      <div className="mt-6 space-y-3 text-center text-sm">
         {mode === 'signin' && (
           <>
             <button
               type="button"
               onClick={() => setMode('forgot')}
-              className="block w-full text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground transition-colors hover:text-foreground"
             >
               Forgot password?
             </button>
             <p className="text-muted-foreground">
-              No account?{' '}
+              No account yet?{' '}
               <button
                 type="button"
                 onClick={() => setMode('signup')}
-                className="font-medium text-primary hover:underline"
+                className="font-semibold text-primary hover:underline"
               >
-                Sign up
+                Create one
               </button>
             </p>
           </>
@@ -190,11 +199,11 @@ function LoginForm() {
 
         {mode === 'signup' && (
           <p className="text-muted-foreground">
-            Have an account?{' '}
+            Already have an account?{' '}
             <button
               type="button"
               onClick={() => setMode('signin')}
-              className="font-medium text-primary hover:underline"
+              className="font-semibold text-primary hover:underline"
             >
               Sign in
             </button>
@@ -205,9 +214,9 @@ function LoginForm() {
           <button
             type="button"
             onClick={() => setMode('signin')}
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="text-muted-foreground transition-colors hover:text-foreground"
           >
-            ← Back to sign in
+            Back to sign in
           </button>
         )}
       </div>
@@ -215,25 +224,52 @@ function LoginForm() {
   );
 }
 
-// ── Page (wraps form in Suspense for useSearchParams) ─────────────────────────
-
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
-      <Suspense
-        fallback={
-          <div className="flex h-12 w-12 items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    <div className="relative flex min-h-screen items-center overflow-hidden px-4 py-10">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(91,163,255,0.18),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(38,208,124,0.12),transparent_30%)]" />
+      <div className="page-content relative grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+        <section className="page-reveal hidden lg:block">
+          <span className="hero-kicker">Premium Athletic Logging</span>
+          <h2 className="mt-4 font-display text-6xl font-semibold leading-none text-foreground">
+            The gym tracker should feel sharper than a spreadsheet.
+          </h2>
+          <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
+            LiftOS is built to keep your workouts clear: create your own exercises, log the sessions you actually run, and get next-time guidance without the clutter.
+          </p>
+
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            <div className="glass-panel px-5 py-5">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Clarity first</p>
+              <p className="mt-2 font-display text-2xl font-semibold">Own exercises, simple logging, better scanability</p>
+            </div>
+            <div className="glass-panel px-5 py-5">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Guided progression</p>
+              <p className="mt-2 font-display text-2xl font-semibold">Smarter next-time targets without overcomplication</p>
+            </div>
           </div>
-        }
-      >
-        <LoginForm />
-      </Suspense>
+        </section>
+
+        <div className="page-reveal delay-2">
+          <Suspense
+            fallback={
+              <div className="flex h-16 items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            }
+          >
+            <LoginForm />
+          </Suspense>
+        </div>
+      </div>
+
+      <div className="pointer-events-none absolute bottom-8 left-1/2 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/20 px-4 py-2 text-xs uppercase tracking-[0.16em] text-muted-foreground backdrop-blur md:flex">
+        <Sparkles className="h-3.5 w-3.5" />
+        LiftOS Web App
+      </div>
     </div>
   );
 }
-
-// ── Google SVG logo ───────────────────────────────────────────────────────────
 
 function GoogleIcon() {
   return (

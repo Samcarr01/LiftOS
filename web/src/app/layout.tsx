@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, Geist_Mono, Space_Grotesk } from 'next/font/google';
 import { AuthGate } from '@/components/layout/auth-gate';
 import { OfflineProvider } from '@/components/layout/offline-indicator';
 import { Toaster } from '@/components/ui/sonner';
@@ -13,6 +13,12 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
+  subsets: ['latin'],
+  display: 'swap',
+});
+
+const spaceGrotesk = Space_Grotesk({
+  variable: '--font-space-grotesk',
   subsets: ['latin'],
   display: 'swap',
 });
@@ -95,7 +101,7 @@ export default function RootLayout({
         {/* Splash screens — iOS 15+ uses the manifest theme_color; older devices */}
         <meta name="msapplication-TileColor" content="#2563EB" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} min-h-screen antialiased`}>
         <OfflineProvider />
         <AuthGate>
           {children}

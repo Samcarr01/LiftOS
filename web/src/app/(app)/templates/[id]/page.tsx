@@ -13,7 +13,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   GripVertical, Trash2, ChevronLeft, Plus, Loader2, Settings2,
-  Play,
+  Play, Sparkles,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
@@ -48,36 +48,36 @@ function SortableExerciseRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 transition-shadow',
-        isDragging && 'opacity-50 shadow-lg',
+        'elevated-surface flex items-center gap-4 px-4 py-4 transition-all duration-300',
+        isDragging && 'scale-[0.99] opacity-70 shadow-2xl',
       )}
     >
       {/* Drag handle */}
       <button
         {...attributes}
         {...listeners}
-        className="flex h-8 w-6 cursor-grab items-center justify-center text-muted-foreground/50 active:cursor-grabbing touch-none"
+        className="flex h-9 w-7 cursor-grab items-center justify-center rounded-xl text-muted-foreground/50 active:cursor-grabbing touch-none hover:bg-white/5"
       >
         <GripVertical className="h-4 w-4" />
       </button>
 
       {/* Exercise info — tap to configure */}
       <button className="flex flex-1 min-w-0 flex-col items-start gap-0.5" onClick={onConfig}>
-        <span className="truncate text-sm font-medium">{item.exercise.name}</span>
-        <div className="flex items-center gap-2">
+        <span className="truncate font-display text-lg font-semibold">{item.exercise.name}</span>
+        <div className="mt-1 flex items-center gap-2">
           <div className="flex gap-1">
             {item.exercise.muscle_groups.slice(0, 2).map((m) => (
               <MuscleGroupBadge key={m} muscle={m} />
             ))}
           </div>
-          <span className="text-xs text-muted-foreground">{item.default_set_count} sets</span>
+          <span className="status-pill">{item.default_set_count} sets</span>
         </div>
       </button>
 
-      <button onClick={onConfig} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
+      <button onClick={onConfig} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground">
         <Settings2 className="h-4 w-4" />
       </button>
-      <button onClick={onRemove} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-destructive">
+      <button onClick={onRemove} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
         <Trash2 className="h-4 w-4" />
       </button>
     </div>
@@ -111,11 +111,12 @@ function ExerciseConfigSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-2xl p-0">
-        <SheetHeader className="px-5 pt-5 pb-4 border-b border-border">
-          <SheetTitle className="text-left">{item?.exercise.name}</SheetTitle>
+      <SheetContent side="bottom" className="rounded-t-[30px] border-t border-white/10 bg-[linear-gradient(180deg,rgba(10,18,34,0.98),rgba(10,18,34,0.94))] p-0 shadow-[0_-30px_80px_-40px_rgba(2,10,28,0.95)]">
+        <SheetHeader className="border-b border-white/10 px-5 pb-4 pt-6">
+          <span className="hero-kicker w-fit">Exercise Settings</span>
+          <SheetTitle className="font-display pt-3 text-left text-2xl">{item?.exercise.name}</SheetTitle>
           {item && item.exercise.muscle_groups.length > 0 && (
-            <div className="flex gap-1 mt-1">
+            <div className="mt-2 flex gap-1">
               {item.exercise.muscle_groups.map((m) => <MuscleGroupBadge key={m} muscle={m} />)}
             </div>
           )}
@@ -123,19 +124,19 @@ function ExerciseConfigSheet({
 
         <div className="flex flex-col gap-5 px-5 py-5">
           {/* Set count */}
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Sets</label>
-            <div className="mt-1.5 flex items-center gap-4">
+          <div className="premium-card px-4 py-4">
+            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Starting Sets</label>
+            <div className="mt-3 flex items-center gap-4">
               <button
                 onClick={() => setSets((v) => Math.max(1, v - 1))}
-                className="flex h-11 w-11 items-center justify-center rounded-xl border border-border text-xl hover:bg-muted"
+                className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 text-xl hover:bg-white/5"
               >
                 −
               </button>
-              <span className="flex-1 text-center text-2xl font-bold">{sets}</span>
+              <span className="flex-1 text-center font-display text-3xl font-semibold">{sets}</span>
               <button
                 onClick={() => setSets((v) => Math.min(20, v + 1))}
-                className="flex h-11 w-11 items-center justify-center rounded-xl border border-border text-xl hover:bg-muted"
+                className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 text-xl hover:bg-white/5"
               >
                 +
               </button>
@@ -143,20 +144,20 @@ function ExerciseConfigSheet({
           </div>
 
           {/* Notes */}
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Notes (optional)</label>
+          <div className="premium-card px-4 py-4">
+            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Notes</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Form cues, target weight…"
-              rows={2}
-              className="mt-1.5 w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+              rows={3}
+              className="mt-3 w-full resize-none rounded-2xl border border-white/10 bg-black/15 px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-primary/50 focus-visible:outline-none"
             />
           </div>
 
           <button
             onClick={save}
-            className="flex h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            className="premium-button w-full justify-center"
           >
             Save
           </button>
@@ -276,95 +277,148 @@ export default function TemplateEditorPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-4">
-      {/* Header */}
-      <div className="mb-5 flex items-center gap-3">
-        <button
-          onClick={() => router.back()}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground hover:bg-muted"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-
-        <input
-          value={templateName}
-          onChange={(e) => handleNameChange(e.target.value)}
-          placeholder="Workout name"
-          className="flex-1 bg-transparent text-xl font-bold tracking-tight outline-none placeholder:text-muted-foreground"
-        />
-
-        {saveStatus === 'saving' && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />}
-        {saveStatus === 'saved' && <span className="shrink-0 text-xs text-muted-foreground">Saved</span>}
-      </div>
-
-      <div className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 p-4">
-        <p className="text-sm font-semibold">Build this workout your way</p>
-        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-          Add the exercises you actually do. Creating your own exercise is the default, and you can still switch to the library inside the picker.
-        </p>
-      </div>
-
-      <div className="mb-5 rounded-2xl border border-border bg-card p-4">
-        <button
-          onClick={() => void handleStartWorkout()}
-          disabled={isStartingWorkout || exercises.length === 0}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isStartingWorkout ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-          Start This Workout
-        </button>
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-          {exercises.length === 0
-            ? 'Add at least one exercise before starting.'
-            : 'Ready when you are. What you log here becomes the baseline for the next AI suggestion.'}
-        </p>
-      </div>
-
-      {/* Exercise list */}
-      {isLoading ? (
-        <div className="flex justify-center py-10">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={exercises.map((e) => e.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2">
-              {exercises.map((item) => (
-                <SortableExerciseRow
-                  key={item.id}
-                  item={item}
-                  onConfig={() => { setConfigItem(item); setConfigOpen(true); }}
-                  onRemove={() => void handleRemove(item.id)}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      )}
-
-      {exercises.length === 0 && !isLoading && (
-        <div className="mb-4 rounded-2xl border border-dashed border-border px-4 py-8 text-center">
-          <p className="text-sm font-semibold">This workout is empty</p>
-          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Add your first exercise below. Weight and reps, weight and laps, laps, time, or distance all work.
-          </p>
-        </div>
-      )}
-
-      {/* Add Exercise */}
-      <div className="mt-4">
-        <ExerciseSelector
-          onSelect={handleAddExercise}
-          defaultMode="create"
-          trigger={
-            <button className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary">
-              <Plus className="h-4 w-4" /> Create Or Add Exercise
+    <div className="page-shell">
+      <div className="page-content py-5 md:py-7">
+        <section className="page-hero">
+          <div className="flex items-start gap-4">
+            <button
+              onClick={() => router.back()}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+            >
+              <ChevronLeft className="h-5 w-5" />
             </button>
-          }
-        />
-        <p className="mt-2 text-center text-xs text-muted-foreground">
-          Your own exercises come first. You can switch to the library inside the sheet if you want.
-        </p>
+
+            <div className="min-w-0 flex-1">
+              <span className="hero-kicker">Workout Editor</span>
+              <input
+                value={templateName}
+                onChange={(e) => handleNameChange(e.target.value)}
+                placeholder="Workout name"
+                className="page-title mt-4 w-full bg-transparent outline-none placeholder:text-muted-foreground"
+              />
+              <p className="page-subtitle mt-3">
+                Shape this workout around the exercises you actually do. Keep it simple now, then reuse it every time you want to log this session.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => void handleStartWorkout()}
+              disabled={isStartingWorkout || exercises.length === 0}
+              className="premium-button disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isStartingWorkout ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              Start This Workout
+            </button>
+            <span className="status-pill">
+              {exercises.length} exercise{exercises.length !== 1 ? 's' : ''}
+            </span>
+            {saveStatus === 'saving' && (
+              <span className="status-pill border-primary/20 bg-primary/10 text-primary">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Saving
+              </span>
+            )}
+            {saveStatus === 'saved' && (
+              <span className="status-pill border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+                Saved
+              </span>
+            )}
+          </div>
+        </section>
+
+        <div className="mt-8 space-y-8">
+          <section className="section-shell">
+            <div className="premium-card page-reveal delay-2 px-5 py-5">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/14 text-primary">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="font-display text-2xl font-semibold">Build it the way you train</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                    Add exercises, choose the right starting set count, and keep notes where they help. Your own exercise names come first.
+                  </p>
+                  <p className="mt-3 text-xs uppercase tracking-[0.16em] text-muted-foreground/75">
+                    {exercises.length === 0
+                      ? 'Add at least one exercise before starting.'
+                      : 'Ready when you are. What you log next becomes the baseline for future guidance.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="section-shell">
+            <div className="section-heading">
+              <div>
+                <h2 className="section-title">Exercises In This Workout</h2>
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/75">drag to reorder</p>
+              </div>
+            </div>
+
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={exercises.map((exercise) => exercise.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-3">
+                    {exercises.map((item) => (
+                      <SortableExerciseRow
+                        key={item.id}
+                        item={item}
+                        onConfig={() => {
+                          setConfigItem(item);
+                          setConfigOpen(true);
+                        }}
+                        onRemove={() => void handleRemove(item.id)}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )}
+
+            {exercises.length === 0 && !isLoading && (
+              <div className="premium-card page-reveal delay-2 px-5 py-10 text-center">
+                <p className="font-display text-2xl font-semibold">This workout is empty</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Add your first exercise below. Weight and reps, weight and laps, laps, time, or distance all work.
+                </p>
+              </div>
+            )}
+          </section>
+
+          <section className="section-shell">
+            <div className="section-heading">
+              <div>
+                <h2 className="section-title">Add Exercise</h2>
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/75">create first, browse if needed</p>
+              </div>
+            </div>
+
+            <ExerciseSelector
+              onSelect={handleAddExercise}
+              defaultMode="create"
+              trigger={
+                <button className="premium-card page-reveal delay-3 flex h-auto w-full items-center justify-center gap-3 px-4 py-5 text-left">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/14 text-primary">
+                    <Plus className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display text-xl font-semibold">Create Or Add Exercise</p>
+                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                      Start with your own exercise. You can switch to the existing list inside the sheet whenever you want.
+                    </p>
+                  </div>
+                </button>
+              }
+            />
+          </section>
+        </div>
       </div>
 
       {/* Exercise config sheet */}

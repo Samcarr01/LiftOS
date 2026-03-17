@@ -2,24 +2,28 @@
 
 import { use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Trophy, Award } from 'lucide-react';
+import { ArrowLeft, Award, Trophy } from 'lucide-react';
 import { useSessionDetail } from '@/hooks/use-session-detail';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import { formatLongDate } from '@/lib/format-date';
+import { formatSetValues } from '@/lib/workout/formatting';
 import type { SessionDetailExercise, SessionDetailSet } from '@/types/app';
 import type { TrackingSchema } from '@/types/tracking';
-import { formatSetValues } from '@/lib/workout/formatting';
 
 const SET_TYPE_LABELS: Record<string, string> = {
-  working: 'W', warmup: 'WU', top: 'T', drop: 'D', failure: 'F',
+  working: 'Working',
+  warmup: 'Warm Up',
+  top: 'Top',
+  drop: 'Drop',
+  failure: 'Failure',
 };
 
 const PR_LABEL: Record<string, string> = {
-  best_weight:         'Weight PR',
+  best_weight: 'Weight PR',
   best_reps_at_weight: 'Reps PR',
-  best_e1rm:           '1RM PR',
-  best_volume:         'Volume PR',
+  best_e1rm: 'Est. 1RM PR',
+  best_volume: 'Volume PR',
 };
 
 function formatPrValue(recordType: string, recordValue: number): string {
@@ -30,71 +34,44 @@ function formatPrValue(recordType: string, recordValue: number): string {
   return String(recordValue);
 }
 
-export default function SessionDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const { detail, loading, error } = useSessionDetail(id);
-  const router = useRouter();
-
+function StatCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-background/80 backdrop-blur-sm px-4 py-3">
-        <button
-          onClick={() => router.back()}
-          className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <h1 className="text-base font-bold">
-          {loading ? 'Loading…' : (detail?.template_name ?? 'Workout')}
-        </h1>
-      </header>
-
-      {error && (
-        <p className="px-4 pt-6 text-sm text-destructive">{error}</p>
-      )}
-
-      {loading && (
-        <div className="space-y-4 px-4 pt-4">
-          <Skeleton className="h-20 w-full rounded-xl" />
-          <Skeleton className="h-40 w-full rounded-xl" />
-          <Skeleton className="h-40 w-full rounded-xl" />
-        </div>
-      )}
-
-      {detail && (
-        <div className="px-4 pt-4 space-y-4">
-          {/* Summary strip */}
-          <div className="grid grid-cols-3 gap-3">
-            <StatCard
-              label="Date"
-              value={formatLongDate(detail.started_at)}
-              small
-            />
-            <StatCard
-              label="Exercises"
-              value={String(detail.exercises.length)}
-            />
-            <StatCard
-              label="Saved Sets"
-              value={String(detail.total_sets)}
-            />
-          </div>
-
-          {/* Exercises */}
-          {detail.exercises.map((ex) => (
-            <ExerciseBlock key={ex.session_exercise_id} exercise={ex} />
-          ))}
-        </div>
-      )}
+    <div className="premium-card px-4 py-4 text-center">
+      <p className="font-display text-xl font-semibold">{value}</p>
+      <p className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
     </div>
   );
 }
 
-function StatCard({ label, value, small }: { label: string; value: string; small?: boolean }) {
+function SetLine({
+  set,
+  trackingSchema,
+}: {
+  set: SessionDetailSet;
+  trackingSchema: TrackingSchema;
+}) {
   return (
-    <div className="flex flex-col items-center rounded-xl bg-muted px-3 py-3">
-      <span className={`font-bold ${small ? 'text-sm' : 'text-lg'}`}>{value}</span>
-      <span className="mt-0.5 text-[11px] text-muted-foreground">{label}</span>
+    <div className={`glass-panel flex items-center gap-3 px-4 py-3 ${!set.is_completed ? 'opacity-50' : ''}`}>
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-sm font-semibold text-primary">
+        {set.set_index + 1}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+          {SET_TYPE_LABELS[set.set_type] ?? set.set_type}
+        </p>
+        <p className="mt-1 text-sm font-medium text-foreground">
+          {formatSetValues(set.values, trackingSchema)}
+        </p>
+      </div>
+      {!set.is_completed && (
+        <span className="status-pill">Open</span>
+      )}
     </div>
   );
 }
@@ -103,68 +80,114 @@ function ExerciseBlock({ exercise }: { exercise: SessionDetailExercise }) {
   const hasPrs = exercise.prs.length > 0;
 
   return (
-    <div className="rounded-2xl border border-border bg-card">
-      {/* Exercise header */}
-      <div className="px-4 pt-4 pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="truncate text-sm font-bold">{exercise.exercise_name}</h3>
-            <div className="mt-1 flex flex-wrap gap-1">
-              {exercise.muscle_groups.slice(0, 3).map((m) => (
-                <MuscleGroupBadge key={m} muscle={m} />
-              ))}
-            </div>
-          </div>
-          {hasPrs && (
-            <Trophy className="h-4 w-4 shrink-0 text-yellow-500" />
-          )}
-        </div>
-
-        {/* PRs */}
-        {hasPrs && (
+    <div className="premium-card page-reveal px-5 py-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="truncate font-display text-2xl font-semibold">{exercise.exercise_name}</h2>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {exercise.prs.map((pr, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-1 rounded-full bg-yellow-500/15 px-2 py-0.5 text-[10px] font-medium text-yellow-600 dark:text-yellow-400"
-              >
-                <Award className="h-2.5 w-2.5" />
-                {PR_LABEL[pr.record_type]} · {formatPrValue(pr.record_type, pr.record_value)}
-              </span>
+            {exercise.muscle_groups.slice(0, 3).map((muscle) => (
+              <MuscleGroupBadge key={muscle} muscle={muscle} />
             ))}
+          </div>
+        </div>
+        {hasPrs && (
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-yellow-500/12 text-yellow-300">
+            <Trophy className="h-5 w-5" />
           </div>
         )}
       </div>
 
-      {/* Sets table */}
-      <div className="border-t border-border/50 px-4 pb-3 pt-2">
-        <div className="mb-1 flex gap-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-          <span className="w-5 text-center">#</span>
-          <span className="w-12">Type</span>
-          <span className="flex-1">Values</span>
+      {hasPrs && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {exercise.prs.map((pr, index) => (
+            <span
+              key={`${pr.record_type}-${index}`}
+              className="status-pill border-yellow-500/25 bg-yellow-500/10 text-yellow-300"
+            >
+              <Award className="h-3.5 w-3.5" />
+              {PR_LABEL[pr.record_type]} · {formatPrValue(pr.record_type, pr.record_value)}
+            </span>
+          ))}
         </div>
-        {exercise.sets.map((s) => (
-          <SetLine key={s.id} set={s} trackingSchema={exercise.tracking_schema} />
+      )}
+
+      <div className="mt-5 space-y-3">
+        {exercise.sets.map((set) => (
+          <SetLine key={set.id} set={set} trackingSchema={exercise.tracking_schema} />
         ))}
       </div>
     </div>
   );
 }
 
-function SetLine({ set, trackingSchema }: { set: SessionDetailSet; trackingSchema: TrackingSchema }) {
+export default function SessionDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const { detail, loading, error } = useSessionDetail(id);
+  const router = useRouter();
+
   return (
-    <div
-      className={`flex items-center gap-3 py-1 text-sm ${
-        !set.is_completed ? 'opacity-40' : ''
-      }`}
-    >
-      <span className="w-5 shrink-0 text-center text-[11px] text-muted-foreground">
-        {set.set_index + 1}
-      </span>
-      <span className="w-12 shrink-0 text-[10px] font-medium text-muted-foreground">
-        {SET_TYPE_LABELS[set.set_type] ?? set.set_type}
-      </span>
-      <span className="flex-1 font-medium">{formatSetValues(set.values, trackingSchema)}</span>
+    <div className="page-shell">
+      <div className="page-content py-5 md:py-7">
+        <section className="page-hero">
+          <div className="flex items-start gap-4">
+            <button
+              onClick={() => router.back()}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div className="min-w-0 flex-1">
+              <span className="hero-kicker">Workout Detail</span>
+              <h1 className="page-title mt-4">
+                {loading ? 'Loading session' : (detail?.template_name ?? 'Workout')}
+              </h1>
+              <p className="page-subtitle mt-3">
+                Review the session the way you remember it: when you trained, what exercises you did, and exactly what you logged for each set.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {error && (
+          <p className="mt-6 text-sm text-destructive">{error}</p>
+        )}
+
+        {loading && (
+          <div className="mt-8 space-y-4">
+            <Skeleton className="h-40 w-full rounded-[28px]" />
+            <Skeleton className="h-64 w-full rounded-[28px]" />
+            <Skeleton className="h-64 w-full rounded-[28px]" />
+          </div>
+        )}
+
+        {detail && (
+          <div className="mt-8 space-y-8">
+            <section className="section-shell">
+              <div className="grid gap-3 md:grid-cols-3">
+                <StatCard label="Date" value={formatLongDate(detail.started_at)} />
+                <StatCard label="Exercises" value={String(detail.exercises.length)} />
+                <StatCard label="Saved Sets" value={String(detail.total_sets)} />
+              </div>
+            </section>
+
+            <section className="section-shell">
+              <div className="section-heading">
+                <div>
+                  <h2 className="section-title">Logged Exercises</h2>
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/75">
+                    {detail.exercises.length} movement{detail.exercises.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                {detail.exercises.map((exercise) => (
+                  <ExerciseBlock key={exercise.session_exercise_id} exercise={exercise} />
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,12 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
-  LogOut, Trash2, Download, Smartphone, User,
-  ChevronRight, Loader2, AlertTriangle,
+  AlertTriangle,
+  ChevronRight,
+  Download,
+  Loader2,
+  LogOut,
+  Smartphone,
+  Trash2,
+  User,
 } from 'lucide-react';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
@@ -19,8 +29,6 @@ import { db } from '@/lib/offline/indexed-db';
 
 const APP_VERSION = '0.1.0';
 
-// ── Delete Account Dialog ─────────────────────────────────────────────────────
-
 function DeleteAccountDialog({
   open,
   onClose,
@@ -28,16 +36,15 @@ function DeleteAccountDialog({
   open: boolean;
   onClose: () => void;
 }) {
-  const [step, setStep]       = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [confirm, setConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
-  const signOut               = useAuthStore((s) => s.signOut);
+  const signOut = useAuthStore((state) => state.signOut);
 
   async function handleDelete() {
     setDeleting(true);
     try {
       const supabase = createClient();
-      // Call Edge Function to purge all user data + delete auth user
       const { error } = await invokeAuthedFunction(supabase, 'delete-account', {});
       if (error) throw error;
       await signOut();
@@ -55,10 +62,10 @@ function DeleteAccountDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DialogContent className="sm:max-w-sm">
+    <Dialog open={open} onOpenChange={(value) => !value && handleClose()}>
+      <DialogContent className="sm:max-w-md border-white/10 bg-[linear-gradient(180deg,rgba(10,18,34,0.98),rgba(10,18,34,0.94))] text-foreground shadow-[0_40px_100px_-50px_rgba(2,10,28,1)]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-destructive">
+          <DialogTitle className="flex items-center gap-2 font-display text-2xl text-destructive">
             <AlertTriangle className="h-5 w-5" />
             Delete Account
           </DialogTitle>
@@ -66,20 +73,16 @@ function DeleteAccountDialog({
 
         {step === 1 ? (
           <>
-            <p className="text-sm text-muted-foreground">
-              This will permanently delete <strong>all your data</strong> — workouts,
-              templates, personal records, and your account. This cannot be undone.
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              This permanently deletes all workouts, templates, exercise data, records, and your account. There is no undo for this action.
             </p>
-            <DialogFooter className="gap-2">
-              <button
-                onClick={handleClose}
-                className="flex h-10 flex-1 items-center justify-center rounded-xl border border-border text-sm font-medium hover:bg-muted"
-              >
+            <DialogFooter className="gap-2 sm:justify-start">
+              <button onClick={handleClose} className="premium-button-secondary flex-1 justify-center">
                 Cancel
               </button>
               <button
                 onClick={() => setStep(2)}
-                className="flex h-10 flex-1 items-center justify-center rounded-xl bg-destructive text-sm font-semibold text-destructive-foreground hover:bg-destructive/90"
+                className="flex h-11 flex-1 items-center justify-center rounded-2xl bg-destructive px-4 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90"
               >
                 Continue
               </button>
@@ -87,28 +90,28 @@ function DeleteAccountDialog({
           </>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground">
-              Type <strong>DELETE</strong> to confirm permanent account deletion.
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Type <strong className="text-foreground">DELETE</strong> to confirm permanent account deletion.
             </p>
             <input
               autoFocus
               value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
+              onChange={(event) => setConfirm(event.target.value)}
               placeholder="Type DELETE"
-              className="h-10 w-full rounded-xl border border-input bg-transparent px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-12 w-full rounded-2xl border border-white/10 bg-black/15 px-4 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50"
             />
-            <DialogFooter className="gap-2">
+            <DialogFooter className="gap-2 sm:justify-start">
               <button
                 onClick={handleClose}
                 disabled={deleting}
-                className="flex h-10 flex-1 items-center justify-center rounded-xl border border-border text-sm font-medium hover:bg-muted disabled:opacity-50"
+                className="premium-button-secondary flex-1 justify-center disabled:opacity-60"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={confirm !== 'DELETE' || deleting}
-                className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-destructive text-sm font-semibold text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-destructive px-4 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
               >
                 {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
                 Delete Forever
@@ -121,22 +124,85 @@ function DeleteAccountDialog({
   );
 }
 
-// ── Profile Page ──────────────────────────────────────────────────────────────
+function SettingSection({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="section-shell">
+      <div className="section-heading">
+        <div>
+          <h2 className="section-title">{title}</h2>
+          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/75">{subtitle}</p>
+        </div>
+      </div>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
+
+function ActionRow({
+  icon,
+  label,
+  description,
+  onClick,
+  loading,
+  destructive,
+  accent,
+}: {
+  icon: ReactNode;
+  label: string;
+  description?: string;
+  onClick: () => void;
+  loading?: boolean;
+  destructive?: boolean;
+  accent?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      className={`elevated-surface page-reveal flex w-full items-center gap-4 px-4 py-4 text-left disabled:opacity-60 ${
+        destructive ? 'text-destructive' : accent ? 'text-primary' : ''
+      }`}
+    >
+      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+        destructive
+          ? 'bg-destructive/12 text-destructive'
+          : accent
+            ? 'bg-primary/14 text-primary'
+            : 'bg-white/6 text-foreground'
+      }`}
+      >
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-display text-lg font-semibold">{label}</p>
+        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+      </div>
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+    </button>
+  );
+}
 
 export default function ProfilePage() {
-  const user    = useAuthStore((s) => s.user);
-  const signOut = useAuthStore((s) => s.signOut);
+  const user = useAuthStore((state) => state.user);
+  const signOut = useAuthStore((state) => state.signOut);
   const { unit, setUnit } = useUnitStore();
   const { isInstallable, isInstalled, isDismissed, install } = usePwaInstall();
 
-  const [displayName, setDisplayName]   = useState('');
-  const [editingName, setEditingName]   = useState(false);
-  const [savingName, setSavingName]     = useState(false);
-  const [exporting, setExporting]       = useState(false);
-  const [deleteOpen, setDeleteOpen]     = useState(false);
-  const [failedCount, setFailedCount]   = useState(0);
+  const [displayName, setDisplayName] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [savingName, setSavingName] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [failedCount, setFailedCount] = useState(0);
 
-  // Load display name from DB
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
@@ -149,7 +215,6 @@ export default function ProfilePage() {
       });
   }, [user]);
 
-  // Count failed sync queue items
   useEffect(() => {
     db.syncQueue.where('status').equals('failed').count().then(setFailedCount);
   }, []);
@@ -162,12 +227,14 @@ export default function ProfilePage() {
       .from('users')
       .update({ display_name: displayName.trim() || null })
       .eq('id', user.id);
+
     if (error) {
       toast.error('Failed to save name');
     } else {
       toast.success('Name updated');
       setEditingName(false);
     }
+
     setSavingName(false);
   }
 
@@ -198,197 +265,157 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-28">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-sm px-4 py-3">
-        <h1 className="text-lg font-bold">Profile</h1>
-      </header>
-
-      <div className="px-4 pt-6 space-y-6">
-
-        {/* ── Avatar + email ────────────────────────────────────── */}
-        <section className="flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
-            <User className="h-7 w-7" />
-          </div>
-          <div className="min-w-0 flex-1">
-            {editingName ? (
-              <div className="flex items-center gap-2">
-                <input
-                  autoFocus
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && void saveDisplayName()}
-                  placeholder="Your name"
-                  className="h-9 flex-1 rounded-lg border border-input bg-transparent px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-                <button
-                  onClick={() => void saveDisplayName()}
-                  disabled={savingName}
-                  className="flex h-9 items-center rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-                >
-                  {savingName ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Save'}
+    <div className="page-shell">
+      <div className="page-content py-5 md:py-7">
+        <section className="page-hero">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[28px] bg-primary/14 text-primary shadow-[0_28px_70px_-38px_rgba(91,163,255,0.7)]">
+              <User className="h-9 w-9" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="hero-kicker">Profile</span>
+              {editingName ? (
+                <div className="mt-4 flex flex-col gap-3 md:flex-row">
+                  <input
+                    autoFocus
+                    value={displayName}
+                    onChange={(event) => setDisplayName(event.target.value)}
+                    onKeyDown={(event) => event.key === 'Enter' && void saveDisplayName()}
+                    placeholder="Your name"
+                    className="h-12 flex-1 rounded-2xl border border-white/10 bg-black/15 px-4 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => void saveDisplayName()}
+                      disabled={savingName}
+                      className="premium-button px-4 disabled:opacity-60"
+                    >
+                      {savingName ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => setEditingName(false)}
+                      className="premium-button-secondary px-4"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setEditingName(true)} className="mt-4 text-left">
+                  <h1 className="page-title">{displayName || 'Add your name'}</h1>
                 </button>
-                <button
-                  onClick={() => setEditingName(false)}
-                  className="flex h-9 items-center rounded-lg border border-border px-3 text-xs font-medium"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setEditingName(true)}
-                className="flex items-center gap-1.5 text-left"
-              >
-                <p className="text-base font-semibold">
-                  {displayName || 'Add your name'}
-                </p>
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
-              </button>
-            )}
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">{user?.email}</p>
+              )}
+              <p className="page-subtitle mt-3">{user?.email}</p>
+            </div>
           </div>
         </section>
 
-        {/* ── Unit toggle ───────────────────────────────────────── */}
-        <SettingSection title="Preferences">
-          <div className="flex items-center justify-between rounded-xl bg-card border border-border px-4 py-3">
-            <div>
-              <p className="text-sm font-medium">Weight Unit</p>
-              <p className="text-xs text-muted-foreground">Used throughout the app</p>
-            </div>
-            <div className="flex rounded-lg border border-border bg-muted p-0.5">
-              {(['kg', 'lb'] as const).map((u) => (
-                <button
-                  key={u}
-                  onClick={() => void handleUnitChange(u)}
-                  className={`h-7 w-10 rounded-md text-xs font-semibold transition-colors ${
-                    unit === u
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {u}
-                </button>
-              ))}
-            </div>
-          </div>
-        </SettingSection>
-
-        {/* ── Data & app ────────────────────────────────────────── */}
-        <SettingSection title="Data">
-          <ActionRow
-            icon={<Download className="h-4 w-4" />}
-            label="Export Data"
-            description="Download all your data as JSON"
-            onClick={() => void handleExport()}
-            loading={exporting}
-          />
-
-          {failedCount > 0 && (
-            <div className="flex items-center gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3">
-              <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-500" />
-              <div>
-                <p className="text-sm font-medium">Sync Issues</p>
-                <p className="text-xs text-muted-foreground">
-                  {failedCount} mutation{failedCount !== 1 ? 's' : ''} failed to sync
-                </p>
+        <div className="mt-8 space-y-8">
+          <SettingSection title="Preferences" subtitle="local app settings">
+            <div className="premium-card page-reveal px-5 py-5">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h3 className="font-display text-xl font-semibold">Weight Unit</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">Used across workouts, history, and progress.</p>
+                </div>
+                <div className="flex rounded-2xl border border-white/10 bg-black/15 p-1">
+                  {(['kg', 'lb'] as const).map((value) => (
+                    <button
+                      key={value}
+                      onClick={() => void handleUnitChange(value)}
+                      className={`h-10 min-w-[58px] rounded-xl px-4 text-sm font-semibold transition-colors ${
+                        unit === value
+                          ? 'bg-primary text-primary-foreground shadow-[0_18px_36px_-24px_rgba(91,163,255,0.8)]'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
+          </SettingSection>
+
+          <SettingSection title="Data" subtitle="exports and status">
+            <ActionRow
+              icon={<Download className="h-4 w-4" />}
+              label="Export Data"
+              description="Download all of your saved data as JSON."
+              onClick={() => void handleExport()}
+              loading={exporting}
+            />
+
+            {failedCount > 0 && (
+              <div className="premium-card page-reveal px-5 py-5">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-yellow-500/12 text-yellow-300">
+                    <AlertTriangle className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-xl font-semibold">Sync issues detected</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {failedCount} queued change{failedCount !== 1 ? 's' : ''} failed to sync. The app will retry when possible.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="elevated-surface page-reveal flex items-center justify-between px-4 py-4">
+              <div>
+                <p className="font-display text-lg font-semibold">App Version</p>
+                <p className="mt-1 text-sm text-muted-foreground">Current installed web build</p>
+              </div>
+              <span className="status-pill font-mono">{APP_VERSION}</span>
+            </div>
+          </SettingSection>
+
+          {(isInstallable && !isDismissed && !isInstalled) && (
+            <SettingSection title="Install" subtitle="pwa access">
+              <ActionRow
+                icon={<Smartphone className="h-4 w-4" />}
+                label="Add To Home Screen"
+                description="Install LiftOS as an app for faster access and a cleaner mobile feel."
+                onClick={() => void install()}
+                accent
+              />
+            </SettingSection>
           )}
 
-          <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
-            <p className="text-sm font-medium">App Version</p>
-            <p className="text-xs text-muted-foreground font-mono">{APP_VERSION}</p>
-          </div>
-        </SettingSection>
+          {isInstalled && (
+            <SettingSection title="Install" subtitle="pwa access">
+              <div className="premium-card page-reveal flex items-center gap-4 px-5 py-5">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/14 text-primary">
+                  <Smartphone className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-xl font-semibold">App installed</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">LiftOS is already available from your home screen.</p>
+                </div>
+              </div>
+            </SettingSection>
+          )}
 
-        {/* ── PWA Install ───────────────────────────────────────── */}
-        {isInstallable && !isDismissed && !isInstalled && (
-          <SettingSection title="Install">
+          <SettingSection title="Account" subtitle="session and security">
             <ActionRow
-              icon={<Smartphone className="h-4 w-4 text-primary" />}
-              label="Add to Home Screen"
-              description="Install LiftOS as an app for faster access"
-              onClick={() => void install()}
-              accent
+              icon={<LogOut className="h-4 w-4" />}
+              label="Sign Out"
+              description="End this session on the current device."
+              onClick={() => void handleSignOut()}
+            />
+            <ActionRow
+              icon={<Trash2 className="h-4 w-4" />}
+              label="Delete Account"
+              description="Permanently erase all of your data."
+              onClick={() => setDeleteOpen(true)}
+              destructive
             />
           </SettingSection>
-        )}
-
-        {isInstalled && (
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
-            <Smartphone className="h-4 w-4 text-primary" />
-            <p className="text-sm font-medium text-muted-foreground">App installed ✓</p>
-          </div>
-        )}
-
-        {/* ── Account actions ───────────────────────────────────── */}
-        <SettingSection title="Account">
-          <ActionRow
-            icon={<LogOut className="h-4 w-4" />}
-            label="Sign Out"
-            onClick={() => void handleSignOut()}
-          />
-          <ActionRow
-            icon={<Trash2 className="h-4 w-4 text-destructive" />}
-            label="Delete Account"
-            description="Permanently erase all data"
-            onClick={() => setDeleteOpen(true)}
-            destructive
-          />
-        </SettingSection>
+        </div>
       </div>
 
       <DeleteAccountDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} />
     </div>
-  );
-}
-
-// ── Shared sub-components ─────────────────────────────────────────────────────
-
-function SettingSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        {title}
-      </h2>
-      <div className="space-y-2">{children}</div>
-    </section>
-  );
-}
-
-function ActionRow({
-  icon,
-  label,
-  description,
-  onClick,
-  loading,
-  destructive,
-  accent,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  description?: string;
-  onClick: () => void;
-  loading?: boolean;
-  destructive?: boolean;
-  accent?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={loading}
-      className={`flex w-full items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left hover:bg-muted disabled:opacity-50 ${
-        destructive ? 'text-destructive' : accent ? 'text-primary' : ''
-      }`}
-    >
-      <span className="shrink-0">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}</span>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">{label}</p>
-        {description && <p className="text-xs text-muted-foreground">{description}</p>}
-      </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />
-    </button>
   );
 }

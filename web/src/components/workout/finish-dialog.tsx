@@ -2,35 +2,56 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { addToQueue } from '@/lib/offline';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { useCompletionStore } from '@/store/completion-store';
-import type { ActiveWorkoutState } from '@/types/app';
-import type { CompleteWorkoutResponse } from '@/types/app';
+import type { ActiveWorkoutState, CompleteWorkoutResponse } from '@/types/app';
 
 interface FinishDialogProps {
-  open:    boolean;
+  open: boolean;
   onClose: () => void;
 }
 
 function computeSummary(workout: ActiveWorkoutState) {
-  const totalSets  = workout.exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
-  const doneSets   = workout.exercises.reduce((acc, ex) => acc + ex.sets.filter((s) => s.isCompleted).length, 0);
+  const totalSets = workout.exercises.reduce((count, exercise) => count + exercise.sets.length, 0);
+  const doneSets = workout.exercises.reduce((count, exercise) => count + exercise.sets.filter((set) => set.isCompleted).length, 0);
   const remainingSets = totalSets - doneSets;
   return { totalSets, doneSets, remainingSets };
 }
 
+function SummaryStat({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: string;
+  detail?: string;
+}) {
+  return (
+    <div className="premium-card px-4 py-4 text-center">
+      <p className="font-display text-2xl font-semibold">{value}</p>
+      <p className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+      {detail && <p className="mt-1 text-xs text-muted-foreground">{detail}</p>}
+    </div>
+  );
+}
+
 export function FinishDialog({ open, onClose }: FinishDialogProps) {
-  const workout         = useActiveWorkoutStore((s) => s.workout);
-  const setIsCompleting = useActiveWorkoutStore((s) => s.setIsCompleting);
-  const clearWorkout    = useActiveWorkoutStore((s) => s.clearWorkout);
-  const setResult       = useCompletionStore((s) => s.setResult);
-  const router          = useRouter();
+  const workout = useActiveWorkoutStore((state) => state.workout);
+  const setIsCompleting = useActiveWorkoutStore((state) => state.setIsCompleting);
+  const clearWorkout = useActiveWorkoutStore((state) => state.clearWorkout);
+  const setResult = useCompletionStore((state) => state.setResult);
+  const router = useRouter();
   const [saving, setSaving] = useState(false);
 
   if (!workout) return null;
@@ -40,31 +61,29 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
   async function handleConfirm() {
     if (!workout) return;
 
-    // ── Offline: queue sets locally, don't navigate yet ──────────────────────
     if (!navigator.onLine) {
-      for (const ex of workout.exercises) {
-        for (const set of ex.sets) {
+      for (const exercise of workout.exercises) {
+        for (const set of exercise.sets) {
           void addToQueue({
-            table:     'set_entries',
+            table: 'set_entries',
             operation: 'insert',
             data: {
               session_exercise_id: set.sessionExerciseId,
-              set_index:           set.setIndex,
-              values:              set.values,
-              set_type:            set.setType,
-              is_completed:        set.isCompleted,
-              notes:               set.notes,
+              set_index: set.setIndex,
+              values: set.values,
+              set_type: set.setType,
+              is_completed: set.isCompleted,
+              notes: set.notes,
             },
             timestamp: set.loggedAt || new Date().toISOString(),
           });
         }
       }
-      toast.info("You're offline — sets saved locally. Tap Finish once reconnected.");
+      toast.info("You're offline. Sets were saved locally. Finish again once you're back online.");
       onClose();
       return;
     }
 
-    // ── Online: direct path ───────────────────────────────────────────────────
     setSaving(true);
     setIsCompleting(true);
 
@@ -96,7 +115,6 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
       }
 
       const result = body as CompleteWorkoutResponse;
-
       setResult({
         sessionId: result.sessionId,
         summary: result.summary,
@@ -105,16 +123,16 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
       });
 
       if (result.newPrs.length > 0) {
-        toast.success(`Workout complete! 🏆 ${result.newPrs.length} new PR${result.newPrs.length !== 1 ? 's' : ''}!`);
+        toast.success(`Workout complete! ${result.newPrs.length} new PR${result.newPrs.length !== 1 ? 's' : ''}.`);
       } else {
-        toast.success('Workout complete!');
+        toast.success('Workout complete.');
       }
 
       clearWorkout();
       router.replace('/workout/complete');
     } catch (err: unknown) {
-      const msg = (err as { message?: string }).message ?? 'Failed to save workout';
-      toast.error(msg);
+      const message = (err as { message?: string }).message ?? 'Failed to save workout';
+      toast.error(message);
       setIsCompleting(false);
       setSaving(false);
       onClose();
@@ -122,46 +140,48 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && !saving && onClose()}>
-      <DialogContent className="sm:max-w-sm">
+    <Dialog open={open} onOpenChange={(value) => !value && !saving && onClose()}>
+      <DialogContent className="sm:max-w-lg border-white/10 bg-[linear-gradient(180deg,rgba(10,18,34,0.98),rgba(10,18,34,0.94))] text-foreground shadow-[0_50px_110px_-60px_rgba(2,10,28,1)]">
         <DialogHeader>
-        <DialogTitle>Finish Workout?</DialogTitle>
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/14 text-primary">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="hero-kicker">Finish Workout</p>
+              <DialogTitle className="font-display pt-2 text-3xl">Save this session</DialogTitle>
+            </div>
+          </div>
         </DialogHeader>
 
-        {/* Summary */}
-        <div className="grid grid-cols-3 gap-3 py-4">
-          <div className="flex flex-col items-center rounded-xl bg-muted px-3 py-3">
-            <span className="text-xl font-bold">{workout.exercises.length}</span>
-            <span className="mt-0.5 text-[11px] text-muted-foreground">Exercises</span>
-          </div>
-          <div className="flex flex-col items-center rounded-xl bg-muted px-3 py-3">
-            <span className="text-xl font-bold">{doneSets}<span className="text-sm font-normal text-muted-foreground">/{totalSets}</span></span>
-            <span className="mt-0.5 text-[11px] text-muted-foreground">Sets done</span>
-          </div>
-          <div className="flex flex-col items-center rounded-xl bg-muted px-3 py-3">
-            <span className="text-xl font-bold">{remainingSets}</span>
-            <span className="mt-0.5 text-[11px] text-muted-foreground">Left open</span>
-          </div>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          Review what you logged, then save the workout. Any open sets stay attached to the session, so you do not lose the structure you built.
+        </p>
+
+        <div className="grid gap-3 py-2 md:grid-cols-3">
+          <SummaryStat label="Exercises" value={String(workout.exercises.length)} />
+          <SummaryStat label="Sets Saved" value={`${doneSets}/${totalSets}`} detail={`${remainingSets} left open`} />
+          <SummaryStat label="Session Status" value={remainingSets === 0 ? 'Ready' : 'Partial'} />
         </div>
 
         {doneSets < totalSets && (
-          <p className="text-center text-sm text-muted-foreground">
-            {totalSets - doneSets} set{totalSets - doneSets !== 1 ? 's' : ''} not completed — they'll still be saved.
-          </p>
+          <div className="glass-panel px-4 py-4 text-sm text-muted-foreground">
+            {remainingSets} set{remainingSets !== 1 ? 's are' : ' is'} still open. They will be kept with the workout if you save now.
+          </div>
         )}
 
-        <DialogFooter className="mt-4 flex-col gap-2 sm:gap-2">
+        <DialogFooter className="mt-2 flex-col gap-2 sm:flex-col">
           <button
             onClick={onClose}
             disabled={saving}
-            className="flex h-12 w-full items-center justify-center rounded-2xl border border-border text-sm font-medium hover:bg-muted disabled:opacity-50"
+            className="premium-button-secondary w-full justify-center disabled:opacity-60"
           >
             Keep Logging
           </button>
           <button
             onClick={handleConfirm}
             disabled={saving}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="premium-button w-full justify-center disabled:opacity-60"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Save Workout

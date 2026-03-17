@@ -1,10 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Zap, Plus, Dumbbell, Loader2, ChevronRight,
-  Calendar, Flame, Library, TrendingUp,
+  Calendar,
+  ChevronRight,
+  Dumbbell,
+  Flame,
+  Library,
+  Loader2,
+  Plus,
+  Sparkles,
+  Zap,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,15 +21,11 @@ import { useHomeData } from '@/hooks/use-home-data';
 import { formatShortDate } from '@/lib/format-date';
 import type { HistorySessionSummary } from '@/types/app';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 function greeting(name: string | null): string {
-  const h    = new Date().getHours();
-  const time = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+  const hour = new Date().getHours();
+  const time = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
   return name ? `Good ${time}, ${name.split(' ')[0]}` : `Good ${time}`;
 }
-
-// ── Start Workout Sheet ───────────────────────────────────────────────────────
 
 function StartWorkoutSheet({
   open,
@@ -34,12 +37,11 @@ function StartWorkoutSheet({
   onCreateWorkout: () => void;
 }) {
   const { templates, isLoading } = useTemplates();
-  const { startWorkout }         = useStartWorkout();
-  const [starting, setStarting]  = useState<string | null>(null);
+  const { startWorkout } = useStartWorkout();
+  const [starting, setStarting] = useState<string | null>(null);
 
   async function handleStart(templateId: string) {
-    const key = templateId;
-    setStarting(key);
+    setStarting(templateId);
     try {
       await startWorkout(templateId);
     } finally {
@@ -49,70 +51,69 @@ function StartWorkoutSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="bottom" className="flex h-[80dvh] flex-col overflow-hidden rounded-t-2xl p-0">
-        <SheetHeader className="shrink-0 border-b border-border px-4 pb-3 pt-5">
-          <SheetTitle>Start Workout</SheetTitle>
+    <Sheet open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <SheetContent side="bottom" className="flex h-[84dvh] flex-col overflow-hidden rounded-t-[32px] border-t border-white/10 bg-[linear-gradient(180deg,rgba(10,18,34,0.98),rgba(10,18,34,0.93))] p-0 shadow-[0_-30px_80px_-40px_rgba(2,10,28,0.95)]">
+        <SheetHeader className="shrink-0 border-b border-white/8 px-5 pb-4 pt-6 text-left">
+          <span className="hero-kicker w-fit">Workout Launcher</span>
+          <SheetTitle className="font-display pt-3 text-left text-2xl">Start a saved workout</SheetTitle>
+          <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Pick one of your saved sessions and jump straight into logging. The layout stays simple once the workout starts.
+          </p>
         </SheetHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
-          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-            <p className="text-sm font-semibold">Pick a saved workout to begin</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Create your own workout once, add the exercises you actually do, then start it here whenever you train.
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
+          <div className="glass-panel animate-float-slow mb-4 px-4 py-4">
+            <p className="text-sm font-semibold text-foreground">Built for repeat training</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              Reuse the same workouts, log what you actually did, and let next-session targets update in the background.
             </p>
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-8">
+            <div className="flex justify-center py-12">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : templates.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-center">
-              <p className="text-sm font-semibold">No saved workouts yet</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Create one first, then you can reuse it and track progress.
+            <div className="premium-card px-5 py-6 text-center">
+              <p className="font-display text-xl font-semibold">No workouts saved yet</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Create your first workout with the exercises and tracking style you actually use.
               </p>
               <button
                 onClick={() => {
                   onClose();
                   onCreateWorkout();
                 }}
-                className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                className="premium-button mt-5 w-full"
               >
-                <Plus className="mr-1.5 h-4 w-4" />
+                <Plus className="h-4 w-4" />
                 Create Workout
               </button>
             </div>
           ) : (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Saved Workouts
-              </p>
-              {templates.map((t) => (
+            <div className="space-y-3">
+              {templates.map((template, index) => (
                 <button
-                  key={t.id}
-                  onClick={() => handleStart(t.id)}
+                  key={template.id}
+                  onClick={() => void handleStart(template.id)}
                   disabled={starting !== null}
-                  className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 text-left hover:bg-muted disabled:opacity-60"
+                  className={`elevated-surface page-reveal delay-${Math.min(index + 1, 4)} flex w-full items-center gap-4 px-4 py-4 text-left disabled:opacity-60`}
                 >
-                  {starting === t.id
-                    ? <Loader2 className="h-9 w-9 animate-spin text-muted-foreground" />
-                    : (
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                          <Dumbbell className="h-4 w-4 text-primary" />
-                        </div>
-                      )
-                    }
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{t.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {t.exercise_count} exercise{t.exercise_count !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                    <span className="text-xs font-semibold text-primary">Start</span>
-                  </button>
-                ))}
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/14 shadow-[0_20px_36px_-22px_rgba(91,163,255,0.8)]">
+                    {starting === template.id
+                      ? <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      : <Dumbbell className="h-5 w-5 text-primary" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-display text-lg font-semibold">{template.name}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {template.exercise_count} exercise{template.exercise_count !== 1 ? 's' : ''}
+                      {template.last_used_at ? ` · Last used ${formatShortDate(template.last_used_at)}` : ' · Ready to log'}
+                    </p>
+                  </div>
+                  <span className="status-pill border-primary/20 bg-primary/10 text-primary">Start</span>
+                </button>
+              ))}
             </div>
           )}
         </div>
@@ -121,44 +122,38 @@ function StartWorkoutSheet({
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function SuggestedCard({
-  template,
-  onStart,
-  loading,
+function QuickAction({
+  label,
+  description,
+  icon,
+  onClick,
+  primary,
+  className = '',
 }: {
-  template: TemplateWithCount;
-  onStart: (id: string) => void;
-  loading: boolean;
+  label: string;
+  description: string;
+  icon: ReactNode;
+  onClick: () => void;
+  primary?: boolean;
+  className?: string;
 }) {
   return (
     <button
-      onClick={() => onStart(template.id)}
-      disabled={loading}
-      className="w-full rounded-2xl bg-primary p-4 text-left text-primary-foreground hover:bg-primary/90 active:scale-[0.99] transition-transform disabled:opacity-60"
+      onClick={onClick}
+      className={`${primary ? 'premium-card bg-[linear-gradient(135deg,rgba(54,114,255,0.22),rgba(17,29,56,0.9))] shadow-[0_28px_60px_-30px_rgba(91,163,255,0.75)]' : 'quick-action-card'} page-reveal ${className}`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-widest opacity-70 mb-1">
-            Next Saved Workout
-          </p>
-          <p className="truncate text-lg font-bold">{template.name}</p>
-          <p className="mt-0.5 text-sm opacity-80">
-            {template.exercise_count} exercise{template.exercise_count !== 1 ? 's' : ''}
-            {!template.last_used_at && ' · Never done'}
-          </p>
-        </div>
-        {loading
-          ? <Loader2 className="h-5 w-5 shrink-0 animate-spin opacity-70" />
-          : <Zap className="h-5 w-5 shrink-0 opacity-70" />
-        }
+      <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${primary ? 'bg-white/12 text-primary-foreground' : 'bg-primary/14 text-primary'}`}>
+        {icon}
+      </div>
+      <div>
+        <p className={`font-display text-lg font-semibold ${primary ? 'text-primary-foreground' : 'text-foreground'}`}>{label}</p>
+        <p className={`mt-1 text-sm leading-relaxed ${primary ? 'text-primary-foreground/74' : 'text-muted-foreground'}`}>{description}</p>
       </div>
     </button>
   );
 }
 
-function PinnedCard({
+function FeaturedWorkoutCard({
   template,
   onStart,
   loading,
@@ -171,63 +166,120 @@ function PinnedCard({
     <button
       onClick={() => onStart(template.id)}
       disabled={loading}
-      className="flex w-48 shrink-0 flex-col gap-2 rounded-2xl border border-border bg-card p-4 text-left hover:bg-muted active:bg-muted/80 disabled:opacity-60"
+      className="premium-card page-reveal delay-2 relative w-full overflow-hidden p-5 text-left transition-transform duration-300 hover:-translate-y-1"
     >
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
-        {loading ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <Dumbbell className="h-4 w-4 text-primary" />}
+      <div className="absolute inset-y-0 right-0 w-40 bg-[radial-gradient(circle_at_center,rgba(91,163,255,0.25),transparent_68%)]" />
+      <div className="relative flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <span className="hero-kicker">Next workout</span>
+          <h2 className="mt-4 font-display text-2xl font-semibold">{template.name}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {template.exercise_count} exercise{template.exercise_count !== 1 ? 's' : ''}
+            {template.last_used_at ? ` · Last used ${formatShortDate(template.last_used_at)}` : ' · Fresh session'}
+          </p>
+        </div>
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/14 text-primary shadow-[0_18px_36px_-22px_rgba(91,163,255,0.8)]">
+          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
+        </div>
+      </div>
+      <div className="relative mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary">
+        Start this workout
+        <ChevronRight className="h-4 w-4" />
+      </div>
+    </button>
+  );
+}
+
+function SavedWorkoutCard({
+  template,
+  onStart,
+  loading,
+}: {
+  template: TemplateWithCount;
+  onStart: (id: string) => void;
+  loading: boolean;
+}) {
+  return (
+    <button
+      onClick={() => onStart(template.id)}
+      disabled={loading}
+      className="elevated-surface page-reveal delay-3 flex w-64 shrink-0 flex-col gap-4 p-4 text-left disabled:opacity-60"
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/14 text-primary">
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Dumbbell className="h-4 w-4" />}
+        </div>
+        <span className="status-pill">Saved</span>
       </div>
       <div className="min-w-0">
-        <p className="truncate text-sm font-bold">{template.name}</p>
-        <p className="text-xs text-muted-foreground">
-          {template.exercise_count} ex.
-          {template.last_used_at && ` · ${formatShortDate(template.last_used_at)}`}
+        <p className="truncate font-display text-lg font-semibold">{template.name}</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {template.exercise_count} exercise{template.exercise_count !== 1 ? 's' : ''}
         </p>
       </div>
     </button>
   );
 }
 
-function RecentRow({
+function RecentWorkoutRow({
   session,
   onClick,
 }: {
   session: HistorySessionSummary;
   onClick: () => void;
 }) {
-  const name = session.template_name ?? 'Custom Workout';
-  const date = formatShortDate(session.started_at);
   const preview = session.primary_result && session.primary_exercise_name
-    ? `${session.primary_exercise_name} - ${session.primary_result}`
+    ? `${session.primary_exercise_name} · ${session.primary_result}`
     : `${session.exercise_count} exercise${session.exercise_count !== 1 ? 's' : ''}`;
 
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 text-left hover:bg-muted active:bg-muted transition-colors"
+      className="elevated-surface page-reveal delay-4 flex w-full items-center gap-4 px-4 py-4 text-left"
     >
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-        <Calendar className="h-3.5 w-3.5 text-primary" />
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/14 text-primary">
+        <Calendar className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{name}</p>
-        <p className="text-xs text-muted-foreground">
-          {date} · {session.total_sets} saved set{session.total_sets !== 1 ? 's' : ''}
+        <p className="truncate font-display text-lg font-semibold">{session.template_name ?? 'Custom Workout'}</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {formatShortDate(session.started_at)} · {session.total_sets} saved set{session.total_sets !== 1 ? 's' : ''}
         </p>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground/80">{preview}</p>
+        <p className="mt-1 truncate text-xs uppercase tracking-[0.16em] text-muted-foreground/80">{preview}</p>
       </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
     </button>
   );
 }
 
-// ── Page ─────────────────────────────────────────────────────────────────────
+function SectionHeader({
+  icon,
+  title,
+  action,
+}: {
+  icon: ReactNode;
+  title: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="section-heading">
+      <div className="flex items-center gap-2">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/6 text-primary">
+          {icon}
+        </span>
+        <h2 className="section-title">{title}</h2>
+      </div>
+      {action}
+    </div>
+  );
+}
 
 export default function HomePage() {
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [starting, setStarting]   = useState<string | null>(null);
-  const { data, loading }         = useHomeData();
-  const { startWorkout }          = useStartWorkout();
-  const router                    = useRouter();
+  const [starting, setStarting] = useState<string | null>(null);
+  const { data, loading } = useHomeData();
+  const { startWorkout } = useStartWorkout();
+  const router = useRouter();
 
   async function handleQuickStart(templateId: string) {
     setStarting(templateId);
@@ -239,143 +291,134 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-28">
-      {/* ── Header ────────────────────────────────────────────────── */}
-      <header className="px-4 pt-6 pb-4">
-        {loading
-          ? <Skeleton className="h-7 w-48" />
-          : <h1 className="text-xl font-bold">{greeting(data?.displayName ?? null)}</h1>
-        }
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-        </p>
-      </header>
-
-      <div className="px-4 space-y-6">
-        <section className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              onClick={() => setSheetOpen(true)}
-              className="flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 hover:bg-primary/90 active:scale-[0.98] transition-transform"
-            >
-              <Zap className="h-5 w-5" />
-              Start Workout
-            </button>
-            <button
-              onClick={() => router.push('/templates?create=1')}
-              className="flex h-[52px] items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm font-semibold hover:bg-muted active:scale-[0.98] transition-transform"
-            >
-              <Plus className="h-5 w-5 text-primary" />
-              Create Workout
-            </button>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              onClick={() => router.push('/exercises')}
-              className="flex h-[52px] items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm font-semibold hover:bg-muted active:scale-[0.98] transition-transform"
-            >
-              <Library className="h-5 w-5 text-primary" />
-              Your Exercises
-            </button>
-            <button
-              onClick={() => router.push('/progress')}
-              className="flex h-[52px] items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm font-semibold hover:bg-muted active:scale-[0.98] transition-transform"
-            >
-              <TrendingUp className="h-5 w-5 text-primary" />
-              Progress
-            </button>
-          </div>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            Keep it simple: build your own workout, add your own exercises, log your sets, and come back here when you want to start again or review progress.
+    <div className="page-shell">
+      <div className="page-content py-5 md:py-7">
+        <section className="page-hero">
+          <span className="hero-kicker">LiftOS</span>
+          {loading
+            ? <Skeleton className="mt-4 h-10 w-56 rounded-2xl" />
+            : <h1 className="page-title mt-4">{greeting(data?.displayName ?? null)}</h1>}
+          <p className="page-subtitle mt-3">
+            Keep training simple. Start a saved workout, build a new one, or manage the exercises you actually use without getting lost in the interface.
           </p>
+          <div className="mt-6 grid gap-3 md:grid-cols-[1.2fr_1fr_1fr]">
+            <QuickAction
+              label="Start Workout"
+              description="Jump into one of your saved sessions and start logging."
+              icon={<Zap className="h-5 w-5" />}
+              onClick={() => setSheetOpen(true)}
+              primary
+            />
+            <QuickAction
+              label="Create Workout"
+              description="Build a new workout around your own exercise names and structure."
+              icon={<Plus className="h-5 w-5" />}
+              onClick={() => router.push('/templates?create=1')}
+              className="delay-2"
+            />
+            <QuickAction
+              label="Your Exercises"
+              description="Browse, rename, and clean up the exercise list you’ve built."
+              icon={<Library className="h-5 w-5" />}
+              onClick={() => router.push('/exercises')}
+              className="delay-3"
+            />
+          </div>
         </section>
 
-        {!loading && !data?.suggested && (data?.pinned ?? []).length === 0 && (
-          <section className="rounded-2xl border border-dashed border-border bg-card px-4 py-4">
-            <p className="text-sm font-semibold">New here?</p>
-            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              Start by creating a workout with the exercises and tracking style you actually use: weight and reps, weight and laps, time, distance, or laps.
-            </p>
-            <button
-              onClick={() => router.push('/templates?create=1')}
-              className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              Create Your First Workout
-            </button>
-          </section>
-        )}
+        <div className="mt-8 space-y-8">
+          {!loading && !data?.suggested && (data?.pinned ?? []).length === 0 && (
+            <section className="premium-card page-reveal delay-2 px-5 py-5">
+              <span className="hero-kicker">First session</span>
+              <h2 className="mt-4 font-display text-2xl font-semibold">Start with the workout you actually do</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                Add the exercises you really use in the gym, choose the tracking style that makes sense, and keep the app focused on logging rather than setup.
+              </p>
+              <button
+                onClick={() => router.push('/templates?create=1')}
+                className="premium-button mt-5"
+              >
+                <Plus className="h-4 w-4" />
+                Create Your First Workout
+              </button>
+            </section>
+          )}
 
-        {/* ── Suggested workout ──────────────────────────────────── */}
-        {loading ? (
-          <Skeleton className="h-24 w-full rounded-2xl" />
-        ) : data?.suggested ? (
-          <SuggestedCard
-            template={data.suggested}
-            onStart={handleQuickStart}
-            loading={starting === data.suggested.id}
-          />
-        ) : null}
+          {loading ? (
+            <Skeleton className="h-56 w-full rounded-[28px]" />
+          ) : data?.suggested ? (
+            <section className="section-shell">
+              <SectionHeader icon={<Sparkles className="h-4 w-4" />} title="Featured Workout" />
+              <FeaturedWorkoutCard
+                template={data.suggested}
+                onStart={handleQuickStart}
+                loading={starting === data.suggested.id}
+              />
+            </section>
+          ) : null}
 
-        {/* ── Pinned workouts ────────────────────────────────────── */}
-        {loading ? (
-          <div className="flex gap-3 overflow-hidden">
-            <Skeleton className="h-28 w-48 shrink-0 rounded-2xl" />
-            <Skeleton className="h-28 w-48 shrink-0 rounded-2xl" />
-          </div>
-        ) : (data?.pinned ?? []).length > 0 ? (
-          <section>
-            <SectionHeader icon={<Flame className="h-3.5 w-3.5" />} title="Saved Workouts" />
-            <div className="mt-2 flex gap-3 overflow-x-auto pb-1 no-scrollbar">
-              {data!.pinned.map((t) => (
-                <PinnedCard
-                  key={t.id}
-                  template={t}
-                  onStart={handleQuickStart}
-                  loading={starting === t.id}
-                />
-              ))}
+          {loading ? (
+            <div className="flex gap-3 overflow-hidden">
+              <Skeleton className="h-44 w-64 shrink-0 rounded-[28px]" />
+              <Skeleton className="h-44 w-64 shrink-0 rounded-[28px]" />
             </div>
-          </section>
-        ) : null}
+          ) : (data?.pinned ?? []).length > 0 ? (
+            <section className="section-shell">
+              <SectionHeader icon={<Flame className="h-4 w-4" />} title="Saved Workouts" />
+              <div className="flex gap-4 overflow-x-auto pb-1 no-scrollbar">
+                {data!.pinned.map((template) => (
+                  <SavedWorkoutCard
+                    key={template.id}
+                    template={template}
+                    onStart={handleQuickStart}
+                    loading={starting === template.id}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
 
-        {/* ── Recent workouts ────────────────────────────────────── */}
-        {loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-16 w-full rounded-xl" />
-            <Skeleton className="h-16 w-full rounded-xl" />
-            <Skeleton className="h-16 w-full rounded-xl" />
-          </div>
-        ) : (data?.recentSessions ?? []).length > 0 ? (
-          <section>
-            <SectionHeader
-              icon={<Calendar className="h-3.5 w-3.5" />}
-              title="Recent Workouts"
-              action={
-                <button
-                  onClick={() => router.push('/history')}
-                  className="text-xs font-semibold text-primary hover:text-primary/80"
-                >
-                  View All
-                </button>
-              }
-            />
-            <div className="mt-2 space-y-2">
-              {data!.recentSessions.map((s) => (
-                <RecentRow
-                  key={s.id}
-                  session={s}
-                  onClick={() => router.push(`/history/${s.id}`)}
-                />
-              ))}
+          {loading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-24 w-full rounded-[28px]" />
+              <Skeleton className="h-24 w-full rounded-[28px]" />
             </div>
-          </section>
-        ) : !loading ? (
-          <div className="flex flex-col items-center gap-3 py-8 text-center">
-            <Dumbbell className="h-10 w-10 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">No workouts logged yet. Create one, then start when you are ready.</p>
-          </div>
-        ) : null}
-
+          ) : (data?.recentSessions ?? []).length > 0 ? (
+            <section className="section-shell">
+              <SectionHeader
+                icon={<Calendar className="h-4 w-4" />}
+                title="Recent Workouts"
+                action={
+                  <button
+                    onClick={() => router.push('/history')}
+                    className="premium-button-secondary py-2 text-xs"
+                  >
+                    View All
+                  </button>
+                }
+              />
+              <div className="space-y-3">
+                {data!.recentSessions.map((session) => (
+                  <RecentWorkoutRow
+                    key={session.id}
+                    session={session}
+                    onClick={() => router.push(`/history/${session.id}`)}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : !loading ? (
+            <div className="premium-card page-reveal delay-3 flex flex-col items-center gap-3 px-5 py-12 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/14 text-primary">
+                <Dumbbell className="h-7 w-7" />
+              </div>
+              <h2 className="font-display text-2xl font-semibold">No workouts logged yet</h2>
+              <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
+                Once you complete a session, your history and progress snapshots will show up here.
+              </p>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <StartWorkoutSheet
@@ -383,26 +426,6 @@ export default function HomePage() {
         onClose={() => setSheetOpen(false)}
         onCreateWorkout={() => router.push('/templates?create=1')}
       />
-    </div>
-  );
-}
-
-function SectionHeader({
-  icon,
-  title,
-  action,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <div className="flex items-center gap-1.5">
-        <span className="text-muted-foreground">{icon}</span>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h2>
-      </div>
-      {action}
     </div>
   );
 }

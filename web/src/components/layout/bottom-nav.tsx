@@ -16,8 +16,8 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background md:hidden">
-      <div className="flex h-16 items-center justify-around px-2 safe-area-pb">
+    <nav className="fixed inset-x-0 bottom-3 z-50 px-4 md:hidden">
+      <div className="mx-auto flex h-[68px] max-w-md items-center justify-around rounded-[26px] border border-white/10 bg-[rgba(9,16,31,0.84)] px-2 shadow-[0_28px_60px_-32px_rgba(2,10,28,0.95)] backdrop-blur-2xl safe-area-pb">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const isActive = href === '/'
             ? pathname === '/'
@@ -29,14 +29,14 @@ export function BottomNav() {
               key={href}
               href={href}
               className={cn(
-                'flex min-h-11 min-w-11 flex-col items-center justify-center gap-1 rounded-lg px-3 transition-colors',
+                'flex min-h-11 min-w-[72px] flex-col items-center justify-center gap-1 rounded-2xl px-3 transition-all duration-300',
                 isActive
-                  ? 'text-primary'
-                  : 'text-muted-foreground hover:text-foreground',
+                  ? 'bg-primary/14 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
+                  : 'text-muted-foreground hover:bg-white/6 hover:text-foreground',
               )}
             >
               <Icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{label}</span>
+              <span className="text-[10px] font-semibold tracking-[0.08em]">{label}</span>
             </Link>
           );
         })}

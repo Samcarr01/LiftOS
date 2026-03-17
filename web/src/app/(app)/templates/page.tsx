@@ -1,19 +1,40 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import {
+  useState,
+  useRef,
+  useEffect,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+} from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Pin, PinOff, Copy, Trash2, MoreHorizontal, Dumbbell, Loader2, Play, Library } from 'lucide-react';
+import {
+  Copy,
+  Dumbbell,
+  Flame,
+  FolderPlus,
+  Library,
+  Loader2,
+  MoreHorizontal,
+  Pin,
+  PinOff,
+  Play,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
+import { toast } from 'sonner';
 import { useStartWorkout } from '@/hooks/use-start-workout';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTemplates, type TemplateWithCount } from '@/hooks/use-templates';
 import { formatDistanceToNow } from '@/lib/format-date';
-import { toast } from 'sonner';
-
-// ── Create template dialog ────────────────────────────────────────────────────
 
 function CreateTemplateRow({
   onCreate,
@@ -53,36 +74,58 @@ function CreateTemplateRow({
     }
   }
 
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter') void handleSave();
-    if (e.key === 'Escape') { setIsCreating(false); setName(''); }
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Enter') void handleSave();
+    if (event.key === 'Escape') {
+      setIsCreating(false);
+      setName('');
+    }
   }
 
   if (isCreating) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-card p-3">
-        <input
-          ref={inputRef}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Workout name…"
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-        />
-        <button
-          onClick={() => { setIsCreating(false); setName(''); }}
-          className="text-xs text-muted-foreground hover:text-foreground px-2"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={isSaving || !name.trim()}
-          className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
-        >
-          {isSaving && <Loader2 className="h-3 w-3 animate-spin" />}
-          Create
-        </button>
+      <div className="premium-card page-reveal delay-2 px-4 py-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/14 text-primary">
+            <FolderPlus className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-xl font-semibold">Name your workout</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Keep it plain and specific so it is easy to spot when you want to train.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-3 md:flex-row">
+          <input
+            ref={inputRef}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="e.g. Push Day, Upper A, Long Run"
+            className="h-12 flex-1 rounded-2xl border border-white/10 bg-black/15 px-4 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setIsCreating(false);
+                setName('');
+              }}
+              className="premium-button-secondary flex-1 px-4"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving || !name.trim()}
+              className="premium-button flex-1 px-4 disabled:opacity-60"
+            >
+              {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+              Create
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -90,15 +133,21 @@ function CreateTemplateRow({
   return (
     <button
       onClick={open}
-      className="flex min-h-[52px] w-full items-center gap-3 rounded-xl border border-dashed border-border px-4 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+      className="premium-card page-reveal delay-2 flex w-full items-center gap-4 px-4 py-5 text-left"
     >
-      <Plus className="h-4 w-4" />
-      Create workout
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/14 text-primary">
+        <FolderPlus className="h-5 w-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-display text-xl font-semibold">Create a new workout</p>
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+          Build a saved workout once, then reuse it whenever you want to log that session again.
+        </p>
+      </div>
+      <span className="status-pill border-primary/20 bg-primary/10 text-primary">New</span>
     </button>
   );
 }
-
-// ── Template row ──────────────────────────────────────────────────────────────
 
 function TemplateRow({
   template,
@@ -111,50 +160,52 @@ function TemplateRow({
   onDuplicate: () => void;
   onTogglePin: () => void;
 }) {
-  const exerciseLabel = `${template.exercise_count} exercise${template.exercise_count !== 1 ? 's' : ''}`;
-  const lastUsed = template.last_used_at ? formatDistanceToNow(template.last_used_at) : 'Never used';
   const { startWorkout } = useStartWorkout();
   const [starting, setStarting] = useState(false);
 
-  async function handleStart(e: React.MouseEvent) {
-    e.preventDefault();
+  async function handleStart(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
     setStarting(true);
-    try { await startWorkout(template.id); }
-    finally { setStarting(false); }
+    try {
+      await startWorkout(template.id);
+    } finally {
+      setStarting(false);
+    }
   }
 
   return (
-    <div className="group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-colors hover:border-border/80 hover:bg-card/80">
-      {/* Icon */}
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-        <Dumbbell className="h-4 w-4 text-primary" />
+    <div className="elevated-surface page-reveal flex items-center gap-4 px-4 py-4 transition-transform duration-300 hover:-translate-y-0.5">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/14 text-primary shadow-[0_22px_40px_-26px_rgba(91,163,255,0.8)]">
+        <Dumbbell className="h-5 w-5" />
       </div>
 
-      {/* Name + meta — tap to open editor */}
-      <Link href={`/templates/${template.id}`} className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <p className="truncate text-sm font-semibold">{template.name}</p>
-          {template.is_pinned && <Pin className="h-3 w-3 shrink-0 text-primary" />}
+      <Link href={`/templates/${template.id}`} className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="truncate font-display text-lg font-semibold">{template.name}</p>
+          {template.is_pinned && (
+            <span className="status-pill border-primary/20 bg-primary/10 text-primary">Pinned</span>
+          )}
         </div>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          {exerciseLabel} · {lastUsed}
+        <p className="mt-1 text-sm text-muted-foreground">
+          {template.exercise_count} exercise{template.exercise_count !== 1 ? 's' : ''}
+          {template.last_used_at
+            ? ` · Used ${formatDistanceToNow(template.last_used_at)}`
+            : ' · Ready to start'}
         </p>
       </Link>
 
-      {/* Start button */}
       <button
         onClick={handleStart}
         disabled={starting}
-        className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        className="premium-button shrink-0 px-4 py-2.5 disabled:opacity-60"
         title="Start workout"
       >
-        {starting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+        {starting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
         Start
       </button>
 
-      {/* Actions */}
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground">
+        <DropdownMenuTrigger className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground">
           <MoreHorizontal className="h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
@@ -163,14 +214,13 @@ function TemplateRow({
             {template.is_pinned ? 'Unpin' : 'Pin'}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onDuplicate} className="gap-2">
-            <Copy className="h-4 w-4" /> Duplicate
+            <Copy className="h-4 w-4" />
+            Duplicate
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={onDelete}
-            className="gap-2 text-destructive focus:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" /> Delete
+          <DropdownMenuItem onClick={onDelete} className="gap-2 text-destructive focus:text-destructive">
+            <Trash2 className="h-4 w-4" />
+            Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -178,12 +228,40 @@ function TemplateRow({
   );
 }
 
-// ── Page ─────────────────────────────────────────────────────────────────────
+function SectionHeader({
+  icon,
+  title,
+  meta,
+}: {
+  icon: ReactNode;
+  title: string;
+  meta?: string;
+}) {
+  return (
+    <div className="section-heading">
+      <div className="flex items-center gap-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/6 text-primary">
+          {icon}
+        </div>
+        <div>
+          <h2 className="section-title">{title}</h2>
+          {meta && <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/75">{meta}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function TemplatesPage() {
   const router = useRouter();
-  const { templates, isLoading, createTemplate, deleteTemplate, duplicateTemplate, togglePin } =
-    useTemplates();
+  const {
+    templates,
+    isLoading,
+    createTemplate,
+    deleteTemplate,
+    duplicateTemplate,
+    togglePin,
+  } = useTemplates();
   const [autoOpenCreate, setAutoOpenCreate] = useState(false);
 
   useEffect(() => {
@@ -194,8 +272,8 @@ export default function TemplatesPage() {
     window.history.replaceState({}, '', '/templates');
   }, []);
 
-  const pinned = templates.filter((t) => t.is_pinned);
-  const all    = templates.filter((t) => !t.is_pinned);
+  const pinned = templates.filter((template) => template.is_pinned);
+  const all = templates.filter((template) => !template.is_pinned);
 
   async function handleCreate(name: string) {
     const template = await createTemplate(name);
@@ -223,78 +301,125 @@ export default function TemplatesPage() {
   }
 
   async function handleTogglePin(id: string) {
-    try { await togglePin(id); } catch { toast.error('Failed to update pin'); }
+    try {
+      await togglePin(id);
+    } catch {
+      toast.error('Failed to update pin');
+    }
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-6">
-      <div className="mb-6 rounded-2xl border border-border bg-card p-4">
-        <h1 className="text-2xl font-bold tracking-tight">Workouts</h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Create your own workout, add the exercises you actually use, then start it any time without rebuilding the session from scratch.
-        </p>
-        <div className="mt-4">
-          <Link
-            href="/exercises"
-            className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold text-muted-foreground hover:bg-muted"
-          >
-            <Library className="h-4 w-4 text-primary" />
-            Manage Exercises
-          </Link>
-        </div>
-      </div>
+    <div className="page-shell">
+      <div className="page-content py-5 md:py-7">
+        <section className="page-hero">
+          <span className="hero-kicker">Workouts</span>
+          <h1 className="page-title mt-4">Build your repeatable training sessions</h1>
+          <p className="page-subtitle mt-3">
+            Create the workouts you actually run, pin the important ones, and jump straight into logging without rebuilding each session from scratch.
+          </p>
 
-      {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {/* Pinned section */}
-          {pinned.length > 0 && (
-            <section className="space-y-2">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pinned</h2>
-              {pinned.map((t) => (
-                <TemplateRow
-                  key={t.id}
-                  template={t}
-                  onDelete={() => void handleDelete(t.id, t.name)}
-                  onDuplicate={() => void handleDuplicate(t.id)}
-                  onTogglePin={() => void handleTogglePin(t.id)}
-                />
-              ))}
-            </section>
-          )}
-
-          {/* All templates */}
-          <section className="space-y-2">
-            {pinned.length > 0 && (
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">All Workouts</h2>
-            )}
-            {all.map((t) => (
-              <TemplateRow
-                key={t.id}
-                template={t}
-                onDelete={() => void handleDelete(t.id, t.name)}
-                onDuplicate={() => void handleDuplicate(t.id)}
-                onTogglePin={() => void handleTogglePin(t.id)}
-              />
-            ))}
-            {templates.length === 0 && (
-              <div className="flex flex-col items-center gap-3 py-12 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-                  <Dumbbell className="h-6 w-6 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium">No workouts yet</p>
-                  <p className="text-sm text-muted-foreground">Create your first saved workout below</p>
-                </div>
+          <div className="mt-6 grid gap-3 md:grid-cols-[1.3fr_1fr]">
+            <button
+              onClick={() => setAutoOpenCreate(true)}
+              className="quick-action-card page-reveal"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/14 text-primary">
+                <FolderPlus className="h-5 w-5" />
               </div>
-            )}
+              <div>
+                <p className="font-display text-lg font-semibold text-foreground">Create Workout</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Start a new saved session for lifting, runs, laps, or anything else you track.
+                </p>
+              </div>
+            </button>
+
+            <Link href="/exercises" className="quick-action-card page-reveal delay-2">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/14 text-primary">
+                <Library className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-display text-lg font-semibold text-foreground">Your Exercises</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Browse the exercise list you have created and clean up duplicates.
+                </p>
+              </div>
+            </Link>
+          </div>
+        </section>
+
+        <div className="mt-8 space-y-8">
+          <section className="section-shell">
+            <SectionHeader
+              icon={<Sparkles className="h-4 w-4" />}
+              title="Workout Builder"
+              meta={`${templates.length} saved`}
+            />
             <CreateTemplateRow onCreate={handleCreate} autoOpen={autoOpenCreate} />
           </section>
+
+          {isLoading ? (
+            <div className="flex justify-center py-16">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {pinned.length > 0 && (
+                <section className="section-shell">
+                  <SectionHeader
+                    icon={<Flame className="h-4 w-4" />}
+                    title="Pinned Workouts"
+                    meta="quick access"
+                  />
+                  <div className="space-y-3">
+                    {pinned.map((template) => (
+                      <TemplateRow
+                        key={template.id}
+                        template={template}
+                        onDelete={() => void handleDelete(template.id, template.name)}
+                        onDuplicate={() => void handleDuplicate(template.id)}
+                        onTogglePin={() => void handleTogglePin(template.id)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <section className="section-shell">
+                <SectionHeader
+                  icon={<Dumbbell className="h-4 w-4" />}
+                  title={pinned.length > 0 ? 'All Workouts' : 'Saved Workouts'}
+                  meta={templates.length === 0 ? 'start here' : 'ready to log'}
+                />
+
+                {templates.length === 0 ? (
+                  <div className="premium-card page-reveal delay-2 flex flex-col items-center gap-3 px-5 py-12 text-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/14 text-primary">
+                      <Dumbbell className="h-7 w-7" />
+                    </div>
+                    <h2 className="font-display text-2xl font-semibold">No workouts saved yet</h2>
+                    <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
+                      Create your first workout above, then reuse it whenever you want to train that session again.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {all.map((template) => (
+                      <TemplateRow
+                        key={template.id}
+                        template={template}
+                        onDelete={() => void handleDelete(template.id, template.name)}
+                        onDuplicate={() => void handleDuplicate(template.id)}
+                        onTogglePin={() => void handleTogglePin(template.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
