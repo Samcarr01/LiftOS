@@ -75,7 +75,10 @@ export function useStartWorkout() {
       if (error) throw error;
       if (!data) throw new Error('Empty response from start-workout');
 
-      const response = mapResponse(data as RawStartWorkoutResponse);
+      const payload =
+        ((data as { data?: RawStartWorkoutResponse }).data) ??
+        (data as RawStartWorkoutResponse);
+      const response = mapResponse(payload);
       hydrateWorkout(response);
       router.push(`/workout/${response.session.id}`);
     } catch (err: unknown) {

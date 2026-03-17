@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Dumbbell, ChevronRight, Loader2 } from 'lucide-react';
 import { useHistory } from '@/hooks/use-history';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatMonthGroup, formatShortDate, formatDuration } from '@/lib/format-date';
+import { formatMonthGroup, formatShortDate } from '@/lib/format-date';
 import type { HistorySessionSummary } from '@/types/app';
 
 /** Group sessions by "Month Year" key */
@@ -92,9 +92,8 @@ function SessionRow({
   session: HistorySessionSummary;
   onClick: () => void;
 }) {
-  const name = session.template_name ?? 'Quick Workout';
+  const name = session.template_name ?? 'Logged Workout';
   const date = formatShortDate(session.started_at);
-  const dur  = session.duration_seconds ? formatDuration(session.duration_seconds) : null;
 
   return (
     <button
@@ -109,7 +108,6 @@ function SessionRow({
         <p className="truncate text-sm font-semibold">{name}</p>
         <p className="text-xs text-muted-foreground">
           {date}
-          {dur && <> · {dur}</>}
           {session.exercise_count > 0 && <> · {session.exercise_count} exercises</>}
         </p>
       </div>

@@ -12,15 +12,15 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  GripVertical, Trash2, ChevronLeft, Plus, Timer, Loader2,
-  ChevronRight, Settings2,
+  GripVertical, Trash2, ChevronLeft, Plus, Loader2, Settings2,
+  Play,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Input } from '@/components/ui/input';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import { ExerciseSelector } from '@/components/exercise-selector';
 import { useTemplateExercises, type TemplateExerciseWithDetails } from '@/hooks/use-template-exercises';
 import { useTemplates } from '@/hooks/use-templates';
+import { useStartWorkout } from '@/hooks/use-start-workout';
 import type { ExerciseWithSchema } from '@/types/app';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
@@ -67,10 +67,7 @@ function SortableExerciseRow({
               <MuscleGroupBadge key={m} muscle={m} />
             ))}
           </div>
-          <span className="text-xs text-muted-foreground">
-            {item.default_set_count} sets
-            {item.rest_seconds ? ` · ${item.rest_seconds}s rest` : ''}
-          </span>
+          <span className="text-xs text-muted-foreground">{item.default_set_count} sets</span>
         </div>
       </button>
 
@@ -95,18 +92,17 @@ function ExerciseConfigSheet({
   item: TemplateExerciseWithDetails | null;
   open: boolean;
   onClose: () => void;
-  onSave: (patch: { default_set_count?: number; rest_seconds?: number | null; notes?: string | null }) => void;
+  onSave: (patch: { default_set_count?: number; notes?: string | null }) => void;
 }) {
   const [sets, setSets] = useState(item?.default_set_count ?? 3);
-  const [rest, setRest] = useState(item?.rest_seconds ?? 90);
   const [notes, setNotes] = useState(item?.notes ?? '');
 
   useEffect(() => {
-    if (item) { setSets(item.default_set_count); setRest(item.rest_seconds ?? 90); setNotes(item.notes ?? ''); }
+    if (item) { setSets(item.default_set_count); setNotes(item.notes ?? ''); }
   }, [item]);
 
   function save() {
-    onSave({ default_set_count: sets, rest_seconds: rest, notes: notes.trim() || null });
+    onSave({ default_set_count: sets, notes: notes.trim() || null });
     onClose();
   }
 
@@ -136,28 +132,6 @@ function ExerciseConfigSheet({
               <span className="flex-1 text-center text-2xl font-bold">{sets}</span>
               <button
                 onClick={() => setSets((v) => Math.min(20, v + 1))}
-                className="flex h-11 w-11 items-center justify-center rounded-xl border border-border text-xl hover:bg-muted"
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          {/* Rest time */}
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">
-              <Timer className="inline h-3.5 w-3.5 mr-1" />Rest (seconds)
-            </label>
-            <div className="mt-1.5 flex items-center gap-4">
-              <button
-                onClick={() => setRest((v) => Math.max(0, v - 15))}
-                className="flex h-11 w-11 items-center justify-center rounded-xl border border-border text-xl hover:bg-muted"
-              >
-                −
-              </button>
-              <span className="flex-1 text-center text-2xl font-bold">{rest}s</span>
-              <button
-                onClick={() => setRest((v) => Math.min(600, v + 15))}
                 className="flex h-11 w-11 items-center justify-center rounded-xl border border-border text-xl hover:bg-muted"
               >
                 +
@@ -195,6 +169,7 @@ export default function TemplateEditorPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const supabase = createClient();
+  const { startWorkout } = useStartWorkout();
   const { updateTemplateName } = useTemplates();
   const { exercises, isLoading, addExercise, removeExercise, updateExercise, reorderExercises } =
     useTemplateExercises(id);
@@ -208,6 +183,7 @@ export default function TemplateEditorPage() {
   // Config sheet state
   const [configItem, setConfigItem] = useState<TemplateExerciseWithDetails | null>(null);
   const [configOpen, setConfigOpen] = useState(false);
+  const [isStartingWorkout, setIsStartingWorkout] = useState(false);
 
   // Fetch template name
   useEffect(() => {
@@ -273,6 +249,16 @@ export default function TemplateEditorPage() {
     try { await updateExercise(configItem.id, patch); } catch { toast.error('Failed to save'); }
   }
 
+  async function handleStartWorkout() {
+    if (exercises.length === 0) return;
+    setIsStartingWorkout(true);
+    try {
+      await startWorkout(id);
+    } finally {
+      setIsStartingWorkout(false);
+    }
+  }
+
   if (isFetchingName) {
     return (
       <div className="flex flex-1 items-center justify-center">
@@ -295,12 +281,35 @@ export default function TemplateEditorPage() {
         <input
           value={templateName}
           onChange={(e) => handleNameChange(e.target.value)}
-          placeholder="Template name"
+          placeholder="Workout name"
           className="flex-1 bg-transparent text-xl font-bold tracking-tight outline-none placeholder:text-muted-foreground"
         />
 
         {saveStatus === 'saving' && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />}
         {saveStatus === 'saved' && <span className="shrink-0 text-xs text-muted-foreground">Saved</span>}
+      </div>
+
+      <div className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+        <p className="text-sm font-semibold">Build this workout your way</p>
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+          Add the exercises you actually do. Creating your own exercise is the default, and you can still switch to the library inside the picker.
+        </p>
+      </div>
+
+      <div className="mb-5 rounded-2xl border border-border bg-card p-4">
+        <button
+          onClick={() => void handleStartWorkout()}
+          disabled={isStartingWorkout || exercises.length === 0}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isStartingWorkout ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+          Start This Workout
+        </button>
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          {exercises.length === 0
+            ? 'Add at least one exercise before starting.'
+            : 'Ready when you are. What you log here becomes the baseline for the next AI suggestion.'}
+        </p>
       </div>
 
       {/* Exercise list */}
@@ -326,9 +335,11 @@ export default function TemplateEditorPage() {
       )}
 
       {exercises.length === 0 && !isLoading && (
-        <div className="mb-4 flex flex-col items-center gap-2 py-10 text-center">
-          <p className="text-sm text-muted-foreground">No exercises yet</p>
-          <p className="text-xs text-muted-foreground/60">Tap "Add Exercise" to get started</p>
+        <div className="mb-4 rounded-2xl border border-dashed border-border px-4 py-8 text-center">
+          <p className="text-sm font-semibold">This workout is empty</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            Add your first exercise below. Weight and reps, laps, time, or distance all work.
+          </p>
         </div>
       )}
 
@@ -336,12 +347,16 @@ export default function TemplateEditorPage() {
       <div className="mt-4">
         <ExerciseSelector
           onSelect={handleAddExercise}
+          defaultMode="create"
           trigger={
             <button className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary">
-              <Plus className="h-4 w-4" /> Add Exercise
+              <Plus className="h-4 w-4" /> Create Or Add Exercise
             </button>
           }
         />
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          Your own exercises come first. You can switch to the library inside the sheet if you want.
+        </p>
       </div>
 
       {/* Exercise config sheet */}

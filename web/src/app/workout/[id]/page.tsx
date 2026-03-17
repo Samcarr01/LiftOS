@@ -1,30 +1,11 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { ExerciseCard } from '@/components/workout/exercise-card';
-import { RestTimer } from '@/components/workout/rest-timer';
 import { FinishDialog } from '@/components/workout/finish-dialog';
-
-// ── Elapsed timer display (MM:SS) ─────────────────────────────────────────────
-
-function useElapsedTimer(startedAt: string | undefined): string {
-  const [, setTick] = useState(0);
-
-  useEffect(() => {
-    if (!startedAt) return;
-    const id = setInterval(() => setTick((n) => n + 1), 1000);
-    return () => clearInterval(id);
-  }, [startedAt]);
-
-  if (!startedAt) return '00:00';
-  const elapsed = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000);
-  const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
-  const secs = (elapsed % 60).toString().padStart(2, '0');
-  return `${mins}:${secs}`;
-}
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
@@ -35,7 +16,6 @@ export default function WorkoutPage() {
   const dismissedSuggestions = useActiveWorkoutStore((s) => s.dismissedSuggestions);
 
   const [finishOpen, setFinishOpen] = useState(false);
-  const elapsed = useElapsedTimer(workout?.session.started_at);
 
   // Warn on accidental navigation away
   useEffect(() => {
@@ -69,8 +49,8 @@ export default function WorkoutPage() {
   }
 
   const templateName = workout.session.template_id
-    ? (workout.exercises[0]?.sessionExercise ? 'Workout' : 'Workout')
-    : 'Blank Workout';
+    ? 'Current Workout'
+    : 'Quick Log';
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -90,12 +70,14 @@ export default function WorkoutPage() {
 
         <div className="flex flex-1 flex-col">
           <h1 className="truncate text-base font-bold leading-tight">{templateName}</h1>
-          <p className="text-xs text-muted-foreground tabular-nums">{elapsed}</p>
+          <p className="text-xs text-muted-foreground">
+            Log the sets that matter. AI suggestions show up when available.
+          </p>
         </div>
 
         <button
           onClick={() => setFinishOpen(true)}
-          disabled={workout.isCompleting}
+          disabled={workout.isCompleting || workout.exercises.length === 0}
           className="flex h-9 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
           {workout.isCompleting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
@@ -116,14 +98,20 @@ export default function WorkoutPage() {
 
         {workout.exercises.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-16 text-center">
-            <p className="font-medium">No exercises</p>
-            <p className="text-sm text-muted-foreground">This was a blank workout</p>
+            <p className="font-medium">This workout has no exercises</p>
+            <p className="text-sm text-muted-foreground">Go back and add exercises before you start logging.</p>
+            <button
+              onClick={() => {
+                useActiveWorkoutStore.getState().clearWorkout();
+                router.replace('/templates');
+              }}
+              className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              Go To Workouts
+            </button>
           </div>
         )}
       </main>
-
-      {/* Rest timer overlay */}
-      <RestTimer />
 
       {/* Finish dialog */}
       <FinishDialog open={finishOpen} onClose={() => setFinishOpen(false)} />

@@ -129,19 +129,20 @@ Deno.serve(async (req: Request) => {
       // Prefilled = clone of last performance up to default_set_count.
       // If last session had fewer sets, the last set's values are repeated.
       // If no last performance, return empty value objects.
+      // set_index stays 0-based so client inserts/upserts remain stable.
       let prefilledSets: Array<{ set_index: number; values: Record<string, unknown>; set_type: string }>;
       if (lastPerfSets && lastPerfSets.length > 0) {
         prefilledSets = Array.from({ length: count }, (_, i) => {
           const src = lastPerfSets[i] ?? lastPerfSets[lastPerfSets.length - 1];
           return {
-            set_index: i + 1,
+            set_index: i,
             values: { ...src.values },
             set_type: src.set_type ?? 'working',
           };
         });
       } else {
         prefilledSets = Array.from({ length: count }, (_, i) => ({
-          set_index: i + 1,
+          set_index: i,
           values: {},
           set_type: 'working',
         }));

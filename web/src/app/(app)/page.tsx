@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useTemplates, type TemplateWithCount } from '@/hooks/use-templates';
 import { useStartWorkout } from '@/hooks/use-start-workout';
 import { useHomeData, type LastHighlight } from '@/hooks/use-home-data';
-import { formatShortDate, formatDuration } from '@/lib/format-date';
+import { formatShortDate } from '@/lib/format-date';
 import type { HistorySessionSummary } from '@/types/app';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -24,13 +24,21 @@ function greeting(name: string | null): string {
 
 // ── Start Workout Sheet ───────────────────────────────────────────────────────
 
-function StartWorkoutSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+function StartWorkoutSheet({
+  open,
+  onClose,
+  onCreateWorkout,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreateWorkout: () => void;
+}) {
   const { templates, isLoading } = useTemplates();
   const { startWorkout }         = useStartWorkout();
   const [starting, setStarting]  = useState<string | null>(null);
 
-  async function handleStart(templateId: string | null) {
-    const key = templateId ?? 'blank';
+  async function handleStart(templateId: string) {
+    const key = templateId;
     setStarting(key);
     try {
       await startWorkout(templateId);
@@ -47,55 +55,65 @@ function StartWorkoutSheet({ open, onClose }: { open: boolean; onClose: () => vo
           <SheetTitle>Start Workout</SheetTitle>
         </SheetHeader>
 
-        <div className="overflow-y-auto px-4 py-4 space-y-2">
-          {/* Blank workout */}
-          <button
-            onClick={() => handleStart(null)}
-            disabled={starting !== null}
-            className="flex w-full items-center gap-3 rounded-xl border border-dashed border-border px-4 py-3.5 text-left hover:border-primary/50 hover:bg-primary/5 disabled:opacity-60"
-          >
-            {starting === 'blank'
-              ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              : <Plus className="h-5 w-5 text-muted-foreground" />
-            }
-            <div>
-              <p className="text-sm font-semibold">Blank Workout</p>
-              <p className="text-xs text-muted-foreground">Start without a template</p>
-            </div>
-          </button>
+        <div className="overflow-y-auto px-4 py-4 space-y-4">
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+            <p className="text-sm font-semibold">Pick a saved workout to begin</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Create your own workout once, add the exercises you actually do, then start it here whenever you train.
+            </p>
+          </div>
 
           {isLoading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : templates.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              No templates yet.
-            </p>
-          ) : (
-            templates.map((t) => (
+            <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-center">
+              <p className="text-sm font-semibold">No saved workouts yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Create one first, then you can reuse it and track progress.
+              </p>
               <button
-                key={t.id}
-                onClick={() => handleStart(t.id)}
-                disabled={starting !== null}
-                className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 text-left hover:bg-muted disabled:opacity-60"
+                onClick={() => {
+                  onClose();
+                  onCreateWorkout();
+                }}
+                className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
               >
-                {starting === t.id
-                  ? <Loader2 className="h-9 w-9 animate-spin text-muted-foreground" />
-                  : (
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                      <Dumbbell className="h-4 w-4 text-primary" />
-                    </div>
-                  )
-                }
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {t.exercise_count} exercise{t.exercise_count !== 1 ? 's' : ''}
-                  </p>
-                </div>
+                <Plus className="mr-1.5 h-4 w-4" />
+                Create Workout
               </button>
-            ))
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Saved Workouts
+              </p>
+              {templates.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => handleStart(t.id)}
+                  disabled={starting !== null}
+                  className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 text-left hover:bg-muted disabled:opacity-60"
+                >
+                  {starting === t.id
+                    ? <Loader2 className="h-9 w-9 animate-spin text-muted-foreground" />
+                    : (
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                          <Dumbbell className="h-4 w-4 text-primary" />
+                        </div>
+                      )
+                    }
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{t.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t.exercise_count} exercise{t.exercise_count !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold text-primary">Start</span>
+                  </button>
+                ))}
+            </div>
           )}
         </div>
       </SheetContent>
@@ -176,9 +194,8 @@ function RecentRow({
   session: HistorySessionSummary;
   onClick: () => void;
 }) {
-  const name = session.template_name ?? 'Quick Workout';
+  const name = session.template_name ?? 'Logged Workout';
   const date = formatShortDate(session.started_at);
-  const dur  = session.duration_seconds ? formatDuration(session.duration_seconds) : null;
 
   return (
     <button
@@ -191,7 +208,7 @@ function RecentRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{name}</p>
         <p className="text-xs text-muted-foreground">
-          {date}{dur && ` · ${dur}`}
+          {date}
           {session.total_sets > 0 && ` · ${session.total_sets} sets`}
         </p>
       </div>
@@ -241,16 +258,42 @@ export default function HomePage() {
       </header>
 
       <div className="px-4 space-y-6">
+        <section className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              onClick={() => setSheetOpen(true)}
+              className="flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 hover:bg-primary/90 active:scale-[0.98] transition-transform"
+            >
+              <Zap className="h-5 w-5" />
+              Start Workout
+            </button>
+            <button
+              onClick={() => router.push('/templates?create=1')}
+              className="flex h-[52px] items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm font-semibold hover:bg-muted active:scale-[0.98] transition-transform"
+            >
+              <Plus className="h-5 w-5 text-primary" />
+              Create Workout
+            </button>
+          </div>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Keep it simple: build your own workout, add your own exercises, log your sets, and let AI suggest the next target when you come back.
+          </p>
+        </section>
 
-        {/* ── Start Workout FAB ──────────────────────────────────── */}
-        <button
-          onClick={() => setSheetOpen(true)}
-          className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 hover:bg-primary/90 active:scale-[0.98] transition-transform"
-          style={{ height: '52px' }}
-        >
-          <Zap className="h-5 w-5" />
-          Start Workout
-        </button>
+        {!loading && !data?.suggested && (data?.pinned ?? []).length === 0 && (
+          <section className="rounded-2xl border border-dashed border-border bg-card px-4 py-4">
+            <p className="text-sm font-semibold">New here?</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              Start by creating a workout with the exercises and tracking style you actually use: weight and reps, time, distance, or laps.
+            </p>
+            <button
+              onClick={() => router.push('/templates?create=1')}
+              className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              Create Your First Workout
+            </button>
+          </section>
+        )}
 
         {/* ── Suggested workout ──────────────────────────────────── */}
         {loading ? (
@@ -271,7 +314,7 @@ export default function HomePage() {
           </div>
         ) : (data?.pinned ?? []).length > 0 ? (
           <section>
-            <SectionHeader icon={<Flame className="h-3.5 w-3.5" />} title="Pinned" />
+            <SectionHeader icon={<Flame className="h-3.5 w-3.5" />} title="Saved Workouts" />
             <div className="mt-2 flex gap-3 overflow-x-auto pb-1 no-scrollbar">
               {data!.pinned.map((t) => (
                 <PinnedCard
@@ -306,7 +349,18 @@ export default function HomePage() {
           </div>
         ) : (data?.recentSessions ?? []).length > 0 ? (
           <section>
-            <SectionHeader icon={<Calendar className="h-3.5 w-3.5" />} title="Recent Workouts" />
+            <SectionHeader
+              icon={<Calendar className="h-3.5 w-3.5" />}
+              title="Recent Workouts"
+              action={
+                <button
+                  onClick={() => router.push('/history')}
+                  className="text-xs font-semibold text-primary hover:text-primary/80"
+                >
+                  View All
+                </button>
+              }
+            />
             <div className="mt-2 space-y-2">
               {data!.recentSessions.map((s) => (
                 <RecentRow
@@ -320,22 +374,37 @@ export default function HomePage() {
         ) : !loading ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <Dumbbell className="h-10 w-10 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">No workouts yet — start your first one above!</p>
+            <p className="text-sm text-muted-foreground">No workouts logged yet. Create one, then start when you are ready.</p>
           </div>
         ) : null}
 
       </div>
 
-      <StartWorkoutSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <StartWorkoutSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onCreateWorkout={() => router.push('/templates?create=1')}
+      />
     </div>
   );
 }
 
-function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
+function SectionHeader({
+  icon,
+  title,
+  action,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  action?: React.ReactNode;
+}) {
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-muted-foreground">{icon}</span>
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h2>
+    <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-1.5">
+        <span className="text-muted-foreground">{icon}</span>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h2>
+      </div>
+      {action}
     </div>
   );
 }

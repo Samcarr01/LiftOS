@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Search, Plus, ArrowLeft, Loader2, Check, Dumbbell } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Search, Plus, Loader2, Check, Dumbbell } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import { useExercises } from '@/hooks/use-exercises';
 import type { ExerciseWithSchema, ExerciseCreate } from '@/types/app';
-import { ExerciseCreateSchema, TrackingSchemaValidator } from '@/lib/validation';
+import { ExerciseCreateSchema } from '@/lib/validation';
 import { TRACKING_PRESETS, type TrackingPresetKey } from '@/types/tracking';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -22,11 +22,16 @@ const PRESET_LABELS: Record<TrackingPresetKey, string> = {
 interface Props {
   onSelect: (exercise: ExerciseWithSchema) => void;
   trigger: React.ReactNode;
+  defaultMode?: 'browse' | 'create';
 }
 
-export function ExerciseSelector({ onSelect, trigger }: Props) {
+export function ExerciseSelector({
+  onSelect,
+  trigger,
+  defaultMode = 'browse',
+}: Props) {
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<'browse' | 'create'>('browse');
+  const [mode, setMode] = useState<'browse' | 'create'>(defaultMode);
   const { exercises, isLoading, createExercise } = useExercises();
 
   // Browse state
@@ -37,9 +42,19 @@ export function ExerciseSelector({ onSelect, trigger }: Props) {
   const [newName, setNewName] = useState('');
   const [newMuscles, setNewMuscles] = useState<string[]>([]);
   const [newPreset, setNewPreset] = useState<TrackingPresetKey>('WEIGHT_REPS');
-  const [newRest, setNewRest] = useState(90);
   const [newNotes, setNewNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setMode(defaultMode);
+    setSearch('');
+    setMuscleFilter(null);
+    setNewName('');
+    setNewMuscles([]);
+    setNewPreset('WEIGHT_REPS');
+    setNewNotes('');
+  }, [open, defaultMode]);
 
   const filtered = useMemo(() => {
     let list = exercises;
@@ -57,9 +72,14 @@ export function ExerciseSelector({ onSelect, trigger }: Props) {
   function handleSelect(exercise: ExerciseWithSchema) {
     onSelect(exercise);
     setOpen(false);
-    setMode('browse');
+    setMode(defaultMode);
     setSearch('');
     setMuscleFilter(null);
+  }
+
+  function openCreate(prefill = '') {
+    if (prefill.trim()) setNewName((current) => current.trim() || prefill.trim());
+    setMode('create');
   }
 
   async function handleCreate() {
@@ -70,14 +90,13 @@ export function ExerciseSelector({ onSelect, trigger }: Props) {
         name: newName.trim(),
         muscle_groups: newMuscles,
         tracking_schema: TRACKING_PRESETS[newPreset],
-        default_rest_seconds: newRest,
         notes: newNotes.trim() || null,
       });
       const exercise = await createExercise(data);
       toast.success(`"${exercise.name}" created`);
       handleSelect(exercise);
       // Reset create form
-      setNewName(''); setNewMuscles([]); setNewPreset('WEIGHT_REPS'); setNewRest(90); setNewNotes('');
+      setNewName(''); setNewMuscles([]); setNewPreset('WEIGHT_REPS'); setNewNotes('');
     } catch (err: unknown) {
       toast.error((err as { message?: string }).message ?? 'Failed to create exercise');
     } finally {
@@ -97,35 +116,42 @@ export function ExerciseSelector({ onSelect, trigger }: Props) {
       {/* Wrap trigger in a click handler since @base-ui SheetTrigger doesn't support asChild */}
       <span onClick={() => setOpen(true)} className="contents">{trigger}</span>
       <Sheet open={open} onOpenChange={setOpen}>
-      <SheetContent side="bottom" className="h-[90dvh] flex flex-col p-0 rounded-t-2xl">
-        <SheetHeader className="px-4 pt-5 pb-3 border-b border-border">
+        <SheetContent side="bottom" className="flex h-[90dvh] flex-col rounded-t-2xl p-0">
+        <SheetHeader className="border-b border-border px-4 pb-3 pt-5">
           <div className="flex items-center gap-3">
-            {mode === 'create' && (
-              <button onClick={() => setMode('browse')} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-            )}
-            <SheetTitle>{mode === 'create' ? 'New Exercise' : 'Add Exercise'}</SheetTitle>
-            {mode === 'browse' && (
-              <button
-                onClick={() => setMode('create')}
-                className="ml-auto flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/20"
-              >
-                <Plus className="h-3.5 w-3.5" /> New
-              </button>
-            )}
+            <SheetTitle>{mode === 'create' ? 'Create Exercise' : 'Exercise Library'}</SheetTitle>
+            <button
+              onClick={() => setMode(mode === 'create' ? 'browse' : 'create')}
+              className="ml-auto flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/20"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {mode === 'create' ? 'Use Library' : 'Create Your Own'}
+            </button>
           </div>
         </SheetHeader>
 
         {/* ── Browse mode ───────────────────────────────────── */}
         {mode === 'browse' && (
           <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="mx-4 mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+              <p className="text-sm font-semibold">Prefer your own exercise names?</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Create an exercise from scratch for weight and reps, time, distance, or laps. You only need the library if you want it.
+              </p>
+              <button
+                onClick={() => openCreate(search)}
+                className="mt-3 inline-flex h-9 items-center justify-center rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                Create Custom Exercise
+              </button>
+            </div>
+
             {/* Search */}
             <div className="px-4 py-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search exercises…"
+                  placeholder="Search the library"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="h-10 pl-9"
@@ -161,9 +187,12 @@ export function ExerciseSelector({ onSelect, trigger }: Props) {
               ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-12 text-center">
                   <Dumbbell className="h-8 w-8 text-muted-foreground/50" />
-                  <p className="text-sm text-muted-foreground">No exercises found</p>
-                  <button onClick={() => setMode('create')} className="text-sm font-medium text-primary hover:underline">
-                    Create one
+                  <p className="text-sm text-muted-foreground">No exercises found in the library</p>
+                  <button
+                    onClick={() => openCreate(search)}
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    {search.trim() ? `Create "${search.trim()}"` : 'Create one instead'}
                   </button>
                 </div>
               ) : (
@@ -193,6 +222,10 @@ export function ExerciseSelector({ onSelect, trigger }: Props) {
         {/* ── Create mode ───────────────────────────────────── */}
         {mode === 'create' && (
           <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-6 pt-2 gap-5">
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Create exactly what you do in the gym. AI uses your logged performance next time to suggest what to lift.
+            </p>
+
             {/* Name */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Exercise name</label>
@@ -266,28 +299,6 @@ export function ExerciseSelector({ onSelect, trigger }: Props) {
                   </div>
                 ))}
                 <Check className="ml-auto h-4 w-4 text-muted-foreground/30" />
-              </div>
-            </div>
-
-            {/* Default rest */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Default rest (seconds)</label>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setNewRest((v) => Math.max(0, v - 15))}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-border text-lg hover:bg-muted"
-                >
-                  −
-                </button>
-                <span className="flex-1 text-center text-sm font-medium">{newRest}s</span>
-                <button
-                  type="button"
-                  onClick={() => setNewRest((v) => Math.min(600, v + 15))}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-border text-lg hover:bg-muted"
-                >
-                  +
-                </button>
               </div>
             </div>
 

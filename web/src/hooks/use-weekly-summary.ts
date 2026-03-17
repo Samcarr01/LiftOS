@@ -22,7 +22,10 @@ export function useWeeklySummary() {
     if (err) {
       setError(err.message);
     } else {
-      setSummary(data as WeeklySummaryData);
+      const payload =
+        ((data as { data?: WeeklySummaryData } | null)?.data) ??
+        (data as WeeklySummaryData);
+      setSummary(payload);
       setGenerated(true);
     }
     setLoading(false);

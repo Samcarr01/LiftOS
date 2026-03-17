@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trophy, Award, CheckCircle2 } from 'lucide-react';
 import { useCompletionStore } from '@/store/completion-store';
-import { formatDuration } from '@/lib/format-date';
 import type { CompletionPR } from '@/store/completion-store';
 
 const PR_LABEL: Record<CompletionPR['record_type'], string> = {
@@ -60,17 +59,17 @@ export default function WorkoutCompletePage() {
       </div>
 
       <h1 className="mt-5 text-2xl font-bold tracking-tight">
-        {hasPrs ? 'Workout Complete! 🏆' : 'Workout Complete!'}
+        {hasPrs ? 'Workout Complete' : 'Workout Saved'}
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Great work — keep the momentum going.
+        Your progress is saved. AI suggestions will use this session next time.
       </p>
 
       {/* Stats strip */}
       <div className="mt-8 grid w-full max-w-sm grid-cols-3 gap-3">
-        <StatCard label="Duration"  value={formatDuration(summary.duration_seconds)} />
-        <StatCard label="Sets"      value={String(summary.total_sets)} />
-        <StatCard label="Volume"    value={`${Math.round(summary.total_volume_kg)}kg`} />
+        <StatCard label="Exercises" value={String(summary.exercise_count)} />
+        <StatCard label="Sets" value={String(summary.total_sets)} />
+        <StatCard label="Volume" value={`${Math.round(summary.total_volume_kg)}kg`} />
       </div>
 
       {/* Exercises */}

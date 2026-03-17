@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Plus, Pin, PinOff, Copy, Trash2, MoreHorizontal, Dumbbell, Loader2, Play } from 'lucide-react';
 import { useStartWorkout } from '@/hooks/use-start-workout';
 import {
@@ -11,20 +12,32 @@ import {
 import { useTemplates, type TemplateWithCount } from '@/hooks/use-templates';
 import { formatDistanceToNow } from '@/lib/format-date';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 // ── Create template dialog ────────────────────────────────────────────────────
 
-function CreateTemplateRow({ onCreate }: { onCreate: (name: string) => Promise<unknown> }) {
+function CreateTemplateRow({
+  onCreate,
+  autoOpen = false,
+}: {
+  onCreate: (name: string) => Promise<unknown>;
+  autoOpen?: boolean;
+}) {
   const [isCreating, setIsCreating] = useState(false);
   const [name, setName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const hasAutoOpened = useRef(false);
 
   function open() {
     setIsCreating(true);
     setTimeout(() => inputRef.current?.focus(), 50);
   }
+
+  useEffect(() => {
+    if (!autoOpen || hasAutoOpened.current) return;
+    hasAutoOpened.current = true;
+    open();
+  }, [autoOpen]);
 
   async function handleSave() {
     if (!name.trim()) return;
@@ -34,7 +47,7 @@ function CreateTemplateRow({ onCreate }: { onCreate: (name: string) => Promise<u
       setName('');
       setIsCreating(false);
     } catch (err: unknown) {
-      toast.error((err as { message?: string }).message ?? 'Failed to create template');
+      toast.error((err as { message?: string }).message ?? 'Failed to create workout');
     } finally {
       setIsSaving(false);
     }
@@ -53,7 +66,7 @@ function CreateTemplateRow({ onCreate }: { onCreate: (name: string) => Promise<u
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Template name…"
+          placeholder="Workout name…"
           className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
         />
         <button
@@ -80,7 +93,7 @@ function CreateTemplateRow({ onCreate }: { onCreate: (name: string) => Promise<u
       className="flex min-h-[52px] w-full items-center gap-3 rounded-xl border border-dashed border-border px-4 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
     >
       <Plus className="h-4 w-4" />
-      New template
+      Create workout
     </button>
   );
 }
@@ -132,10 +145,11 @@ function TemplateRow({
       <button
         onClick={handleStart}
         disabled={starting}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50"
+        className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         title="Start workout"
       >
-        {starting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+        {starting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+        Start
       </button>
 
       {/* Actions */}
@@ -167,28 +181,44 @@ function TemplateRow({
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function TemplatesPage() {
+  const router = useRouter();
   const { templates, isLoading, createTemplate, deleteTemplate, duplicateTemplate, togglePin } =
     useTemplates();
+  const [autoOpenCreate, setAutoOpenCreate] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('create') !== '1') return;
+    setAutoOpenCreate(true);
+    window.history.replaceState({}, '', '/templates');
+  }, []);
 
   const pinned = templates.filter((t) => t.is_pinned);
   const all    = templates.filter((t) => !t.is_pinned);
+
+  async function handleCreate(name: string) {
+    const template = await createTemplate(name);
+    router.push(`/templates/${template.id}`);
+    return template;
+  }
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
     try {
       await deleteTemplate(id);
-      toast.success('Template deleted');
+      toast.success('Workout deleted');
     } catch {
-      toast.error('Failed to delete template');
+      toast.error('Failed to delete workout');
     }
   }
 
   async function handleDuplicate(id: string) {
     try {
       await duplicateTemplate(id);
-      toast.success('Template duplicated');
+      toast.success('Workout duplicated');
     } catch {
-      toast.error('Failed to duplicate template');
+      toast.error('Failed to duplicate workout');
     }
   }
 
@@ -198,8 +228,11 @@ export default function TemplatesPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Templates</h1>
+      <div className="mb-6 rounded-2xl border border-border bg-card p-4">
+        <h1 className="text-2xl font-bold tracking-tight">Workouts</h1>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Create your own workout, add the exercises you actually use, then start it any time without rebuilding the session from scratch.
+        </p>
       </div>
 
       {isLoading ? (
@@ -227,7 +260,7 @@ export default function TemplatesPage() {
           {/* All templates */}
           <section className="space-y-2">
             {pinned.length > 0 && (
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">All Templates</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">All Workouts</h2>
             )}
             {all.map((t) => (
               <TemplateRow
@@ -244,12 +277,12 @@ export default function TemplatesPage() {
                   <Dumbbell className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="font-medium">No templates yet</p>
-                  <p className="text-sm text-muted-foreground">Create your first workout template below</p>
+                  <p className="font-medium">No workouts yet</p>
+                  <p className="text-sm text-muted-foreground">Create your first saved workout below</p>
                 </div>
               </div>
             )}
-            <CreateTemplateRow onCreate={createTemplate} />
+            <CreateTemplateRow onCreate={handleCreate} autoOpen={autoOpenCreate} />
           </section>
         </div>
       )}

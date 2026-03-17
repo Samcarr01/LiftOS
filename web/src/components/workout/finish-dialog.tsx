@@ -22,11 +22,9 @@ interface FinishDialogProps {
 function computeSummary(workout: ActiveWorkoutState) {
   const totalSets  = workout.exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
   const doneSets   = workout.exercises.reduce((acc, ex) => acc + ex.sets.filter((s) => s.isCompleted).length, 0);
+  const remainingSets = totalSets - doneSets;
   const elapsed    = Math.floor((Date.now() - new Date(workout.session.started_at).getTime()) / 1000);
-  const mins       = Math.floor(elapsed / 60);
-  const secs       = elapsed % 60;
-  const duration   = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-  return { totalSets, doneSets, duration, elapsed };
+  return { totalSets, doneSets, remainingSets, elapsed };
 }
 
 export function FinishDialog({ open, onClose }: FinishDialogProps) {
@@ -39,7 +37,7 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
 
   if (!workout) return null;
 
-  const { totalSets, doneSets, duration, elapsed } = computeSummary(workout);
+  const { totalSets, doneSets, remainingSets, elapsed } = computeSummary(workout);
 
   async function handleConfirm() {
     if (!workout) return;
@@ -102,7 +100,13 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
 
       // 3. Store completion result then navigate
       type RawPR = { exercise_id: string; exercise_name: string; record_type: string; record_value: number };
-      const rawData   = data as { new_prs?: RawPR[]; summary?: { exercise_count: number; total_sets: number; total_volume_kg: number; duration_seconds: number } } | null;
+      type CompleteWorkoutPayload = {
+        new_prs?: RawPR[];
+        summary?: { exercise_count: number; total_sets: number; total_volume_kg: number; duration_seconds: number };
+      };
+      const rawData =
+        ((data as { data?: CompleteWorkoutPayload } | null)?.data) ??
+        (data as CompleteWorkoutPayload | null);
       const newPrs    = rawData?.new_prs ?? [];
       const summary   = rawData?.summary ?? {
         exercise_count:   workout.exercises.length,
@@ -144,7 +148,7 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
     <Dialog open={open} onOpenChange={(v) => !v && !saving && onClose()}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Finish Workout?</DialogTitle>
+        <DialogTitle>Finish Workout?</DialogTitle>
         </DialogHeader>
 
         {/* Summary */}
@@ -158,8 +162,8 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
             <span className="mt-0.5 text-[11px] text-muted-foreground">Sets done</span>
           </div>
           <div className="flex flex-col items-center rounded-xl bg-muted px-3 py-3">
-            <span className="text-xl font-bold">{duration}</span>
-            <span className="mt-0.5 text-[11px] text-muted-foreground">Duration</span>
+            <span className="text-xl font-bold">{remainingSets}</span>
+            <span className="mt-0.5 text-[11px] text-muted-foreground">Left open</span>
           </div>
         </div>
 

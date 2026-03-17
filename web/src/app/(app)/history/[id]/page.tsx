@@ -6,7 +6,7 @@ import { ArrowLeft, Trophy, Award } from 'lucide-react';
 import { useSessionDetail } from '@/hooks/use-session-detail';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
-import { formatLongDate, formatDuration } from '@/lib/format-date';
+import { formatLongDate } from '@/lib/format-date';
 import type { SessionDetailExercise, SessionDetailSet } from '@/types/app';
 
 const SET_TYPE_LABELS: Record<string, string> = {
@@ -61,8 +61,8 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
               small
             />
             <StatCard
-              label="Duration"
-              value={detail.duration_seconds ? formatDuration(detail.duration_seconds) : '—'}
+              label="Sets"
+              value={String(detail.total_sets)}
             />
             <StatCard
               label="Volume"

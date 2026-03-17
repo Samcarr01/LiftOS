@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Timer, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import { SetRow } from './set-row';
 import { AISuggestionBanner } from './ai-suggestion-banner';
@@ -16,7 +16,7 @@ interface ExerciseCardProps {
 }
 
 export function ExerciseCard({ state, exerciseIndex, isSuggestionDismissed }: ExerciseCardProps) {
-  const { exercise, sets, lastPerformanceSets, aiSuggestion, sessionExercise } = state;
+  const { exercise, sets, lastPerformanceSets, aiSuggestion } = state;
   const fields = exercise.tracking_schema.fields;
 
   const [notesOpen, setNotesOpen] = useState(false);
@@ -28,15 +28,11 @@ export function ExerciseCard({ state, exerciseIndex, isSuggestionDismissed }: Ex
   const completeSet    = useActiveWorkoutStore((s) => s.completeSet);
   const acceptSug      = useActiveWorkoutStore((s) => s.acceptSuggestion);
   const dismissSug     = useActiveWorkoutStore((s) => s.dismissSuggestion);
-  const startRestTimer = useActiveWorkoutStore((s) => s.startRestTimer);
-
-  const restSeconds = sessionExercise.rest_seconds ?? exercise.default_rest_seconds ?? 90;
   const allComplete = sets.length > 0 && sets.every((s) => s.isCompleted);
 
   function handleComplete(setId: string) {
     completeSet(exerciseIndex, setId);
     navigator.vibrate?.(50);
-    if (restSeconds > 0) startRestTimer(restSeconds);
 
     // Write completed set to IndexedDB for offline persistence (fire-and-forget)
     const completedSet = useActiveWorkoutStore
@@ -126,19 +122,11 @@ export function ExerciseCard({ state, exerciseIndex, isSuggestionDismissed }: Ex
 
         <button
           type="button"
-          onClick={() => startRestTimer(restSeconds)}
-          className="flex h-[44px] items-center gap-1.5 rounded-xl border border-border px-3 text-sm font-medium text-muted-foreground hover:bg-muted active:bg-muted"
-        >
-          <Timer className="h-4 w-4" />
-          <span className="text-xs">{restSeconds}s</span>
-        </button>
-
-        <button
-          type="button"
           onClick={() => setNotesOpen((v) => !v)}
-          className="flex h-[44px] w-[44px] items-center justify-center rounded-xl border border-border text-muted-foreground hover:bg-muted"
+          className="flex h-[44px] items-center gap-1.5 rounded-xl border border-border px-3 text-sm font-medium text-muted-foreground hover:bg-muted"
         >
           {notesOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          {notesOpen ? 'Hide Notes' : 'Notes'}
         </button>
       </div>
 
