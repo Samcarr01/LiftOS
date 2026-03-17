@@ -92,8 +92,11 @@ function SessionRow({
   session: HistorySessionSummary;
   onClick: () => void;
 }) {
-  const name = session.template_name ?? 'Logged Workout';
+  const name = session.template_name ?? 'Custom Workout';
   const date = formatShortDate(session.started_at);
+  const preview = session.primary_result && session.primary_exercise_name
+    ? `${session.primary_exercise_name} - ${session.primary_result}`
+    : `${session.exercise_count} exercise${session.exercise_count !== 1 ? 's' : ''} logged`;
 
   return (
     <button
@@ -107,9 +110,9 @@ function SessionRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{name}</p>
         <p className="text-xs text-muted-foreground">
-          {date}
-          {session.exercise_count > 0 && <> · {session.exercise_count} exercises</>}
+          {date} · {session.total_sets} saved set{session.total_sets !== 1 ? 's' : ''}
         </p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground/80">{preview}</p>
       </div>
 
       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />

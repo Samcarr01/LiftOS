@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     template: '%s | LiftOS',
   },
   description:
-    'Zero-friction gym tracker with AI-driven progression. Log a set in under 2 seconds. See what you lifted last time. Know what to do next.',
+    'Simple gym tracker with guided progression. Log what you did, see what happened last time, and get a clear next target.',
   keywords: ['gym tracker', 'workout log', 'progressive overload', 'AI fitness', 'strength training'],
   authors: [{ name: 'LiftOS' }],
   manifest: '/manifest.json',
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     siteName: 'LiftOS',
     title: 'LiftOS – Zero-Friction Gym Tracker',
     description:
-      'Log a set in under 2 seconds. See last session weights auto-filled. AI suggests your next target. Works offline.',
+      'Log what you did, see what happened last time, and get a clear next target. Works offline.',
     images: [
       {
         url: '/og-image.png',
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'LiftOS – Zero-Friction Gym Tracker',
-    description: 'Log a set in under 2 seconds. AI progression. Works offline.',
+    description: 'Log what you did, see what happened last time, and get a clear next target.',
     images: ['/og-image.png'],
   },
   robots: {

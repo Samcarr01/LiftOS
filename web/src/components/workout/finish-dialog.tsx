@@ -7,19 +7,11 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
 import { addToQueue } from '@/lib/offline';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { useCompletionStore } from '@/store/completion-store';
-import { useAuthStore } from '@/store/auth-store';
-import {
-  buildCompletionSummary,
-  buildSnapshotRows,
-  buildSuggestionRows,
-  detectPersonalRecords,
-} from '@/lib/workout/client-completion';
 import type { ActiveWorkoutState } from '@/types/app';
-import type { Json } from '@/types/database';
+import type { CompleteWorkoutResponse } from '@/types/app';
 
 interface FinishDialogProps {
   open:    boolean;
@@ -38,7 +30,6 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
   const setIsCompleting = useActiveWorkoutStore((s) => s.setIsCompleting);
   const clearWorkout    = useActiveWorkoutStore((s) => s.clearWorkout);
   const setResult       = useCompletionStore((s) => s.setResult);
-  const user            = useAuthStore((s) => s.user);
   const router          = useRouter();
   const [saving, setSaving] = useState(false);
 
@@ -76,130 +67,45 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
     // ── Online: direct path ───────────────────────────────────────────────────
     setSaving(true);
     setIsCompleting(true);
-    const supabase = createClient();
 
     try {
-      if (!user) throw new Error('Please sign in again.');
-
-      // 1. Save all sets to set_entries (upsert on composite key)
-      const setsToSave = workout.exercises.flatMap((ex) =>
-        ex.sets.map((set) => ({
-          session_exercise_id: set.sessionExerciseId,
-          set_index:           set.setIndex,
-          values:              set.values as unknown as Json,
-          set_type:            set.setType,
-          is_completed:        set.isCompleted,
-          notes:               set.notes,
-        }))
-      );
-
-      if (setsToSave.length > 0) {
-        const { error: saveErr } = await supabase
-          .from('set_entries')
-          .upsert(setsToSave, { onConflict: 'session_exercise_id,set_index' }) as { error: unknown };
-        if (saveErr) throw saveErr;
-      }
-
-      // 2. Mark session complete directly through RLS instead of the Edge Function.
-      const completedAt = new Date().toISOString();
-      const summary = buildCompletionSummary(workout);
-
-      const { error: sessionErr } = await supabase
-        .from('workout_sessions')
-        .update({
-          completed_at: completedAt,
-          duration_seconds: summary.duration_seconds,
-        })
-        .eq('id', workout.session.id) as { error: unknown };
-
-      if (sessionErr) throw sessionErr;
-
-      if (workout.session.template_id) {
-        const { error: templateErr } = await supabase
-          .from('workout_templates')
-          .update({ last_used_at: completedAt })
-          .eq('id', workout.session.template_id) as { error: unknown };
-
-        if (templateErr) console.warn('[finish-workout] failed to update template last_used_at', templateErr);
-      }
-
-      const exerciseIds = workout.exercises.map((exercise) => exercise.exercise.id);
-      const existingPrRows = exerciseIds.length > 0
-        ? await supabase
-            .from('personal_records')
-            .select('exercise_id, record_type, record_value')
-            .eq('user_id', user.id)
-            .in('exercise_id', exerciseIds) as {
-            data: Array<{
-              exercise_id: string;
-              record_type: 'best_weight' | 'best_reps_at_weight' | 'best_e1rm' | 'best_volume';
-              record_value: number;
-            }> | null;
-            error: unknown;
-          }
-        : { data: [], error: null };
-
-      if (existingPrRows.error) {
-        console.warn('[finish-workout] failed to fetch existing PRs', existingPrRows.error);
-      }
-
-      // 3. Best-effort progression data updates for next time.
-      const snapshotRows = buildSnapshotRows(workout, user.id, completedAt);
-      if (snapshotRows.length > 0) {
-        const { error: snapshotErr } = await supabase
-          .from('last_performance_snapshots')
-          .upsert(snapshotRows, { onConflict: 'user_id,exercise_id' }) as { error: unknown };
-        if (snapshotErr) {
-          console.warn('[finish-workout] failed to update last performance snapshots', snapshotErr);
-        }
-      }
-
-      const { newPrs, rows: prRows } = detectPersonalRecords(
-        workout,
-        existingPrRows.data ?? [],
-        user.id,
-        completedAt,
-      );
-
-      if (prRows.length > 0) {
-        const { error: prErr } = await supabase
-          .from('personal_records')
-          .upsert(prRows, { onConflict: 'user_id,exercise_id,record_type' }) as { error: unknown };
-        if (prErr) {
-          console.warn('[finish-workout] failed to upsert personal records', prErr);
-        }
-      }
-
-      const suggestionRows = buildSuggestionRows(workout, user.id, completedAt);
-      if (exerciseIds.length > 0) {
-        const { error: deleteSuggestionErr } = await supabase
-          .from('ai_suggestions')
-          .delete()
-          .eq('user_id', user.id)
-          .in('exercise_id', exerciseIds) as { error: unknown };
-        if (deleteSuggestionErr) {
-          console.warn('[finish-workout] failed to clear old suggestions', deleteSuggestionErr);
-        }
-      }
-
-      if (suggestionRows.length > 0) {
-        const { error: suggestionErr } = await supabase
-          .from('ai_suggestions')
-          .insert(suggestionRows) as { error: unknown };
-        if (suggestionErr) {
-          console.warn('[finish-workout] failed to save fresh suggestions', suggestionErr);
-        }
-      }
-
-      setResult({
-        sessionId:     workout.session.id,
-        summary,
-        newPrs,
-        exerciseNames: workout.exercises.map((e) => e.exercise.name),
+      const response = await fetch('/api/workouts/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: workout.session.id,
+          exercises: workout.exercises.map((exercise) => ({
+            sessionExerciseId: exercise.sessionExercise.id,
+            sets: exercise.sets.map((set) => ({
+              setIndex: set.setIndex,
+              values: set.values,
+              setType: set.setType,
+              isCompleted: set.isCompleted,
+              notes: set.notes,
+              loggedAt: set.loggedAt || null,
+            })),
+          })),
+        }),
       });
 
-      if (newPrs.length > 0) {
-        toast.success(`Workout complete! 🏆 ${newPrs.length} new PR${newPrs.length !== 1 ? 's' : ''}!`);
+      const body = await response.json().catch(() => null) as CompleteWorkoutResponse | { error?: string } | null;
+      if (!response.ok) {
+        throw new Error(body && 'error' in body ? body.error ?? 'Failed to save workout' : 'Failed to save workout');
+      }
+
+      const result = body as CompleteWorkoutResponse;
+
+      setResult({
+        sessionId: result.sessionId,
+        summary: result.summary,
+        newPrs: result.newPrs,
+        exerciseNames: result.exerciseNames,
+      });
+
+      if (result.newPrs.length > 0) {
+        toast.success(`Workout complete! 🏆 ${result.newPrs.length} new PR${result.newPrs.length !== 1 ? 's' : ''}!`);
       } else {
         toast.success('Workout complete!');
       }

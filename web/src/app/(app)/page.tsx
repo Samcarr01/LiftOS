@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Zap, Plus, Dumbbell, Loader2, ChevronRight,
-  Trophy, Calendar, Flame,
+  Calendar, Flame, Library, TrendingUp,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTemplates, type TemplateWithCount } from '@/hooks/use-templates';
 import { useStartWorkout } from '@/hooks/use-start-workout';
-import { useHomeData, type LastHighlight } from '@/hooks/use-home-data';
+import { useHomeData } from '@/hooks/use-home-data';
 import { formatShortDate } from '@/lib/format-date';
 import type { HistorySessionSummary } from '@/types/app';
 
@@ -141,7 +141,7 @@ function SuggestedCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-widest opacity-70 mb-1">
-            Suggested
+            Next Saved Workout
           </p>
           <p className="truncate text-lg font-bold">{template.name}</p>
           <p className="mt-0.5 text-sm opacity-80">
@@ -194,8 +194,11 @@ function RecentRow({
   session: HistorySessionSummary;
   onClick: () => void;
 }) {
-  const name = session.template_name ?? 'Logged Workout';
+  const name = session.template_name ?? 'Custom Workout';
   const date = formatShortDate(session.started_at);
+  const preview = session.primary_result && session.primary_exercise_name
+    ? `${session.primary_exercise_name} - ${session.primary_result}`
+    : `${session.exercise_count} exercise${session.exercise_count !== 1 ? 's' : ''}`;
 
   return (
     <button
@@ -208,21 +211,12 @@ function RecentRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{name}</p>
         <p className="text-xs text-muted-foreground">
-          {date}
-          {session.total_sets > 0 && ` · ${session.total_sets} sets`}
+          {date} · {session.total_sets} saved set{session.total_sets !== 1 ? 's' : ''}
         </p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground/80">{preview}</p>
       </div>
       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />
     </button>
-  );
-}
-
-function HighlightRow({ highlight }: { highlight: LastHighlight }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/50 px-3 py-2.5">
-      <p className="truncate text-sm font-medium">{highlight.exerciseName}</p>
-      <span className="shrink-0 text-sm font-bold text-primary">{highlight.displayValue}</span>
-    </div>
   );
 }
 
@@ -275,8 +269,24 @@ export default function HomePage() {
               Create Workout
             </button>
           </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              onClick={() => router.push('/exercises')}
+              className="flex h-[52px] items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm font-semibold hover:bg-muted active:scale-[0.98] transition-transform"
+            >
+              <Library className="h-5 w-5 text-primary" />
+              Your Exercises
+            </button>
+            <button
+              onClick={() => router.push('/progress')}
+              className="flex h-[52px] items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm font-semibold hover:bg-muted active:scale-[0.98] transition-transform"
+            >
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Progress
+            </button>
+          </div>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Keep it simple: build your own workout, add your own exercises, log your sets, and let AI suggest the next target when you come back.
+            Keep it simple: build your own workout, add your own exercises, log your sets, and come back here when you want to start again or review progress.
           </p>
         </section>
 
@@ -327,18 +337,6 @@ export default function HomePage() {
             </div>
           </section>
         ) : null}
-
-        {/* ── Last session highlights ────────────────────────────── */}
-        {!loading && (data?.lastHighlights ?? []).length > 0 && (
-          <section>
-            <SectionHeader icon={<Trophy className="h-3.5 w-3.5 text-yellow-500" />} title="Last Session" />
-            <div className="mt-2 space-y-1.5">
-              {data!.lastHighlights.map((h, i) => (
-                <HighlightRow key={i} highlight={h} />
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* ── Recent workouts ────────────────────────────────────── */}
         {loading ? (

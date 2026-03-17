@@ -187,14 +187,16 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()((set, get) => 
       const ex = s.workout.exercises[exerciseIndex];
       if (!ex?.aiSuggestion) return {};
 
-      const { primary } = ex.aiSuggestion;
+      const target = ex.aiSuggestion.next_target?.values;
+      if (!target) return {};
+
       const targetValues: SetValues = {};
-      if (primary.weight !== undefined) targetValues['weight'] = primary.weight;
-      if (primary.added_weight !== undefined) targetValues['added_weight'] = primary.added_weight;
-      if (primary.reps !== undefined) targetValues['reps'] = primary.reps;
-      if (primary.laps !== undefined) targetValues['laps'] = primary.laps;
-      if (primary.duration !== undefined) targetValues['duration'] = primary.duration;
-      if (primary.distance !== undefined) targetValues['distance'] = primary.distance;
+      if (target.weight !== undefined) targetValues['weight'] = target.weight;
+      if (target.added_weight !== undefined) targetValues['added_weight'] = target.added_weight;
+      if (target.reps !== undefined) targetValues['reps'] = target.reps;
+      if (target.laps !== undefined) targetValues['laps'] = target.laps;
+      if (target.duration !== undefined) targetValues['duration'] = target.duration;
+      if (target.distance !== undefined) targetValues['distance'] = target.distance;
 
       // Fill only the first uncompleted set
       let filled = false;

@@ -12,18 +12,13 @@ import { useState, useCallback, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { TemplateWithCount } from './use-templates';
 import type { HistorySessionSummary } from '@/types/app';
-
-export interface LastHighlight {
-  exerciseName: string;
-  displayValue: string; // e.g. "80kg × 5"
-}
+import { fetchSessionPreviews } from '@/lib/workout/session-previews';
 
 export interface HomeData {
   displayName:      string | null;
   suggested:        TemplateWithCount | null;
   pinned:           TemplateWithCount[];
   recentSessions:   HistorySessionSummary[];
-  lastHighlights:   LastHighlight[];
 }
 
 async function fetchHomeData(): Promise<HomeData> {
@@ -110,53 +105,22 @@ async function fetchHomeData(): Promise<HomeData> {
     exercise_count:   s.session_exercises?.[0]?.count ?? 0,
     total_sets:       s.set_entries?.[0]?.count ?? 0,
     volume_kg:        0,
+    primary_exercise_name: null,
+    primary_result: null,
   }));
 
-  // Last session highlights — top sets from most recent session
-  let lastHighlights: LastHighlight[] = [];
-  if (recentSessions.length > 0) {
-    const lastId = recentSessions[0].id;
-    const { data: highlightData } = await supabase
-      .from('set_entries')
-      .select(`
-        values,
-        session_exercises!inner (
-          exercises ( name )
-        )
-      `)
-      .eq('session_exercises.session_id', lastId)
-      .eq('is_completed', true)
-      .order('logged_at', { ascending: false })
-      .limit(20);
+  const previews = await fetchSessionPreviews(
+    supabase,
+    recentSessions.map((session) => session.id),
+  );
 
-    // Deduplicate to best set per exercise
-    const bestByExercise = new Map<string, { name: string; weight: number; reps: number }>();
-    for (const row of (highlightData ?? []) as Array<{
-      values: Record<string, number>;
-      session_exercises: { exercises: { name: string } | null };
-    }>) {
-      const name   = row.session_exercises?.exercises?.name;
-      if (!name) continue;
-      const w      = row.values?.weight ?? 0;
-      const r      = row.values?.reps   ?? 0;
-      const e1rm   = w * (1 + r / 30);
-      const stored = bestByExercise.get(name);
-      if (!stored || e1rm > stored.weight * (1 + stored.reps / 30)) {
-        bestByExercise.set(name, { name, weight: w, reps: r });
-      }
-    }
-
-    lastHighlights = Array.from(bestByExercise.values())
-      .slice(0, 3)
-      .map((h) => ({
-        exerciseName: h.name,
-        displayValue: h.weight > 0
-          ? `${h.weight}kg × ${h.reps}`
-          : h.reps > 0 ? `${h.reps} reps` : '—',
-      }));
+  for (const session of recentSessions) {
+    const preview = previews.get(session.id);
+    session.primary_exercise_name = preview?.primaryExerciseName ?? null;
+    session.primary_result = preview?.primaryResult ?? null;
   }
 
-  return { displayName, suggested, pinned, recentSessions, lastHighlights };
+  return { displayName, suggested, pinned, recentSessions };
 }
 
 export function useHomeData() {

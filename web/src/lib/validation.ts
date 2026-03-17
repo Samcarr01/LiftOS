@@ -43,22 +43,34 @@ export function buildSetValuesSchema(
 
 // ── AI suggestion ─────────────────────────────────────────────────────────────
 
-const SuggestionTargetSchema = z.object({
+const SuggestionValuesSchema = z.object({
   weight:       z.number().positive().optional(),
   added_weight: z.number().positive().optional(),
   reps:         z.number().int().positive().optional(),
   laps:         z.number().int().positive().optional(),
   duration:     z.number().positive().optional(),
   distance:     z.number().positive().optional(),
-  rationale:    z.string().max(200),
+});
+
+const SuggestionResultSchema = z.object({
+  display: z.string().min(1).max(200),
+  values:  SuggestionValuesSchema,
 });
 
 export const AISuggestionDataSchema = z.object({
-  primary:                  SuggestionTargetSchema,
-  alternative:              SuggestionTargetSchema.nullable(),
-  plateau_flag:             z.boolean(),
-  plateau_intervention:     z.string().max(300).optional(),
-  plateau_sessions_stalled: z.number().int().min(0).optional(),
+  decision: z.enum(['hold', 'progress']),
+  metric: z.enum(['weight', 'added_weight', 'reps', 'laps', 'duration', 'distance'])
+    .nullable()
+    .optional(),
+  last_result: SuggestionResultSchema.nullable(),
+  next_target: SuggestionResultSchema.nullable(),
+  reason: z.string().max(300),
+  progression: z.object({
+    eligible: z.boolean(),
+    separate_win_count: z.number().int().min(0),
+    wins_required: z.number().int().min(1),
+    last_progression_date: z.string().nullable(),
+  }),
 });
 
 // ── Exercises ─────────────────────────────────────────────────────────────────

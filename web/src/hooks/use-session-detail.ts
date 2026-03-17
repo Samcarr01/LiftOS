@@ -6,6 +6,7 @@ import type { SessionDetail, SessionDetailExercise, SessionDetailSet } from '@/t
 import type { Json } from '@/types/database';
 import { TrackingSchemaValidator } from '@/lib/validation';
 import { WEIGHT_REPS } from '@/types/tracking';
+import { computeVolumeKg } from '@/lib/workout/formatting';
 
 export function useSessionDetail(sessionId: string) {
   const [detail, setDetail]   = useState<SessionDetail | null>(null);
@@ -62,7 +63,7 @@ export function useSessionDetail(sessionId: string) {
       const { data: prs } = await supabase
         .from('personal_records')
         .select('exercise_id, record_type, record_value')
-        .eq('achieved_in_session_id', sessionId);
+        .eq('session_id', sessionId);
 
       const row = data as {
         id: string;
@@ -107,11 +108,8 @@ export function useSessionDetail(sessionId: string) {
             .sort((a, b) => a.set_index - b.set_index)
             .map((s) => {
               const vals = s.values as Record<string, number>;
-              // Accumulate volume
-              const w = vals['weight'] ?? 0;
-              const r = vals['reps']   ?? 0;
-              totalVolume += w * r;
-              totalSets   += 1;
+              totalVolume += computeVolumeKg(vals);
+              if (s.is_completed) totalSets += 1;
               return {
                 id:           s.id,
                 set_index:    s.set_index,

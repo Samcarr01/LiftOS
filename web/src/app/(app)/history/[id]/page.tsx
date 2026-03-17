@@ -8,6 +8,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import { formatLongDate } from '@/lib/format-date';
 import type { SessionDetailExercise, SessionDetailSet } from '@/types/app';
+import type { TrackingSchema } from '@/types/tracking';
+import { formatSetValues } from '@/lib/workout/formatting';
 
 const SET_TYPE_LABELS: Record<string, string> = {
   working: 'W', warmup: 'WU', top: 'T', drop: 'D', failure: 'F',
@@ -17,8 +19,16 @@ const PR_LABEL: Record<string, string> = {
   best_weight:         'Weight PR',
   best_reps_at_weight: 'Reps PR',
   best_e1rm:           '1RM PR',
-  best_volume:         'Vol PR',
+  best_volume:         'Volume PR',
 };
+
+function formatPrValue(recordType: string, recordValue: number): string {
+  if (recordType === 'best_weight') return `${recordValue}kg`;
+  if (recordType === 'best_reps_at_weight') return `${recordValue} reps`;
+  if (recordType === 'best_e1rm') return `${recordValue}kg e1RM`;
+  if (recordType === 'best_volume') return `${recordValue}kg total`;
+  return String(recordValue);
+}
 
 export default function SessionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -61,12 +71,12 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
               small
             />
             <StatCard
-              label="Sets"
-              value={String(detail.total_sets)}
+              label="Exercises"
+              value={String(detail.exercises.length)}
             />
             <StatCard
-              label="Volume"
-              value={`${Math.round(detail.total_volume_kg)}kg`}
+              label="Saved Sets"
+              value={String(detail.total_sets)}
             />
           </div>
 
@@ -119,7 +129,7 @@ function ExerciseBlock({ exercise }: { exercise: SessionDetailExercise }) {
                 className="inline-flex items-center gap-1 rounded-full bg-yellow-500/15 px-2 py-0.5 text-[10px] font-medium text-yellow-600 dark:text-yellow-400"
               >
                 <Award className="h-2.5 w-2.5" />
-                {PR_LABEL[pr.record_type]} · {pr.record_value}
+                {PR_LABEL[pr.record_type]} · {formatPrValue(pr.record_type, pr.record_value)}
               </span>
             ))}
           </div>
@@ -134,18 +144,14 @@ function ExerciseBlock({ exercise }: { exercise: SessionDetailExercise }) {
           <span className="flex-1">Values</span>
         </div>
         {exercise.sets.map((s) => (
-          <SetLine key={s.id} set={s} />
+          <SetLine key={s.id} set={s} trackingSchema={exercise.tracking_schema} />
         ))}
       </div>
     </div>
   );
 }
 
-function SetLine({ set }: { set: SessionDetailSet }) {
-  const vals = Object.entries(set.values)
-    .map(([k, v]) => `${v}${k === 'weight' ? 'kg' : k === 'reps' ? '' : ''}`)
-    .join(' × ');
-
+function SetLine({ set, trackingSchema }: { set: SessionDetailSet; trackingSchema: TrackingSchema }) {
   return (
     <div
       className={`flex items-center gap-3 py-1 text-sm ${
@@ -158,7 +164,7 @@ function SetLine({ set }: { set: SessionDetailSet }) {
       <span className="w-12 shrink-0 text-[10px] font-medium text-muted-foreground">
         {SET_TYPE_LABELS[set.set_type] ?? set.set_type}
       </span>
-      <span className="flex-1 font-medium">{vals}</span>
+      <span className="flex-1 font-medium">{formatSetValues(set.values, trackingSchema)}</span>
     </div>
   );
 }

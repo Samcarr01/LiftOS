@@ -73,19 +73,8 @@ function mapResponse(raw: RawStartWorkoutResponse): StartWorkoutResponse {
 
 function buildPrefilledSets(
   count: number,
-  lastPerformance: LastPerformanceSet[] | null,
+  _lastPerformance: LastPerformanceSet[] | null,
 ): PrefilledSet[] {
-  if (lastPerformance && lastPerformance.length > 0) {
-    return Array.from({ length: count }, (_, index) => {
-      const source = lastPerformance[index] ?? lastPerformance[lastPerformance.length - 1];
-      return {
-        setIndex: index,
-        values: source.values,
-        setType: source.set_type,
-      };
-    });
-  }
-
   return Array.from({ length: count }, (_, index) => ({
     setIndex: index,
     values: {},

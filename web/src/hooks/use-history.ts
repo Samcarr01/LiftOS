@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { HistorySessionSummary } from '@/types/app';
+import { fetchSessionPreviews } from '@/lib/workout/session-previews';
 
 const PAGE_SIZE = 20;
 
@@ -61,11 +62,20 @@ export function useHistory() {
       exercise_count:   row.session_exercises?.[0]?.count ?? 0,
       total_sets:       row.set_entries?.[0]?.count ?? 0,
       volume_kg:        0, // will be enriched below
+      primary_exercise_name: null,
+      primary_result: null,
     }));
 
-    // Enrich with volume from personal_records or compute locally
-    // For now we surface 0 and let the detail page show accurate data
-    // (avoids an N+1 query per history row)
+    const previews = await fetchSessionPreviews(
+      supabase,
+      mapped.map((session) => session.id),
+    );
+
+    for (const session of mapped) {
+      const preview = previews.get(session.id);
+      session.primary_exercise_name = preview?.primaryExerciseName ?? null;
+      session.primary_result = preview?.primaryResult ?? null;
+    }
 
     if (reset) {
       setSessions(mapped);

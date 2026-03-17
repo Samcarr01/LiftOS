@@ -133,6 +133,8 @@ export interface HistorySessionSummary {
   exercise_count:   number;
   total_sets:       number;
   volume_kg:        number;
+  primary_exercise_name: string | null;
+  primary_result:        string | null;
 }
 
 export interface SessionDetailSet {
@@ -173,6 +175,30 @@ export interface SessionDetail {
   exercises:        SessionDetailExercise[];
   total_volume_kg:  number;
   total_sets:       number;
+}
+
+export interface CompleteWorkoutExerciseSuggestion {
+  exercise_id: string;
+  exercise_name: string;
+  suggestion: AISuggestionData | null;
+}
+
+export interface CompleteWorkoutResponse {
+  sessionId: string;
+  summary: {
+    exercise_count: number;
+    total_sets: number;
+    total_volume_kg: number;
+    duration_seconds: number;
+  };
+  newPrs: Array<{
+    exercise_id: string;
+    exercise_name: string;
+    record_type: 'best_weight' | 'best_reps_at_weight' | 'best_e1rm' | 'best_volume';
+    record_value: number;
+  }>;
+  exerciseNames: string[];
+  suggestions: CompleteWorkoutExerciseSuggestion[];
 }
 
 // ── Offline sync ──────────────────────────────────────────────────────────────

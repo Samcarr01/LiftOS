@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Pin, PinOff, Copy, Trash2, MoreHorizontal, Dumbbell, Loader2, Play } from 'lucide-react';
+import { Plus, Pin, PinOff, Copy, Trash2, MoreHorizontal, Dumbbell, Loader2, Play, Library } from 'lucide-react';
 import { useStartWorkout } from '@/hooks/use-start-workout';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -233,6 +233,15 @@ export default function TemplatesPage() {
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Create your own workout, add the exercises you actually use, then start it any time without rebuilding the session from scratch.
         </p>
+        <div className="mt-4">
+          <Link
+            href="/exercises"
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold text-muted-foreground hover:bg-muted"
+          >
+            <Library className="h-4 w-4 text-primary" />
+            Manage Exercises
+          </Link>
+        </div>
       </div>
 
       {isLoading ? (

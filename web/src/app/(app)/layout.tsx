@@ -1,6 +1,7 @@
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { PwaInstallBanner } from '@/components/layout/pwa-install-banner';
+import { PwaUpdateBanner } from '@/components/layout/pwa-update-banner';
 
 /** Authenticated app shell: sidebar on desktop, bottom nav on mobile. */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -10,6 +11,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="flex flex-1 flex-col pb-16 md:pb-0">
         {children}
       </main>
+      <PwaUpdateBanner />
       <PwaInstallBanner />
       <BottomNav />
     </div>

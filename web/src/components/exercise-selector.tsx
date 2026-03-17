@@ -166,13 +166,13 @@ export function ExerciseSelector({
         <SheetContent side="bottom" className="flex h-[90dvh] flex-col rounded-t-2xl p-0">
         <SheetHeader className="border-b border-border px-4 pb-3 pt-5">
           <div className="flex items-center gap-3">
-            <SheetTitle>{mode === 'create' ? 'Create Exercise' : 'Exercise Library'}</SheetTitle>
+            <SheetTitle>{mode === 'create' ? 'Create Exercise' : 'Your Exercises'}</SheetTitle>
             <button
               onClick={() => setMode(mode === 'create' ? 'browse' : 'create')}
               className="ml-auto flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/20"
             >
               <Plus className="h-3.5 w-3.5" />
-              {mode === 'create' ? 'Use Library' : 'Create Your Own'}
+              {mode === 'create' ? 'Browse Exercises' : 'Create Your Own'}
             </button>
           </div>
         </SheetHeader>
@@ -206,7 +206,7 @@ export function ExerciseSelector({
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search the library"
+                  placeholder="Search your exercises"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="h-10 pl-9"
@@ -242,7 +242,7 @@ export function ExerciseSelector({
               ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-12 text-center">
                   <Dumbbell className="h-8 w-8 text-muted-foreground/50" />
-                  <p className="text-sm text-muted-foreground">No exercises found in the library</p>
+                  <p className="text-sm text-muted-foreground">No exercises found</p>
                   <button
                     onClick={() => openCreate(search)}
                     className="text-sm font-medium text-primary hover:underline"
