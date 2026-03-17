@@ -107,6 +107,8 @@ interface ProgressBaseline {
   addedWeight: number;
   reps: number;
   laps: number;
+  duration: number;
+  distance: number;
 }
 
 function roundQuarter(value: number): number {
@@ -136,6 +138,25 @@ function applyBounds(
     if (result.laps !== undefined && baseline.laps > 0) {
       result.laps = Math.min(result.laps, baseline.laps + 2);
     }
+    // Never regress below the latest completed target.
+    if (result.weight !== undefined && baseline.weight > 0) {
+      result.weight = Math.max(result.weight, baseline.weight);
+    }
+    if (result.added_weight !== undefined && baseline.addedWeight > 0) {
+      result.added_weight = Math.max(result.added_weight, baseline.addedWeight);
+    }
+    if (result.reps !== undefined && baseline.reps > 0) {
+      result.reps = Math.max(result.reps, baseline.reps);
+    }
+    if (result.laps !== undefined && baseline.laps > 0) {
+      result.laps = Math.max(result.laps, baseline.laps);
+    }
+    if (result.duration !== undefined && baseline.duration > 0) {
+      result.duration = Math.max(result.duration, baseline.duration);
+    }
+    if (result.distance !== undefined && baseline.distance > 0) {
+      result.distance = Math.max(result.distance, baseline.distance);
+    }
     return result;
   };
 
@@ -164,6 +185,69 @@ function incrementByPercent(value: number, percent: number, minimum: number): nu
 
 function roundToStep(value: number, step: number): number {
   return Math.round(value / step) * step;
+}
+
+function buildProgressBaseline(workingSets: SetData[], schema: unknown): ProgressBaseline {
+  const baseline: ProgressBaseline = {
+    weight: 0,
+    addedWeight: 0,
+    reps: 0,
+    laps: 0,
+    duration: 0,
+    distance: 0,
+  };
+
+  if (workingSets.length === 0) return baseline;
+
+  const keys = getSchemaKeys(schema);
+
+  if (keys.includes('weight') && keys.includes('reps')) {
+    baseline.weight = Math.max(...workingSets.map((s) => Number(s.values.weight ?? 0)));
+    const topSet = workingSets.find((s) => Number(s.values.weight ?? 0) === baseline.weight);
+    baseline.reps = Number(topSet?.values.reps ?? 0);
+    return baseline;
+  }
+
+  if (keys.includes('weight') && keys.includes('laps')) {
+    baseline.weight = Math.max(...workingSets.map((s) => Number(s.values.weight ?? 0)));
+    const topSet = workingSets.find((s) => Number(s.values.weight ?? 0) === baseline.weight);
+    baseline.laps = Number(topSet?.values.laps ?? 0);
+    return baseline;
+  }
+
+  if (keys.includes('added_weight') && keys.includes('reps')) {
+    baseline.addedWeight = Math.max(...workingSets.map((s) => Number(s.values.added_weight ?? 0)));
+    const topSet = workingSets.find(
+      (s) => Number(s.values.added_weight ?? 0) === baseline.addedWeight,
+    );
+    baseline.reps = Number(topSet?.values.reps ?? 0);
+    return baseline;
+  }
+
+  if (keys.includes('distance') && keys.includes('duration')) {
+    baseline.distance = Math.max(...workingSets.map((s) => Number(s.values.distance ?? 0)));
+    const topSet = workingSets.find((s) => Number(s.values.distance ?? 0) === baseline.distance);
+    baseline.duration = Number(topSet?.values.duration ?? 0);
+    return baseline;
+  }
+
+  if (keys.includes('distance')) {
+    baseline.distance = Math.max(...workingSets.map((s) => Number(s.values.distance ?? 0)));
+  }
+
+  if (keys.includes('duration')) {
+    baseline.duration = Math.max(...workingSets.map((s) => Number(s.values.duration ?? 0)));
+  }
+
+  if (keys.includes('reps')) {
+    baseline.reps = Math.max(...workingSets.map((s) => Number(s.values.reps ?? 0)));
+  }
+
+  if (keys.includes('laps')) {
+    baseline.laps = Math.max(...workingSets.map((s) => Number(s.values.laps ?? 0)));
+  }
+
+  return baseline;
 }
 
 function ruleBased(sessions: SessionData[], schema: unknown): AISuggestion {
@@ -254,11 +338,7 @@ function ruleBased(sessions: SessionData[], schema: unknown): AISuggestion {
         reps:      lastReps,
         rationale: `Focus on completing all sets at ${bestWeight}kg x ${lastReps}.`,
       },
-      alternative: {
-        weight:    Math.max(bestWeight - 2.5, 0),
-        reps:      lastReps + 1,
-        rationale: 'Slightly lighter with an extra rep might help you hit all sets.',
-      },
+      alternative: null,
       plateau_flag: false,
     };
   }
@@ -291,11 +371,7 @@ function ruleBased(sessions: SessionData[], schema: unknown): AISuggestion {
         laps:      lastLaps,
         rationale: `Repeat ${bestWeight}kg for ${lastLaps} laps until every set feels solid.`,
       },
-      alternative: {
-        weight:    Math.max(bestWeight - 2.5, 0),
-        laps:      lastLaps,
-        rationale: 'A slightly lighter load can help you complete every lap cleanly.',
-      },
+      alternative: null,
       plateau_flag: false,
     };
   }
@@ -339,16 +415,7 @@ function ruleBased(sessions: SessionData[], schema: unknown): AISuggestion {
           ? `Repeat +${bestAddedWeight}kg for ${lastReps} reps until every set is complete.`
           : `Repeat ${lastReps} reps with bodyweight until every set is complete.`,
       },
-      alternative: bestAddedWeight > 0
-        ? {
-            added_weight: Math.max(bestAddedWeight - 1.25, 0),
-            reps:         lastReps,
-            rationale:    'Slightly reduce external load to lock in clean reps.',
-          }
-        : {
-            reps:      Math.max(lastReps - 1, 1),
-            rationale: 'Trim one rep if you need cleaner execution before progressing again.',
-          },
+      alternative: null,
       plateau_flag: false,
     };
   }
@@ -364,7 +431,7 @@ function ruleBased(sessions: SessionData[], schema: unknown): AISuggestion {
     }
     return {
       primary:      { laps: maxLaps, rationale: `Repeat ${maxLaps} laps until every set is complete.` },
-      alternative:  { laps: Math.max(maxLaps - 1, 1), rationale: 'Drop 1 lap if you need to clean up pacing or form.' },
+      alternative:  null,
       plateau_flag: false,
     };
   }
@@ -383,13 +450,11 @@ function ruleBased(sessions: SessionData[], schema: unknown): AISuggestion {
           duration:  lastDuration || undefined,
           rationale: `You covered ${bestDistance}m. Add a small distance bump next time.`,
         },
-        alternative: lastDuration > 0
-          ? {
-              distance:  bestDistance,
-              duration:  Math.max(lastDuration - 5, 1),
-              rationale: 'Keep the same distance and try to finish a little faster.',
-            }
-          : null,
+        alternative: {
+          distance:  bestDistance,
+          duration:  lastDuration || undefined,
+          rationale: 'Keep the same target and make the whole effort feel cleaner.',
+        },
         plateau_flag: false,
       };
     }
@@ -508,11 +573,11 @@ function computePlateau(sessions: SessionData[]): PlateauResult {
 
   let intervention: string;
   if (stalled <= 3) {
-    intervention = 'Try adding 1 extra rep per set before increasing weight. Focus on full range of motion and time under tension.';
+    intervention = 'Hold the same target next session and try to complete every set cleanly before you increase again.';
   } else if (stalled <= 5) {
-    intervention = 'Consider a deload: drop to 85% of your current weight for 1 week, then rebuild. Deloads reset fatigue and often break plateaus.';
+    intervention = 'Keep the same load and push progression through one extra rep or one extra completed set before raising it.';
   } else {
-    intervention = 'Try a variation of this exercise for 2–3 weeks (e.g., different grip or angle), then return to the main lift with fresh stimulus.';
+    intervention = 'Stay at the same target for a week or two, lock in cleaner execution, then resume micro-progressing.';
   }
 
   return { is_plateau: true, stalled, intervention };
@@ -640,14 +705,9 @@ Deno.serve(async (req: Request) => {
 
     const trackingType = trackingTypeLabel(exercise.tracking_schema);
 
-    // Extract last session values for bounds checking.
+    // Extract last session values for non-regression and progression bounds.
     const latestWorking = sessions.length > 0 ? getWorkingSets(sessions[0]) : [];
-    const baseline: ProgressBaseline = {
-      weight: Math.max(...latestWorking.map((s) => Number(s.values.weight ?? 0)), 0),
-      addedWeight: Math.max(...latestWorking.map((s) => Number(s.values.added_weight ?? 0)), 0),
-      reps: Math.max(...latestWorking.map((s) => Number(s.values.reps ?? 0)), 0),
-      laps: Math.max(...latestWorking.map((s) => Number(s.values.laps ?? 0)), 0),
-    };
+    const baseline = buildProgressBaseline(latestWorking, exercise.tracking_schema);
 
     // ── Compute plateau (always — uses same session data, no extra query) ────
     const plateau = computePlateau(sessions);
@@ -682,8 +742,10 @@ RULES:
 2. Alternative target: a different progression path
 3. If no improvement for 3+ consecutive sessions, set plateau_flag to true
 4. Never suggest more than +5% load, +2 reps, or +2 laps in one step
-5. For bodyweight work, use reps and optional added external load only
-6. Reference actual numbers from the data
+5. Never reduce any tracked value below the latest completed session
+6. If progression is not there yet, keep the target the same instead of lowering it
+7. For bodyweight work, use reps and optional added external load only
+8. Reference actual numbers from the data
 
 Respond ONLY with this exact JSON structure (no other text):
 {"primary":{"weight":number|null,"added_weight":number|null,"reps":number|null,"laps":number|null,"duration":number|null,"distance":number|null,"rationale":"string max 200 chars"},"alternative":{"weight":number|null,"added_weight":number|null,"reps":number|null,"laps":number|null,"duration":number|null,"distance":number|null,"rationale":"string max 200 chars"},"plateau_flag":boolean}`;
