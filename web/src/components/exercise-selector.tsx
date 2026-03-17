@@ -43,7 +43,10 @@ export function ExerciseSelector({ onSelect, trigger }: Props) {
 
   const filtered = useMemo(() => {
     let list = exercises;
-    if (muscleFilter) list = list.filter((e) => e.muscle_groups.includes(muscleFilter));
+    if (muscleFilter) {
+      const mf = muscleFilter.toLowerCase();
+      list = list.filter((e) => e.muscle_groups.some((mg) => mg.toLowerCase() === mf));
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter((e) => e.name.toLowerCase().includes(q));
