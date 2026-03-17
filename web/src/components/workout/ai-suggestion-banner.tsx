@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Sparkles, X, ChevronDown, ChevronUp } from 'lucide-react';
 import type { AISuggestionData } from '@/types/app';
-import { cn } from '@/lib/utils';
 
 interface AISuggestionBannerProps {
   suggestion: AISuggestionData;
@@ -13,10 +12,12 @@ interface AISuggestionBannerProps {
 
 function formatTarget(s: AISuggestionData['primary']): string {
   const parts: string[] = [];
-  if (s.weight   !== undefined) parts.push(`${s.weight} kg`);
-  if (s.reps     !== undefined) parts.push(`${s.reps} reps`);
-  if (s.duration !== undefined) parts.push(`${s.duration}s`);
-  if (s.distance !== undefined) parts.push(`${s.distance}m`);
+  if (s.weight !== undefined) parts.push(`${s.weight} kg weight`);
+  if (s.added_weight !== undefined) parts.push(`+${s.added_weight} kg`);
+  if (s.reps !== undefined) parts.push(`${s.reps} reps`);
+  if (s.laps !== undefined) parts.push(`${s.laps} laps`);
+  if (s.duration !== undefined) parts.push(`${s.duration} sec`);
+  if (s.distance !== undefined) parts.push(`${s.distance} m`);
   return parts.join(' × ');
 }
 

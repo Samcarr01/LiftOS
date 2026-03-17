@@ -20,6 +20,13 @@ function getStep(field: TrackingField): number {
   return 1;
 }
 
+function getInputLabel(field: TrackingField): string {
+  if (!field.unit) return field.label;
+  if (field.unit === 'seconds') return `${field.label} in seconds`;
+  if (field.unit === 'metres') return `${field.label} in metres`;
+  return `${field.label} in ${field.unit}`;
+}
+
 // ── Desktop input ─────────────────────────────────────────────────────────────
 
 function DesktopInput({ value, onChange, field, disabled, prefilled }: NumericInputProps) {
@@ -40,6 +47,7 @@ function DesktopInput({ value, onChange, field, disabled, prefilled }: NumericIn
         type="number"
         min={0}
         step={step}
+        aria-label={getInputLabel(field)}
         value={value === '' ? '' : value}
         onChange={(e) => {
           const v = e.target.value;
@@ -212,6 +220,7 @@ export function NumericInput({ value, onChange, field, disabled, prefilled }: Nu
     return (
       <input
         type="number"
+        aria-label={getInputLabel(field)}
         value={value === '' ? '' : value}
         readOnly
         placeholder="—"
@@ -241,6 +250,8 @@ export function NumericInput({ value, onChange, field, disabled, prefilled }: Nu
         type="button"
         disabled={disabled}
         onClick={() => setNumpadOpen(true)}
+        aria-label={getInputLabel(field)}
+        title={getInputLabel(field)}
         className={cn(
           'flex min-h-[44px] min-w-[60px] items-center justify-center rounded-xl border border-border bg-card px-3 text-sm font-semibold',
           'active:bg-muted transition-colors',

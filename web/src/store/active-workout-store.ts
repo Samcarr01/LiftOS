@@ -189,8 +189,10 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()((set, get) => 
 
       const { primary } = ex.aiSuggestion;
       const targetValues: SetValues = {};
-      if (primary.weight   !== undefined) targetValues['weight']   = primary.weight;
-      if (primary.reps     !== undefined) targetValues['reps']     = primary.reps;
+      if (primary.weight !== undefined) targetValues['weight'] = primary.weight;
+      if (primary.added_weight !== undefined) targetValues['added_weight'] = primary.added_weight;
+      if (primary.reps !== undefined) targetValues['reps'] = primary.reps;
+      if (primary.laps !== undefined) targetValues['laps'] = primary.laps;
       if (primary.duration !== undefined) targetValues['duration'] = primary.duration;
       if (primary.distance !== undefined) targetValues['distance'] = primary.distance;
 

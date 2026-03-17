@@ -24,6 +24,13 @@ const SET_TYPE_COLOR: Record<SetEntry['setType'], string> = {
   failure: 'bg-red-500/20 text-red-400',
 };
 
+function formatFieldLabel(field: TrackingField): string {
+  if (!field.unit) return field.label;
+  if (field.unit === 'seconds') return `${field.label} (sec)`;
+  if (field.unit === 'metres') return `${field.label} (m)`;
+  return `${field.label} (${field.unit})`;
+}
+
 // ── Last values formatter ─────────────────────────────────────────────────────
 
 function formatLast(values: SetValues, fields: TrackingField[]): string {
@@ -67,7 +74,7 @@ export function SetRow({ set, setNumber, lastValues, fields, onUpdate, onComplet
   return (
     <div
       className={cn(
-        'flex items-center gap-2 rounded-xl px-2 py-1.5 transition-colors',
+        'flex items-end gap-2 rounded-xl px-2 py-2 transition-colors',
         set.isCompleted && 'opacity-60',
         isPrefilled && 'bg-primary/5',
       )}
@@ -87,21 +94,28 @@ export function SetRow({ set, setNumber, lastValues, fields, onUpdate, onComplet
       </button>
 
       {/* Last session values */}
-      <div className="w-[72px] shrink-0 text-[11px] text-muted-foreground/70 leading-tight truncate">
+      <div className="w-[72px] shrink-0 pb-1 text-[11px] leading-tight text-muted-foreground/70">
         {lastValues ? formatLast(lastValues, fields) : '—'}
       </div>
 
       {/* Current value inputs */}
-      <div className="flex flex-1 items-center gap-1.5 min-w-0 overflow-x-auto no-scrollbar">
+      <div className="flex min-w-0 flex-1 items-end gap-1.5 overflow-x-auto no-scrollbar">
         {fields.map((f) => (
-          <NumericInput
-            key={f.key}
-            value={typeof set.values[f.key] === 'number' ? set.values[f.key] as number : ''}
-            onChange={(v) => handleValueChange(f.key, v)}
-            field={f}
-            disabled={set.isCompleted}
-            prefilled={isPrefilled}
-          />
+          <div key={f.key} className="flex min-w-[72px] flex-col gap-1">
+            <span
+              title={formatFieldLabel(f)}
+              className="truncate px-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70"
+            >
+              {formatFieldLabel(f)}
+            </span>
+            <NumericInput
+              value={typeof set.values[f.key] === 'number' ? set.values[f.key] as number : ''}
+              onChange={(v) => handleValueChange(f.key, v)}
+              field={f}
+              disabled={set.isCompleted}
+              prefilled={isPrefilled}
+            />
+          </div>
         ))}
       </div>
 

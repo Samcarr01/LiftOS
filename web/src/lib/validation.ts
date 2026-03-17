@@ -44,11 +44,13 @@ export function buildSetValuesSchema(
 // ── AI suggestion ─────────────────────────────────────────────────────────────
 
 const SuggestionTargetSchema = z.object({
-  weight:    z.number().positive().optional(),
-  reps:      z.number().int().positive().optional(),
-  duration:  z.number().positive().optional(),
-  distance:  z.number().positive().optional(),
-  rationale: z.string().max(200),
+  weight:       z.number().positive().optional(),
+  added_weight: z.number().positive().optional(),
+  reps:         z.number().int().positive().optional(),
+  laps:         z.number().int().positive().optional(),
+  duration:     z.number().positive().optional(),
+  distance:     z.number().positive().optional(),
+  rationale:    z.string().max(200),
 });
 
 export const AISuggestionDataSchema = z.object({

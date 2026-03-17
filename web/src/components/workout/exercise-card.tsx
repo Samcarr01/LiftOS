@@ -18,6 +18,14 @@ interface ExerciseCardProps {
 export function ExerciseCard({ state, exerciseIndex, isSuggestionDismissed }: ExerciseCardProps) {
   const { exercise, sets, lastPerformanceSets, aiSuggestion } = state;
   const fields = exercise.tracking_schema.fields;
+  const fieldSummary = fields
+    .map((field) => {
+      if (field.unit === 'seconds') return `${field.label} (sec)`;
+      if (field.unit === 'metres') return `${field.label} (m)`;
+      if (field.unit) return `${field.label} (${field.unit})`;
+      return field.label;
+    })
+    .join(', ');
 
   const [notesOpen, setNotesOpen] = useState(false);
   const [cardNotes, setCardNotes] = useState('');
@@ -54,6 +62,9 @@ export function ExerciseCard({ state, exerciseIndex, isSuggestionDismissed }: Ex
                 <MuscleGroupBadge key={m} muscle={m} />
               ))}
             </div>
+            <p className="mt-2 text-xs text-muted-foreground/80">
+              Log: {fieldSummary}
+            </p>
           </div>
           {/* Collapse indicator */}
           {allComplete && (
@@ -79,10 +90,10 @@ export function ExerciseCard({ state, exerciseIndex, isSuggestionDismissed }: Ex
       <div className="flex items-center gap-2 border-t border-border/50 px-2 py-1.5">
         <div className="w-9 shrink-0" />
         <div className="w-[72px] shrink-0 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-          Last
+          Previous
         </div>
         <div className="flex-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-          Current
+          Log Now
         </div>
         {/* spacers for checkbox + delete */}
         <div className="w-[44px] shrink-0" />

@@ -29,11 +29,13 @@ interface SessionData {
 }
 
 interface SuggestionTarget {
-  weight?:    number;
-  reps?:      number;
-  duration?:  number;
-  distance?:  number;
-  rationale:  string;
+  weight?:       number;
+  added_weight?: number;
+  reps?:         number;
+  laps?:         number;
+  duration?:     number;
+  distance?:     number;
+  rationale:     string;
 }
 
 interface AISuggestion {
@@ -50,19 +52,36 @@ function validateTarget(obj: unknown): SuggestionTarget | null {
   if (typeof obj !== 'object' || obj === null) return null;
   const t = obj as Record<string, unknown>;
 
-  const weight   = typeof t.weight   === 'number' && t.weight   > 0 ? t.weight   : undefined;
-  const reps     = typeof t.reps     === 'number' && t.reps     > 0 ? Math.round(t.reps) : undefined;
+  const weight = typeof t.weight === 'number' && t.weight > 0 ? t.weight : undefined;
+  const addedWeight =
+    typeof t.added_weight === 'number' && t.added_weight > 0 ? t.added_weight : undefined;
+  const reps = typeof t.reps === 'number' && t.reps > 0 ? Math.round(t.reps) : undefined;
+  const laps = typeof t.laps === 'number' && t.laps > 0 ? Math.round(t.laps) : undefined;
   const duration = typeof t.duration === 'number' && t.duration > 0 ? t.duration : undefined;
   const distance = typeof t.distance === 'number' && t.distance > 0 ? t.distance : undefined;
 
-  const hasValue = weight !== undefined || reps !== undefined || duration !== undefined || distance !== undefined;
+  const hasValue =
+    weight !== undefined ||
+    addedWeight !== undefined ||
+    reps !== undefined ||
+    laps !== undefined ||
+    duration !== undefined ||
+    distance !== undefined;
   if (!hasValue) return null;
 
   const rationale = typeof t.rationale === 'string'
     ? t.rationale.slice(0, 200)
     : 'Based on recent performance.';
 
-  return { weight, reps, duration, distance, rationale };
+  return {
+    weight,
+    added_weight: addedWeight,
+    reps,
+    laps,
+    duration,
+    distance,
+    rationale,
+  };
 }
 
 function validateSuggestion(raw: unknown): AISuggestion | null {
@@ -83,21 +102,39 @@ function validateSuggestion(raw: unknown): AISuggestion | null {
 
 // ── Bounds ─────────────────────────────────────────────────────────────────────
 
+interface ProgressBaseline {
+  weight: number;
+  addedWeight: number;
+  reps: number;
+  laps: number;
+}
+
+function roundQuarter(value: number): number {
+  return Math.round(value * 4) / 4;
+}
+
 function applyBounds(
   suggestion: AISuggestion,
-  lastWeight: number,
-  lastReps: number,
+  baseline: ProgressBaseline,
 ): AISuggestion {
   const bound = (t: SuggestionTarget | null): SuggestionTarget | null => {
     if (!t) return null;
     const result = { ...t };
     // Max +5% weight, rounded to nearest 0.25 kg
-    if (result.weight !== undefined && lastWeight > 0) {
-      result.weight = Math.round(Math.min(result.weight, lastWeight * 1.05) * 4) / 4;
+    if (result.weight !== undefined && baseline.weight > 0) {
+      result.weight = roundQuarter(Math.min(result.weight, baseline.weight * 1.05));
+    }
+    if (result.added_weight !== undefined && baseline.addedWeight > 0) {
+      result.added_weight = roundQuarter(
+        Math.min(result.added_weight, baseline.addedWeight * 1.05),
+      );
     }
     // Max +2 reps
-    if (result.reps !== undefined && lastReps > 0) {
-      result.reps = Math.min(result.reps, lastReps + 2);
+    if (result.reps !== undefined && baseline.reps > 0) {
+      result.reps = Math.min(result.reps, baseline.reps + 2);
+    }
+    if (result.laps !== undefined && baseline.laps > 0) {
+      result.laps = Math.min(result.laps, baseline.laps + 2);
     }
     return result;
   };
@@ -111,19 +148,75 @@ function applyBounds(
 
 // ── Rule-based fallback ────────────────────────────────────────────────────────
 
-function ruleBased(sessions: SessionData[]): AISuggestion {
+function getSchemaKeys(schema: unknown): string[] {
+  return ((schema as { fields?: { key: string }[] })?.fields ?? []).map((field) => field.key);
+}
+
+function getWorkingSets(session: SessionData): SetData[] {
+  return session.sets.filter(
+    (s) => (s.set_type === 'working' || s.set_type === 'top') && s.is_completed,
+  );
+}
+
+function incrementByPercent(value: number, percent: number, minimum: number): number {
+  return roundQuarter(value + Math.max(value * percent, minimum));
+}
+
+function roundToStep(value: number, step: number): number {
+  return Math.round(value / step) * step;
+}
+
+function ruleBased(sessions: SessionData[], schema: unknown): AISuggestion {
+  const keys = getSchemaKeys(schema);
+  const hasWeight = keys.includes('weight');
+  const hasAddedWeight = keys.includes('added_weight');
+  const hasReps = keys.includes('reps');
+  const hasLaps = keys.includes('laps');
+  const hasDuration = keys.includes('duration');
+  const hasDistance = keys.includes('distance');
+
   if (sessions.length === 0) {
+    if (hasWeight && hasLaps) {
+      return {
+        primary:      { laps: 4, rationale: 'No history yet. Start with a manageable load for 4 laps.' },
+        alternative:  null,
+        plateau_flag: false,
+      };
+    }
+
+    if (hasLaps) {
+      return {
+        primary:      { laps: 4, rationale: 'No history yet. Start with a lap target you can finish cleanly.' },
+        alternative:  null,
+        plateau_flag: false,
+      };
+    }
+
+    if (hasDuration && !hasDistance) {
+      return {
+        primary:      { duration: 30, rationale: 'No history yet. Start with a clean 30-second effort.' },
+        alternative:  null,
+        plateau_flag: false,
+      };
+    }
+
+    if (hasDistance) {
+      return {
+        primary:      { distance: 500, rationale: 'No history yet. Start with a moderate distance and log the result.' },
+        alternative:  null,
+        plateau_flag: false,
+      };
+    }
+
     return {
-      primary:      { reps: 8, rationale: 'No history yet. Start with a comfortable weight for 3 sets of 8.' },
+      primary:      { reps: 8, rationale: 'No history yet. Start with a comfortable target and log your first session.' },
       alternative:  null,
       plateau_flag: false,
     };
   }
 
   const latest       = sessions[0]; // newest first
-  const workingSets  = latest.sets.filter(
-    (s) => (s.set_type === 'working' || s.set_type === 'top') && s.is_completed,
-  );
+  const workingSets  = getWorkingSets(latest);
 
   if (workingSets.length === 0) {
     return {
@@ -133,12 +226,215 @@ function ruleBased(sessions: SessionData[]): AISuggestion {
     };
   }
 
-  const hasWeight = workingSets.some(
-    (s) => typeof s.values.weight === 'number' && (s.values.weight ?? 0) > 0,
-  );
+  if (hasWeight && hasReps) {
+    const bestWeight = Math.max(...workingSets.map((s) => Number(s.values.weight ?? 0)));
+    const topSet = workingSets.find((s) => Number(s.values.weight) === bestWeight);
+    const lastReps = Number(topSet?.values.reps ?? 0);
 
-  if (!hasWeight) {
-    // Bodyweight / no-weight exercise
+    if (latest.allSetsCompleted) {
+      const nextWeight = incrementByPercent(bestWeight, 0.03, 1.25);
+      return {
+        primary: {
+          weight:    nextWeight,
+          reps:      lastReps,
+          rationale: `All sets complete at ${bestWeight}kg. Progress to ${nextWeight}kg.`,
+        },
+        alternative: {
+          weight:    bestWeight,
+          reps:      lastReps + 1,
+          rationale: `Or squeeze out 1 more rep at ${bestWeight}kg.`,
+        },
+        plateau_flag: false,
+      };
+    }
+
+    return {
+      primary: {
+        weight:    bestWeight,
+        reps:      lastReps,
+        rationale: `Focus on completing all sets at ${bestWeight}kg x ${lastReps}.`,
+      },
+      alternative: {
+        weight:    Math.max(bestWeight - 2.5, 0),
+        reps:      lastReps + 1,
+        rationale: 'Slightly lighter with an extra rep might help you hit all sets.',
+      },
+      plateau_flag: false,
+    };
+  }
+
+  if (hasWeight && hasLaps) {
+    const bestWeight = Math.max(...workingSets.map((s) => Number(s.values.weight ?? 0)));
+    const topSet = workingSets.find((s) => Number(s.values.weight) === bestWeight);
+    const lastLaps = Number(topSet?.values.laps ?? 0);
+
+    if (latest.allSetsCompleted) {
+      const nextWeight = incrementByPercent(bestWeight, 0.03, 1.25);
+      return {
+        primary: {
+          weight:    nextWeight,
+          laps:      lastLaps,
+          rationale: `You completed all loaded laps at ${bestWeight}kg. Move to ${nextWeight}kg.`,
+        },
+        alternative: {
+          weight:    bestWeight,
+          laps:      lastLaps + 1,
+          rationale: `Or keep ${bestWeight}kg and add 1 lap.`,
+        },
+        plateau_flag: false,
+      };
+    }
+
+    return {
+      primary: {
+        weight:    bestWeight,
+        laps:      lastLaps,
+        rationale: `Repeat ${bestWeight}kg for ${lastLaps} laps until every set feels solid.`,
+      },
+      alternative: {
+        weight:    Math.max(bestWeight - 2.5, 0),
+        laps:      lastLaps,
+        rationale: 'A slightly lighter load can help you complete every lap cleanly.',
+      },
+      plateau_flag: false,
+    };
+  }
+
+  if (hasAddedWeight && hasReps) {
+    const bestAddedWeight = Math.max(...workingSets.map((s) => Number(s.values.added_weight ?? 0)));
+    const topSet = workingSets.find((s) => Number(s.values.added_weight ?? 0) === bestAddedWeight);
+    const lastReps = Number(topSet?.values.reps ?? 0);
+
+    if (latest.allSetsCompleted) {
+      if (bestAddedWeight > 0) {
+        const nextAddedWeight = incrementByPercent(bestAddedWeight, 0.03, 1.25);
+        return {
+          primary: {
+            added_weight: nextAddedWeight,
+            reps:         lastReps,
+            rationale:    `You finished all sets at +${bestAddedWeight}kg. Try +${nextAddedWeight}kg next.`,
+          },
+          alternative: {
+            added_weight: bestAddedWeight,
+            reps:         lastReps + 1,
+            rationale:    `Or keep +${bestAddedWeight}kg and add 1 rep.`,
+          },
+          plateau_flag: false,
+        };
+      }
+
+      const maxReps = Math.max(...workingSets.map((s) => Number(s.values.reps ?? 0)));
+      return {
+        primary:      { reps: maxReps + 1, rationale: `You hit ${maxReps} reps. Aim for ${maxReps + 1} next time.` },
+        alternative:  { added_weight: 1.25, reps: maxReps, rationale: 'Or add a small external load and keep reps steady.' },
+        plateau_flag: false,
+      };
+    }
+
+    return {
+      primary: {
+        added_weight: bestAddedWeight > 0 ? bestAddedWeight : undefined,
+        reps:         lastReps,
+        rationale:    bestAddedWeight > 0
+          ? `Repeat +${bestAddedWeight}kg for ${lastReps} reps until every set is complete.`
+          : `Repeat ${lastReps} reps with bodyweight until every set is complete.`,
+      },
+      alternative: bestAddedWeight > 0
+        ? {
+            added_weight: Math.max(bestAddedWeight - 1.25, 0),
+            reps:         lastReps,
+            rationale:    'Slightly reduce external load to lock in clean reps.',
+          }
+        : {
+            reps:      Math.max(lastReps - 1, 1),
+            rationale: 'Trim one rep if you need cleaner execution before progressing again.',
+          },
+      plateau_flag: false,
+    };
+  }
+
+  if (hasLaps) {
+    const maxLaps = Math.max(...workingSets.map((s) => Number(s.values.laps ?? 0)));
+    if (latest.allSetsCompleted) {
+      return {
+        primary:      { laps: maxLaps + 1, rationale: `You completed ${maxLaps} laps. Aim for ${maxLaps + 1}.` },
+        alternative:  { laps: maxLaps, rationale: 'Repeat the same lap count and make the effort cleaner.' },
+        plateau_flag: false,
+      };
+    }
+    return {
+      primary:      { laps: maxLaps, rationale: `Repeat ${maxLaps} laps until every set is complete.` },
+      alternative:  { laps: Math.max(maxLaps - 1, 1), rationale: 'Drop 1 lap if you need to clean up pacing or form.' },
+      plateau_flag: false,
+    };
+  }
+
+  if (hasDistance && hasDuration) {
+    const bestDistance = Math.max(...workingSets.map((s) => Number(s.values.distance ?? 0)));
+    const fastestSet = workingSets
+      .filter((s) => Number(s.values.distance ?? 0) === bestDistance)
+      .sort((a, b) => Number(a.values.duration ?? Infinity) - Number(b.values.duration ?? Infinity))[0];
+    const lastDuration = Number(fastestSet?.values.duration ?? 0);
+
+    if (latest.allSetsCompleted) {
+      return {
+        primary: {
+          distance:  roundToStep(bestDistance * 1.05, 10),
+          duration:  lastDuration || undefined,
+          rationale: `You covered ${bestDistance}m. Add a small distance bump next time.`,
+        },
+        alternative: lastDuration > 0
+          ? {
+              distance:  bestDistance,
+              duration:  Math.max(lastDuration - 5, 1),
+              rationale: 'Keep the same distance and try to finish a little faster.',
+            }
+          : null,
+        plateau_flag: false,
+      };
+    }
+    return {
+      primary: {
+        distance:  bestDistance,
+        duration:  lastDuration || undefined,
+        rationale: `Repeat ${bestDistance}m until you can complete every set consistently.`,
+      },
+      alternative:  null,
+      plateau_flag: false,
+    };
+  }
+
+  if (hasDistance) {
+    const bestDistance = Math.max(...workingSets.map((s) => Number(s.values.distance ?? 0)));
+    return latest.allSetsCompleted
+      ? {
+          primary:      { distance: roundToStep(bestDistance * 1.05, 10), rationale: `You hit ${bestDistance}m. Add a little more distance next time.` },
+          alternative:  { distance: bestDistance, rationale: 'Repeat the same distance and make it feel easier.' },
+          plateau_flag: false,
+        }
+      : {
+          primary:      { distance: bestDistance, rationale: `Repeat ${bestDistance}m until every set is complete.` },
+          alternative:  null,
+          plateau_flag: false,
+        };
+  }
+
+  if (hasDuration) {
+    const bestDuration = Math.max(...workingSets.map((s) => Number(s.values.duration ?? 0)));
+    return latest.allSetsCompleted
+      ? {
+          primary:      { duration: bestDuration + 5, rationale: `You held for ${bestDuration} seconds. Add 5 seconds next time.` },
+          alternative:  { duration: bestDuration, rationale: 'Repeat the same duration with cleaner form.' },
+          plateau_flag: false,
+        }
+      : {
+          primary:      { duration: bestDuration, rationale: `Repeat ${bestDuration} seconds until every set is complete.` },
+          alternative:  null,
+          plateau_flag: false,
+        };
+  }
+
+  if (hasReps) {
     const maxReps = Math.max(...workingSets.map((s) => Number(s.values.reps ?? 0)));
     return {
       primary:      { reps: maxReps + 1, rationale: `You hit ${maxReps} reps last session. Aim for ${maxReps + 1}.` },
@@ -146,41 +442,9 @@ function ruleBased(sessions: SessionData[]): AISuggestion {
       plateau_flag: false,
     };
   }
-
-  // Weight + reps exercise
-  const bestWeight = Math.max(...workingSets.map((s) => Number(s.values.weight ?? 0)));
-  const topSet     = workingSets.find((s) => Number(s.values.weight) === bestWeight);
-  const lastReps   = Number(topSet?.values.reps ?? 0);
-
-  if (latest.allSetsCompleted) {
-    const nextWeight = Math.round((bestWeight + 2.5) * 4) / 4;
-    return {
-      primary: {
-        weight:    nextWeight,
-        reps:      lastReps,
-        rationale: `All sets complete at ${bestWeight}kg. Progress to ${nextWeight}kg.`,
-      },
-      alternative: {
-        weight:    bestWeight,
-        reps:      lastReps + 1,
-        rationale: `Or squeeze out 1 more rep at ${bestWeight}kg.`,
-      },
-      plateau_flag: false,
-    };
-  }
-
-  // Incomplete last session → repeat
   return {
-    primary: {
-      weight:    bestWeight,
-      reps:      lastReps,
-      rationale: `Focus on completing all sets at ${bestWeight}kg × ${lastReps}.`,
-    },
-    alternative: {
-      weight:    Math.max(bestWeight - 2.5, 0),
-      reps:      lastReps + 1,
-      rationale: 'Slightly lighter with an extra rep might help you hit all sets.',
-    },
+    primary:      { rationale: 'Log one full session for this exercise to unlock a better target.' },
+    alternative:  null,
     plateau_flag: false,
   };
 }
@@ -198,15 +462,17 @@ function epley(weight: number, reps: number): number {
 }
 
 function sessionE1RM(session: SessionData): number {
-  const working = session.sets.filter(
-    (s) => (s.set_type === 'working' || s.set_type === 'top') && s.is_completed,
-  );
+  const working = getWorkingSets(session);
   if (working.length === 0) return 0;
-  const bestWeight = Math.max(...working.map((s) => Number(s.values.weight ?? 0)));
-  if (bestWeight <= 0) return 0;
-  const topSet = working.find((s) => Number(s.values.weight) === bestWeight);
+  const bestLoad = Math.max(...working.map((s) =>
+    Number(s.values.weight ?? s.values.added_weight ?? 0),
+  ));
+  if (bestLoad <= 0) return 0;
+  const topSet = working.find((s) =>
+    Number(s.values.weight ?? s.values.added_weight ?? 0) === bestLoad,
+  );
   const reps   = Number(topSet?.values.reps ?? 0);
-  return reps > 0 ? epley(bestWeight, reps) : 0;
+  return reps > 0 ? epley(bestLoad, reps) : 0;
 }
 
 /**
@@ -255,10 +521,13 @@ function computePlateau(sessions: SessionData[]): PlateauResult {
 // ── Tracking-type label for AI prompt ─────────────────────────────────────────
 
 function trackingTypeLabel(schema: unknown): string {
-  const fields = (schema as { fields?: { key: string }[] })?.fields ?? [];
-  const keys   = fields.map((f) => f.key);
+  const keys = getSchemaKeys(schema);
   if (keys.includes('weight') && keys.includes('reps')) return 'weight + reps';
-  if (keys.includes('reps')) return 'bodyweight reps only';
+  if (keys.includes('weight') && keys.includes('laps')) return 'weight + laps';
+  if (keys.includes('added_weight') && keys.includes('reps')) return 'bodyweight reps with optional added load';
+  if (keys.includes('reps')) return 'reps only';
+  if (keys.includes('laps')) return 'laps';
+  if (keys.includes('distance') && keys.includes('duration')) return 'distance + time';
   if (keys.includes('duration')) return 'time/duration';
   if (keys.includes('distance')) return 'distance';
   return 'custom fields';
@@ -371,23 +640,21 @@ Deno.serve(async (req: Request) => {
 
     const trackingType = trackingTypeLabel(exercise.tracking_schema);
 
-    // Extract last session best weight/reps for bounds checking
-    const latestWorking = sessions.length > 0
-      ? sessions[0].sets.filter(
-          (s) => (s.set_type === 'working' || s.set_type === 'top') && s.is_completed,
-        )
-      : [];
-    const lastWeight = Math.max(...latestWorking.map((s) => Number(s.values.weight ?? 0)), 0);
-    const lastReps   = Number(
-      latestWorking.find((s) => Number(s.values.weight) === lastWeight)?.values.reps ?? 0,
-    );
+    // Extract last session values for bounds checking.
+    const latestWorking = sessions.length > 0 ? getWorkingSets(sessions[0]) : [];
+    const baseline: ProgressBaseline = {
+      weight: Math.max(...latestWorking.map((s) => Number(s.values.weight ?? 0)), 0),
+      addedWeight: Math.max(...latestWorking.map((s) => Number(s.values.added_weight ?? 0)), 0),
+      reps: Math.max(...latestWorking.map((s) => Number(s.values.reps ?? 0)), 0),
+      laps: Math.max(...latestWorking.map((s) => Number(s.values.laps ?? 0)), 0),
+    };
 
     // ── Compute plateau (always — uses same session data, no extra query) ────
     const plateau = computePlateau(sessions);
 
     // ── < 2 sessions: rule-based only ───────────────────────────────────────
     if (sessions.length < 2) {
-      const suggestion = ruleBased(sessions);
+      const suggestion = ruleBased(sessions, exercise.tracking_schema);
       await storeSuggestion(supabase, userId, exerciseId, suggestion, 'rule-based');
       return json({ data: suggestion, source: 'rule-based' });
     }
@@ -411,15 +678,15 @@ RECENT SESSIONS (session 1 = most recent):
 ${JSON.stringify(sessionHistory, null, 2)}
 
 RULES:
-1. Primary target: small progression (max +5% weight OR +1-2 reps, NOT both simultaneously)
+1. Primary target: small progression using only the tracked fields for this exercise
 2. Alternative target: a different progression path
 3. If no improvement for 3+ consecutive sessions, set plateau_flag to true
-4. Never suggest more than +5kg weight increase or +3 reps in one step
-5. Bodyweight exercises (no weight field): reps progression only
+4. Never suggest more than +5% load, +2 reps, or +2 laps in one step
+5. For bodyweight work, use reps and optional added external load only
 6. Reference actual numbers from the data
 
 Respond ONLY with this exact JSON structure (no other text):
-{"primary":{"weight":number|null,"reps":number|null,"rationale":"string max 200 chars"},"alternative":{"weight":number|null,"reps":number|null,"rationale":"string max 200 chars"},"plateau_flag":boolean}`;
+{"primary":{"weight":number|null,"added_weight":number|null,"reps":number|null,"laps":number|null,"duration":number|null,"distance":number|null,"rationale":"string max 200 chars"},"alternative":{"weight":number|null,"added_weight":number|null,"reps":number|null,"laps":number|null,"duration":number|null,"distance":number|null,"rationale":"string max 200 chars"},"plateau_flag":boolean}`;
 
     // ── Call OpenAI ──────────────────────────────────────────────────────────
     let suggestion: AISuggestion | null = null;
@@ -447,7 +714,7 @@ Respond ONLY with this exact JSON structure (no other text):
       const valid   = validateSuggestion(parsed);
 
       if (valid) {
-        suggestion = applyBounds(valid, lastWeight, lastReps);
+        suggestion = applyBounds(valid, baseline);
         source     = 'ai';
         console.log('[generate-ai-suggestion] AI suggestion generated for exercise', exerciseId);
       } else {
@@ -460,9 +727,9 @@ Respond ONLY with this exact JSON structure (no other text):
 
     // ── Fallback if AI failed ────────────────────────────────────────────────
     if (!suggestion) {
-      suggestion = ruleBased(sessions);
-      if (lastWeight > 0) {
-        suggestion = applyBounds(suggestion, lastWeight, lastReps);
+      suggestion = ruleBased(sessions, exercise.tracking_schema);
+      if (baseline.weight > 0 || baseline.addedWeight > 0 || baseline.reps > 0 || baseline.laps > 0) {
+        suggestion = applyBounds(suggestion, baseline);
       }
       source = 'rule-based';
     }
