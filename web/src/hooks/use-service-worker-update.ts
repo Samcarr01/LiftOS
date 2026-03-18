@@ -8,6 +8,13 @@ export function useServiceWorkerUpdate() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
 
+    // Don't show banner if we just reloaded to apply an update
+    const justReloaded = sessionStorage.getItem('sw-update-reload');
+    if (justReloaded) {
+      sessionStorage.removeItem('sw-update-reload');
+      return;
+    }
+
     let activeRegistration: ServiceWorkerRegistration | null = null;
     let handleUpdateFound: (() => void) | null = null;
 
@@ -42,14 +49,7 @@ export function useServiceWorkerUpdate() {
 
     void navigator.serviceWorker.getRegistration().then(attachRegistration);
 
-    const handleControllerChange = () => {
-      markUpdateReady();
-    };
-
-    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
-
     return () => {
-      navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
       if (activeRegistration && handleUpdateFound) {
         activeRegistration.removeEventListener('updatefound', handleUpdateFound);
       }
@@ -57,7 +57,15 @@ export function useServiceWorkerUpdate() {
   }, []);
 
   function reloadApp() {
-    window.location.reload();
+    setUpdateReady(false);
+    sessionStorage.setItem('sw-update-reload', '1');
+
+    void navigator.serviceWorker.getRegistration().then((registration) => {
+      if (registration?.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+      window.location.reload();
+    });
   }
 
   return {

@@ -55,6 +55,14 @@ export default function HistoryPage() {
 
   useEffect(() => {
     void refresh();
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        void refresh();
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const groups = groupByMonth(sessions);

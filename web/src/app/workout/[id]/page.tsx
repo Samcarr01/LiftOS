@@ -53,12 +53,7 @@ export default function WorkoutPage() {
         <header className="sticky top-0 z-30 -mx-4 border-b border-white/[0.06] bg-white/[0.10] px-4 py-3 backdrop-blur-2xl">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => {
-                if (confirm('Leave workout? Progress will be lost.')) {
-                  useActiveWorkoutStore.getState().clearWorkout();
-                  router.back();
-                }
-              }}
+              onClick={() => router.push('/')}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground"
             >
               <ChevronLeft className="h-4 w-4" />
