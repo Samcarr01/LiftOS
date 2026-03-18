@@ -34,21 +34,6 @@ function formatPrValue(recordType: string, recordValue: number): string {
   return String(recordValue);
 }
 
-function StatCard({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="premium-card px-4 py-4 text-center">
-      <p className="font-display text-xl font-semibold">{value}</p>
-      <p className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-
 function SetLine({
   set,
   trackingSchema,
@@ -57,20 +42,20 @@ function SetLine({
   trackingSchema: TrackingSchema;
 }) {
   return (
-    <div className={`glass-panel flex items-center gap-3 px-4 py-3 ${!set.is_completed ? 'opacity-50' : ''}`}>
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-sm font-semibold text-primary">
+    <div className={`flex items-center gap-3 rounded-xl border border-white/8 px-3 py-2 ${!set.is_completed ? 'opacity-50' : ''}`}>
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-xs font-semibold text-primary">
         {set.set_index + 1}
-      </div>
+      </span>
       <div className="min-w-0 flex-1">
-        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           {SET_TYPE_LABELS[set.set_type] ?? set.set_type}
         </p>
-        <p className="mt-1 text-sm font-medium text-foreground">
+        <p className="text-sm font-medium text-foreground">
           {formatSetValues(set.values, trackingSchema)}
         </p>
       </div>
       {!set.is_completed && (
-        <span className="status-pill">Open</span>
+        <span className="text-[10px] uppercase text-muted-foreground">Open</span>
       )}
     </div>
   );
@@ -80,38 +65,36 @@ function ExerciseBlock({ exercise }: { exercise: SessionDetailExercise }) {
   const hasPrs = exercise.prs.length > 0;
 
   return (
-    <div className="premium-card page-reveal px-5 py-5">
-      <div className="flex items-start justify-between gap-3">
+    <div className="content-card">
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="truncate font-display text-2xl font-semibold">{exercise.exercise_name}</h2>
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <h3 className="truncate font-display text-base font-semibold">{exercise.exercise_name}</h3>
+          <div className="mt-1 flex flex-wrap gap-1">
             {exercise.muscle_groups.slice(0, 3).map((muscle) => (
               <MuscleGroupBadge key={muscle} muscle={muscle} />
             ))}
           </div>
         </div>
         {hasPrs && (
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-yellow-500/12 text-yellow-300">
-            <Trophy className="h-5 w-5" />
-          </div>
+          <Trophy className="h-4 w-4 shrink-0 text-yellow-400" />
         )}
       </div>
 
       {hasPrs && (
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {exercise.prs.map((pr, index) => (
             <span
               key={`${pr.record_type}-${index}`}
-              className="status-pill border-yellow-500/25 bg-yellow-500/10 text-yellow-300"
+              className="inline-flex items-center gap-1 rounded-md border border-yellow-500/25 bg-yellow-500/10 px-2 py-0.5 text-[10px] font-semibold text-yellow-300"
             >
-              <Award className="h-3.5 w-3.5" />
+              <Award className="h-3 w-3" />
               {PR_LABEL[pr.record_type]} · {formatPrValue(pr.record_type, pr.record_value)}
             </span>
           ))}
         </div>
       )}
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-3 space-y-1.5">
         {exercise.sets.map((set) => (
           <SetLine key={set.id} set={set} trackingSchema={exercise.tracking_schema} />
         ))}
@@ -127,65 +110,62 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="page-shell">
-      <div className="page-content py-5 md:py-7">
-        <section className="page-hero">
-          <div className="flex items-start gap-4">
-            <button
-              onClick={() => router.back()}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div className="min-w-0 flex-1">
-              <span className="hero-kicker">Workout Detail</span>
-              <h1 className="page-title mt-4">
-                {loading ? 'Loading session' : (detail?.template_name ?? 'Workout')}
-              </h1>
-              <p className="page-subtitle mt-3">
-                Review the session the way you remember it: when you trained, what exercises you did, and exactly what you logged for each set.
-              </p>
-            </div>
+      <div className="page-content py-5 md:py-7 space-y-5">
+        {/* Compact header */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate font-display text-lg font-bold">
+              {loading ? 'Loading...' : (detail?.template_name ?? 'Workout')}
+            </h1>
+            {detail && (
+              <p className="text-xs text-muted-foreground">{formatLongDate(detail.started_at)}</p>
+            )}
           </div>
-        </section>
+        </div>
 
         {error && (
-          <p className="mt-6 text-sm text-destructive">{error}</p>
+          <p className="text-sm text-destructive">{error}</p>
         )}
 
         {loading && (
-          <div className="mt-8 space-y-4">
-            <Skeleton className="h-40 w-full rounded-[28px]" />
-            <Skeleton className="h-64 w-full rounded-[28px]" />
-            <Skeleton className="h-64 w-full rounded-[28px]" />
+          <div className="space-y-3">
+            <Skeleton className="h-16 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
           </div>
         )}
 
         {detail && (
-          <div className="mt-8 space-y-8">
-            <section className="section-shell">
-              <div className="grid gap-3 md:grid-cols-3">
-                <StatCard label="Date" value={formatLongDate(detail.started_at)} />
-                <StatCard label="Exercises" value={String(detail.exercises.length)} />
-                <StatCard label="Saved Sets" value={String(detail.total_sets)} />
+          <>
+            {/* Stats row */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="content-card text-center py-3">
+                <p className="font-display text-lg font-semibold">{detail.exercises.length}</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Exercises</p>
               </div>
-            </section>
+              <div className="content-card text-center py-3">
+                <p className="font-display text-lg font-semibold">{detail.total_sets}</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Sets</p>
+              </div>
+              <div className="content-card text-center py-3">
+                <p className="font-display text-lg font-semibold">{formatLongDate(detail.started_at).split(',')[0]}</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Date</p>
+              </div>
+            </div>
 
-            <section className="section-shell">
-              <div className="section-heading">
-                <div>
-                  <h2 className="section-title">Logged Exercises</h2>
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/75">
-                    {detail.exercises.length} movement{detail.exercises.length !== 1 ? 's' : ''}
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                {detail.exercises.map((exercise) => (
-                  <ExerciseBlock key={exercise.session_exercise_id} exercise={exercise} />
-                ))}
-              </div>
-            </section>
-          </div>
+            {/* Exercise blocks */}
+            <div className="space-y-3">
+              {detail.exercises.map((exercise) => (
+                <ExerciseBlock key={exercise.session_exercise_id} exercise={exercise} />
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

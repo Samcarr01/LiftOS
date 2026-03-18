@@ -13,7 +13,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   GripVertical, Trash2, ChevronLeft, Plus, Loader2, Settings2,
-  Play, Sparkles,
+  Play,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
@@ -278,85 +278,38 @@ export default function TemplateEditorPage() {
 
   return (
     <div className="page-shell">
-      <div className="page-content py-5 md:py-7">
-        <section className="page-hero">
-          <div className="flex items-start gap-4">
-            <button
-              onClick={() => router.back()}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
+      <div className="page-content py-5 md:py-7 space-y-5">
+        {/* Compact header */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <input
+            value={templateName}
+            onChange={(e) => handleNameChange(e.target.value)}
+            placeholder="Workout name"
+            className="min-w-0 flex-1 bg-transparent font-display text-lg font-bold outline-none placeholder:text-muted-foreground"
+          />
+          {saveStatus === 'saving' && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          {saveStatus === 'saved' && <span className="text-xs text-emerald-400">Saved</span>}
+          <button
+            onClick={() => void handleStartWorkout()}
+            disabled={isStartingWorkout || exercises.length === 0}
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+          >
+            {isStartingWorkout ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+            Start
+          </button>
+        </div>
 
-            <div className="min-w-0 flex-1">
-              <span className="hero-kicker">Workout Editor</span>
-              <input
-                value={templateName}
-                onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="Workout name"
-                className="page-title mt-4 w-full bg-transparent outline-none placeholder:text-muted-foreground"
-              />
-              <p className="page-subtitle mt-3">
-                Shape this workout around the exercises you actually do. Keep it simple now, then reuse it every time you want to log this session.
-              </p>
-            </div>
+        {/* Exercises */}
+        <section>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="section-title">Exercises ({exercises.length})</h2>
           </div>
-
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => void handleStartWorkout()}
-              disabled={isStartingWorkout || exercises.length === 0}
-              className="premium-button disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isStartingWorkout ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              Start This Workout
-            </button>
-            <span className="status-pill">
-              {exercises.length} exercise{exercises.length !== 1 ? 's' : ''}
-            </span>
-            {saveStatus === 'saving' && (
-              <span className="status-pill border-primary/20 bg-primary/10 text-primary">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Saving
-              </span>
-            )}
-            {saveStatus === 'saved' && (
-              <span className="status-pill border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
-                Saved
-              </span>
-            )}
-          </div>
-        </section>
-
-        <div className="mt-8 space-y-8">
-          <section className="section-shell">
-            <div className="premium-card page-reveal delay-2 px-5 py-5">
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/14 text-primary">
-                  <Sparkles className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="font-display text-2xl font-semibold">Build it the way you train</h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                    Add exercises, choose the right starting set count, and keep notes where they help. Your own exercise names come first.
-                  </p>
-                  <p className="mt-3 text-xs uppercase tracking-[0.16em] text-muted-foreground/75">
-                    {exercises.length === 0
-                      ? 'Add at least one exercise before starting.'
-                      : 'Ready when you are. What you log next becomes the baseline for future guidance.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="section-shell">
-            <div className="section-heading">
-              <div>
-                <h2 className="section-title">Exercises In This Workout</h2>
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/75">drag to reorder</p>
-              </div>
-            </div>
 
             {isLoading ? (
               <div className="flex justify-center py-12">
@@ -383,42 +336,26 @@ export default function TemplateEditorPage() {
             )}
 
             {exercises.length === 0 && !isLoading && (
-              <div className="premium-card page-reveal delay-2 px-5 py-10 text-center">
-                <p className="font-display text-2xl font-semibold">This workout is empty</p>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  Add your first exercise below. Weight and reps, weight and laps, laps, time, or distance all work.
-                </p>
+              <div className="content-card py-8 text-center">
+                <p className="text-sm font-semibold">No exercises yet</p>
+                <p className="mt-1 text-xs text-muted-foreground">Add your first exercise below.</p>
               </div>
             )}
-          </section>
+        </section>
 
-          <section className="section-shell">
-            <div className="section-heading">
-              <div>
-                <h2 className="section-title">Add Exercise</h2>
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/75">create first, browse if needed</p>
+        {/* Add exercise */}
+        <ExerciseSelector
+          onSelect={handleAddExercise}
+          defaultMode="create"
+          trigger={
+            <button className="list-row w-full">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/14 text-primary">
+                <Plus className="h-4 w-4" />
               </div>
-            </div>
-
-            <ExerciseSelector
-              onSelect={handleAddExercise}
-              defaultMode="create"
-              trigger={
-                <button className="premium-card page-reveal delay-3 flex h-auto w-full items-center justify-center gap-3 px-4 py-5 text-left">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/14 text-primary">
-                    <Plus className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-display text-xl font-semibold">Create Or Add Exercise</p>
-                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                      Start with your own exercise. You can switch to the existing list inside the sheet whenever you want.
-                    </p>
-                  </div>
-                </button>
-              }
-            />
-          </section>
-        </div>
+              <span className="text-sm font-semibold">Add Exercise</span>
+            </button>
+          }
+        />
       </div>
 
       {/* Exercise config sheet */}

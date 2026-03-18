@@ -7,9 +7,9 @@ import {
   Download,
   Loader2,
   LogOut,
+  Pencil,
   Smartphone,
   Trash2,
-  User,
 } from 'lucide-react';
 import {
   Dialog,
@@ -63,9 +63,9 @@ function DeleteAccountDialog({
 
   return (
     <Dialog open={open} onOpenChange={(value) => !value && handleClose()}>
-      <DialogContent className="sm:max-w-md border-white/10 bg-[linear-gradient(180deg,rgba(10,18,34,0.98),rgba(10,18,34,0.94))] text-foreground shadow-[0_40px_100px_-50px_rgba(2,10,28,1)]">
+      <DialogContent className="sm:max-w-md border-white/10 bg-[rgba(10,18,34,0.98)] text-foreground">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 font-display text-2xl text-destructive">
+          <DialogTitle className="flex items-center gap-2 text-lg text-destructive">
             <AlertTriangle className="h-5 w-5" />
             Delete Account
           </DialogTitle>
@@ -73,8 +73,8 @@ function DeleteAccountDialog({
 
         {step === 1 ? (
           <>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              This permanently deletes all workouts, templates, exercise data, records, and your account. There is no undo for this action.
+            <p className="text-sm text-muted-foreground">
+              This permanently deletes all data. There is no undo.
             </p>
             <DialogFooter className="gap-2 sm:justify-start">
               <button onClick={handleClose} className="premium-button-secondary flex-1 justify-center">
@@ -82,7 +82,7 @@ function DeleteAccountDialog({
               </button>
               <button
                 onClick={() => setStep(2)}
-                className="flex h-11 flex-1 items-center justify-center rounded-2xl bg-destructive px-4 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90"
+                className="flex h-10 flex-1 items-center justify-center rounded-xl bg-destructive px-4 text-sm font-semibold text-destructive-foreground"
               >
                 Continue
               </button>
@@ -90,15 +90,15 @@ function DeleteAccountDialog({
           </>
         ) : (
           <>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Type <strong className="text-foreground">DELETE</strong> to confirm permanent account deletion.
+            <p className="text-sm text-muted-foreground">
+              Type <strong className="text-foreground">DELETE</strong> to confirm.
             </p>
             <input
               autoFocus
               value={confirm}
               onChange={(event) => setConfirm(event.target.value)}
               placeholder="Type DELETE"
-              className="h-12 w-full rounded-2xl border border-white/10 bg-black/15 px-4 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50"
+              className="h-10 w-full rounded-xl border border-white/10 bg-black/15 px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50"
             />
             <DialogFooter className="gap-2 sm:justify-start">
               <button
@@ -111,7 +111,7 @@ function DeleteAccountDialog({
               <button
                 onClick={handleDelete}
                 disabled={confirm !== 'DELETE' || deleting}
-                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-destructive px-4 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+                className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-destructive px-4 text-sm font-semibold text-destructive-foreground disabled:opacity-50"
               >
                 {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
                 Delete Forever
@@ -124,69 +124,41 @@ function DeleteAccountDialog({
   );
 }
 
-function SettingSection({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="section-shell">
-      <div className="section-heading">
-        <div>
-          <h2 className="section-title">{title}</h2>
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/75">{subtitle}</p>
-        </div>
-      </div>
-      <div className="space-y-3">{children}</div>
-    </section>
-  );
-}
-
-function ActionRow({
+function SettingRow({
   icon,
   label,
   description,
   onClick,
   loading,
   destructive,
-  accent,
+  right,
 }: {
   icon: ReactNode;
   label: string;
   description?: string;
-  onClick: () => void;
+  onClick?: () => void;
   loading?: boolean;
   destructive?: boolean;
-  accent?: boolean;
+  right?: ReactNode;
 }) {
+  const Wrapper = onClick ? 'button' : 'div';
   return (
-    <button
+    <Wrapper
       onClick={onClick}
       disabled={loading}
-      className={`elevated-surface page-reveal flex w-full items-center gap-4 px-4 py-4 text-left disabled:opacity-60 ${
-        destructive ? 'text-destructive' : accent ? 'text-primary' : ''
-      }`}
+      className={`list-row w-full ${destructive ? 'text-destructive' : ''}`}
     >
-      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-        destructive
-          ? 'bg-destructive/12 text-destructive'
-          : accent
-            ? 'bg-primary/14 text-primary'
-            : 'bg-white/6 text-foreground'
-      }`}
-      >
+      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+        destructive ? 'bg-destructive/12 text-destructive' : 'bg-white/6 text-muted-foreground'
+      }`}>
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="font-display text-lg font-semibold">{label}</p>
-        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+      <div className="min-w-0 flex-1 text-left">
+        <p className="text-sm font-semibold">{label}</p>
+        {description && <p className="text-xs text-muted-foreground">{description}</p>}
       </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />
-    </button>
+      {right ?? (onClick && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />)}
+    </Wrapper>
   );
 }
 
@@ -234,7 +206,6 @@ export default function ProfilePage() {
       toast.success('Name updated');
       setEditingName(false);
     }
-
     setSavingName(false);
   }
 
@@ -266,153 +237,147 @@ export default function ProfilePage() {
 
   return (
     <div className="page-shell">
-      <div className="page-content py-5 md:py-7">
-        <section className="page-hero">
-          <div className="flex flex-col gap-5 md:flex-row md:items-center">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[28px] bg-primary/14 text-primary shadow-[0_28px_70px_-38px_rgba(91,163,255,0.7)]">
-              <User className="h-9 w-9" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="hero-kicker">Profile</span>
-              {editingName ? (
-                <div className="mt-4 flex flex-col gap-3 md:flex-row">
-                  <input
-                    autoFocus
-                    value={displayName}
-                    onChange={(event) => setDisplayName(event.target.value)}
-                    onKeyDown={(event) => event.key === 'Enter' && void saveDisplayName()}
-                    placeholder="Your name"
-                    className="h-12 flex-1 rounded-2xl border border-white/10 bg-black/15 px-4 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => void saveDisplayName()}
-                      disabled={savingName}
-                      className="premium-button px-4 disabled:opacity-60"
-                    >
-                      {savingName ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
-                    </button>
-                    <button
-                      onClick={() => setEditingName(false)}
-                      className="premium-button-secondary px-4"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button onClick={() => setEditingName(true)} className="mt-4 text-left">
-                  <h1 className="page-title">{displayName || 'Add your name'}</h1>
+      <div className="page-content py-5 md:py-7 space-y-5">
+        <div className="page-header">
+          <h1 className="page-header-title">Profile</h1>
+        </div>
+
+        {/* Name + email */}
+        <div className="content-card">
+          {editingName ? (
+            <div className="flex flex-col gap-2 md:flex-row">
+              <input
+                autoFocus
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                onKeyDown={(event) => event.key === 'Enter' && void saveDisplayName()}
+                placeholder="Your name"
+                className="h-10 flex-1 rounded-xl border border-white/10 bg-black/15 px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => void saveDisplayName()}
+                  disabled={savingName}
+                  className="flex h-9 items-center gap-1 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+                >
+                  {savingName ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Save'}
                 </button>
-              )}
-              <p className="page-subtitle mt-3">{user?.email}</p>
+                <button
+                  onClick={() => setEditingName(false)}
+                  className="flex h-9 items-center rounded-lg border border-white/10 px-3 text-xs text-muted-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">{displayName || 'Add your name'}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+              <button
+                onClick={() => setEditingName(true)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-muted-foreground hover:text-foreground"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Preferences */}
+        <section>
+          <h2 className="section-title mb-2">Preferences</h2>
+          <div className="list-row justify-between">
+            <span className="text-sm font-semibold">Weight Unit</span>
+            <div className="flex rounded-lg border border-white/10 bg-black/15 p-0.5">
+              {(['kg', 'lb'] as const).map((value) => (
+                <button
+                  key={value}
+                  onClick={() => void handleUnitChange(value)}
+                  className={`h-7 min-w-[42px] rounded-md px-3 text-xs font-semibold transition-colors ${
+                    unit === value
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {value}
+                </button>
+              ))}
             </div>
           </div>
         </section>
 
-        <div className="mt-8 space-y-8">
-          <SettingSection title="Preferences" subtitle="local app settings">
-            <div className="premium-card page-reveal px-5 py-5">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h3 className="font-display text-xl font-semibold">Weight Unit</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Used across workouts, history, and progress.</p>
-                </div>
-                <div className="flex rounded-2xl border border-white/10 bg-black/15 p-1">
-                  {(['kg', 'lb'] as const).map((value) => (
-                    <button
-                      key={value}
-                      onClick={() => void handleUnitChange(value)}
-                      className={`h-10 min-w-[58px] rounded-xl px-4 text-sm font-semibold transition-colors ${
-                        unit === value
-                          ? 'bg-primary text-primary-foreground shadow-[0_18px_36px_-24px_rgba(91,163,255,0.8)]'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {value}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </SettingSection>
-
-          <SettingSection title="Data" subtitle="exports and status">
-            <ActionRow
+        {/* Data */}
+        <section>
+          <h2 className="section-title mb-2">Data</h2>
+          <div className="space-y-2">
+            <SettingRow
               icon={<Download className="h-4 w-4" />}
               label="Export Data"
-              description="Download all of your saved data as JSON."
+              description="Download all data as JSON"
               onClick={() => void handleExport()}
               loading={exporting}
             />
 
             {failedCount > 0 && (
-              <div className="premium-card page-reveal px-5 py-5">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-yellow-500/12 text-yellow-300">
-                    <AlertTriangle className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-display text-xl font-semibold">Sync issues detected</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {failedCount} queued change{failedCount !== 1 ? 's' : ''} failed to sync. The app will retry when possible.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <SettingRow
+                icon={<AlertTriangle className="h-4 w-4 text-yellow-300" />}
+                label="Sync issues"
+                description={`${failedCount} change${failedCount !== 1 ? 's' : ''} failed to sync`}
+              />
             )}
 
-            <div className="elevated-surface page-reveal flex items-center justify-between px-4 py-4">
-              <div>
-                <p className="font-display text-lg font-semibold">App Version</p>
-                <p className="mt-1 text-sm text-muted-foreground">Current installed web build</p>
-              </div>
-              <span className="status-pill font-mono">{APP_VERSION}</span>
-            </div>
-          </SettingSection>
+            <SettingRow
+              icon={<span className="text-xs font-mono">{APP_VERSION}</span>}
+              label="App Version"
+            />
+          </div>
+        </section>
 
-          {(isInstallable && !isDismissed && !isInstalled) && (
-            <SettingSection title="Install" subtitle="pwa access">
-              <ActionRow
-                icon={<Smartphone className="h-4 w-4" />}
-                label="Add To Home Screen"
-                description="Install LiftOS as an app for faster access and a cleaner mobile feel."
-                onClick={() => void install()}
-                accent
-              />
-            </SettingSection>
-          )}
+        {/* Install */}
+        {(isInstallable && !isDismissed && !isInstalled) && (
+          <section>
+            <h2 className="section-title mb-2">Install</h2>
+            <SettingRow
+              icon={<Smartphone className="h-4 w-4" />}
+              label="Add To Home Screen"
+              description="Install as a PWA for faster access"
+              onClick={() => void install()}
+            />
+          </section>
+        )}
 
-          {isInstalled && (
-            <SettingSection title="Install" subtitle="pwa access">
-              <div className="premium-card page-reveal flex items-center gap-4 px-5 py-5">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/14 text-primary">
-                  <Smartphone className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-display text-xl font-semibold">App installed</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">LiftOS is already available from your home screen.</p>
-                </div>
-              </div>
-            </SettingSection>
-          )}
+        {isInstalled && (
+          <section>
+            <h2 className="section-title mb-2">Install</h2>
+            <SettingRow
+              icon={<Smartphone className="h-4 w-4" />}
+              label="App installed"
+              description="LiftOS is on your home screen"
+            />
+          </section>
+        )}
 
-          <SettingSection title="Account" subtitle="session and security">
-            <ActionRow
+        {/* Account */}
+        <section>
+          <h2 className="section-title mb-2">Account</h2>
+          <div className="space-y-2">
+            <SettingRow
               icon={<LogOut className="h-4 w-4" />}
               label="Sign Out"
-              description="End this session on the current device."
               onClick={() => void handleSignOut()}
             />
-            <ActionRow
+            <SettingRow
               icon={<Trash2 className="h-4 w-4" />}
               label="Delete Account"
-              description="Permanently erase all of your data."
+              description="Permanently erase all data"
               onClick={() => setDeleteOpen(true)}
               destructive
             />
-          </SettingSection>
-        </div>
+          </div>
+        </section>
       </div>
 
       <DeleteAccountDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} />

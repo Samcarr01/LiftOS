@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Archive, Loader2, Pencil, Save, Search, Sparkles, X } from 'lucide-react';
+import { Archive, Loader2, Pencil, Save, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
@@ -77,177 +77,131 @@ export default function ExercisesPage() {
 
   return (
     <div className="page-shell">
-      <div className="page-content py-5 md:py-7">
-        <section className="page-hero">
-          <span className="hero-kicker">Exercises</span>
-          <h1 className="page-title mt-4">Keep your exercise list clean and obvious</h1>
-          <p className="page-subtitle mt-3">
-            This is your exercise list, not a random public library. Search it, rename things so they make sense, and archive duplicates that are cluttering Progress and workout creation.
-          </p>
+      <div className="page-content py-5 md:py-7 space-y-5">
+        {/* Header */}
+        <div className="page-header">
+          <h1 className="page-header-title">Exercise Library</h1>
           {!isLoading && exercises.length > 0 && (
-            <div className="mt-6 flex flex-wrap gap-3">
-              <span className="status-pill">{exercises.length} active exercise{exercises.length !== 1 ? 's' : ''}</span>
-              {duplicateGroups.length > 0 && (
-                <span className="status-pill border-yellow-500/25 bg-yellow-500/10 text-yellow-300">
-                  {duplicateGroups.length} duplicate name{duplicateGroups.length !== 1 ? 's' : ''}
-                </span>
-              )}
-            </div>
+            <span className="text-xs text-muted-foreground">{exercises.length} exercises</span>
           )}
-        </section>
-
-        <div className="mt-8 space-y-8">
-          <section className="section-shell">
-            <div className="premium-card page-reveal delay-2 px-4 py-4">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search by name, muscle group, or tracking type"
-                  className="h-12 rounded-2xl border-white/10 bg-black/15 pl-11"
-                />
-              </div>
-            </div>
-          </section>
-
-          {duplicateGroups.length > 0 && (
-            <section className="section-shell">
-              <div className="premium-card page-reveal delay-3 px-5 py-5">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-yellow-500/12 text-yellow-300">
-                    <Sparkles className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="font-display text-2xl font-semibold">Duplicate exercise names found</h2>
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                      Rename or archive the extras so Progress and workout selection stay clear and easy to use.
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {duplicateGroups.map((group) => (
-                        <span
-                          key={group.id}
-                          className="status-pill border-yellow-500/25 bg-yellow-500/10 text-yellow-300"
-                        >
-                          {group.name} ({group.duplicateCount})
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
-
-          <section className="section-shell">
-            <div className="section-heading">
-              <div>
-                <h2 className="section-title">Your Exercise List</h2>
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/75">
-                  rename, review, archive
-                </p>
-              </div>
-            </div>
-
-            {isLoading ? (
-              <div className="flex justify-center py-16">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : filteredExercises.length === 0 ? (
-              <div className="premium-card page-reveal delay-2 px-5 py-12 text-center">
-                <p className="font-display text-2xl font-semibold">No exercises match that search</p>
-                <p className="mt-2 text-sm text-muted-foreground">Try another name or muscle group.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredExercises.map((exercise, index) => {
-                  const isEditing = editingId === exercise.id;
-                  const isDuplicate = duplicateNames.has(normalizeExerciseName(exercise.name));
-
-                  return (
-                    <div key={exercise.id} className={`premium-card page-reveal delay-${Math.min(index + 1, 4)} px-5 py-5`}>
-                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                        <div className="min-w-0 flex-1">
-                          {isEditing ? (
-                            <div className="flex flex-col gap-3 md:flex-row">
-                              <Input
-                                value={draftName}
-                                onChange={(event) => setDraftName(event.target.value)}
-                                className="h-11 rounded-2xl border-white/10 bg-black/15"
-                                autoFocus
-                              />
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => void saveName(exercise.id)}
-                                  className="premium-button px-4"
-                                >
-                                  <Save className="h-4 w-4" />
-                                  Save
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setEditingId(null);
-                                    setDraftName('');
-                                  }}
-                                  className="premium-button-secondary px-4"
-                                >
-                                  <X className="h-4 w-4" />
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h2 className="font-display text-2xl font-semibold">{exercise.name}</h2>
-                              {isDuplicate && (
-                                <span className="status-pill border-yellow-500/25 bg-yellow-500/10 text-yellow-300">
-                                  Duplicate Name
-                                </span>
-                              )}
-                            </div>
-                          )}
-
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            {describeTrackingSchema(exercise.tracking_schema)}
-                          </p>
-
-                          <div className="mt-4 flex flex-wrap gap-1.5">
-                            {exercise.muscle_groups.length > 0 ? (
-                              exercise.muscle_groups.map((muscle) => (
-                                <MuscleGroupBadge key={muscle} muscle={muscle} />
-                              ))
-                            ) : (
-                              <span className="text-xs text-muted-foreground">No muscle groups added</span>
-                            )}
-                          </div>
-                        </div>
-
-                        {!isEditing && (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => startEditing(exercise.id, exercise.name)}
-                              className="premium-button-secondary px-4"
-                            >
-                              <Pencil className="h-4 w-4" />
-                              Rename
-                            </button>
-                            <button
-                              onClick={() => void handleArchive(exercise.id, exercise.name)}
-                              className="premium-button-secondary px-4 text-destructive hover:text-destructive"
-                            >
-                              <Archive className="h-4 w-4" />
-                              Archive
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
         </div>
+
+        {/* Search */}
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search by name, muscle group, or type"
+            className="h-10 rounded-xl border-white/10 bg-black/15 pl-10 text-sm"
+          />
+        </div>
+
+        {/* Duplicates warning */}
+        {duplicateGroups.length > 0 && (
+          <div className="content-card flex items-start gap-3">
+            <span className="text-xs font-semibold text-yellow-300">Duplicates</span>
+            <div className="flex flex-wrap gap-1.5">
+              {duplicateGroups.map((group) => (
+                <span
+                  key={group.id}
+                  className="inline-flex items-center rounded-md border border-yellow-500/25 bg-yellow-500/10 px-2 py-0.5 text-[10px] font-semibold text-yellow-300"
+                >
+                  {group.name} ({group.duplicateCount})
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Exercise list */}
+        {isLoading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : filteredExercises.length === 0 ? (
+          <div className="content-card py-8 text-center">
+            <p className="text-sm font-semibold">No exercises match</p>
+            <p className="mt-1 text-xs text-muted-foreground">Try a different search.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {filteredExercises.map((exercise) => {
+              const isEditing = editingId === exercise.id;
+              const isDuplicate = duplicateNames.has(normalizeExerciseName(exercise.name));
+
+              return (
+                <div key={exercise.id} className="list-row flex-col items-stretch gap-2 md:flex-row md:items-center">
+                  <div className="min-w-0 flex-1">
+                    {isEditing ? (
+                      <div className="flex flex-col gap-2 md:flex-row">
+                        <Input
+                          value={draftName}
+                          onChange={(event) => setDraftName(event.target.value)}
+                          className="h-9 rounded-xl border-white/10 bg-black/15 text-sm"
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => void saveName(exercise.id)}
+                            className="flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground"
+                          >
+                            <Save className="h-3.5 w-3.5" />
+                            Save
+                          </button>
+                          <button
+                            onClick={() => { setEditingId(null); setDraftName(''); }}
+                            className="flex h-8 items-center gap-1 rounded-lg border border-white/10 px-3 text-xs font-semibold text-muted-foreground"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-semibold">{exercise.name}</p>
+                          {isDuplicate && (
+                            <span className="rounded-md border border-yellow-500/25 bg-yellow-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-300">
+                              Dup
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{describeTrackingSchema(exercise.tracking_schema)}</p>
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {exercise.muscle_groups.length > 0 ? (
+                            exercise.muscle_groups.map((muscle) => (
+                              <MuscleGroupBadge key={muscle} muscle={muscle} />
+                            ))
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">No muscle groups</span>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {!isEditing && (
+                    <div className="flex shrink-0 gap-1.5">
+                      <button
+                        onClick={() => startEditing(exercise.id, exercise.name)}
+                        className="flex h-8 items-center gap-1 rounded-lg border border-white/10 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => void handleArchive(exercise.id, exercise.name)}
+                        className="flex h-8 items-center gap-1 rounded-lg border border-white/10 px-2.5 text-xs text-muted-foreground hover:text-destructive"
+                      >
+                        <Archive className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

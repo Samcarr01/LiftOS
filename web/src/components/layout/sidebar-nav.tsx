@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Dumbbell, TrendingUp, User, Zap } from 'lucide-react';
+import { Home, Dumbbell, ClockArrowUp, User, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { href: '/',           label: 'Home',      icon: Home },
   { href: '/templates',  label: 'Workouts',  icon: Dumbbell },
-  { href: '/progress',   label: 'Progress',  icon: TrendingUp },
+  { href: '/history',    label: 'History',   icon: ClockArrowUp },
   { href: '/profile',    label: 'Profile',   icon: User },
 ] as const;
 
@@ -22,10 +22,7 @@ export function SidebarNav() {
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/14 shadow-[0_18px_36px_-18px_rgba(91,163,255,0.75)]">
           <Zap className="h-6 w-6 text-primary" />
         </div>
-        <div>
-          <span className="font-display text-xl font-bold tracking-tight">LiftOS</span>
-          <p className="mt-1 text-xs uppercase tracking-[0.28em] text-muted-foreground">Premium Athlete</p>
-        </div>
+        <span className="font-display text-xl font-bold tracking-tight">LiftOS</span>
       </div>
 
       {/* Nav links */}
@@ -35,7 +32,9 @@ export function SidebarNav() {
             ? pathname === '/'
             : href === '/templates'
               ? pathname.startsWith('/templates') || pathname.startsWith('/exercises')
-              : pathname.startsWith(href);
+              : href === '/history'
+                ? pathname.startsWith('/history')
+                : pathname.startsWith(href);
           return (
             <Link
               key={href}

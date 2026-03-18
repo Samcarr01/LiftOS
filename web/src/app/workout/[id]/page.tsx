@@ -50,44 +50,33 @@ export default function WorkoutPage() {
   return (
     <div className="page-shell">
       <div className="page-content py-4 md:py-6">
-        <header className="sticky top-0 z-30 rounded-[30px] border border-white/10 bg-[rgba(10,18,34,0.96)] px-4 py-4 backdrop-blur-md shadow-[0_8px_24px_-8px_rgba(2,10,28,0.6)]">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="flex items-start gap-3">
-              <button
-                onClick={() => {
-                  if (confirm('Leave workout? Progress will be lost.')) {
-                    useActiveWorkoutStore.getState().clearWorkout();
-                    router.back();
-                  }
-                }}
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
+        <header className="sticky top-0 z-30 rounded-2xl border border-white/10 bg-[rgba(10,18,34,0.96)] px-4 py-3 backdrop-blur-md shadow-[0_4px_12px_-4px_rgba(2,10,28,0.5)]">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                if (confirm('Leave workout? Progress will be lost.')) {
+                  useActiveWorkoutStore.getState().clearWorkout();
+                  router.back();
+                }
+              }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
 
-              <div className="min-w-0">
-                <span className="hero-kicker">Live Session</span>
-                <h1 className="mt-3 font-display text-3xl font-semibold">{templateName}</h1>
-                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                  Fill in each row, then press <span className="font-medium text-foreground">Save Set</span> when that set is done. When the session is over, save the workout once from the button on the right.
-                </p>
-              </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate font-display text-base font-bold">{templateName}</h1>
+              <p className="text-xs text-muted-foreground">{savedSets}/{totalSets} sets</p>
             </div>
 
-            <div className="flex flex-col gap-3 lg:items-end">
-              <div className="flex flex-wrap gap-2">
-                <span className="status-pill">{savedSets}/{totalSets} sets saved</span>
-                <span className="status-pill">{workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}</span>
-              </div>
-              <button
-                onClick={() => setFinishOpen(true)}
-                disabled={workout.isCompleting || workout.exercises.length === 0}
-                className="premium-button disabled:opacity-60"
-              >
-                {workout.isCompleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Save Workout
-              </button>
-            </div>
+            <button
+              onClick={() => setFinishOpen(true)}
+              disabled={workout.isCompleting || workout.exercises.length === 0}
+              className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+            >
+              {workout.isCompleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              Save
+            </button>
           </div>
         </header>
 

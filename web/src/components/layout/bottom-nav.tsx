@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Dumbbell, TrendingUp, User } from 'lucide-react';
+import { Home, Dumbbell, ClockArrowUp, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { href: '/',           label: 'Home',      icon: Home },
   { href: '/templates',  label: 'Workouts',  icon: Dumbbell },
-  { href: '/progress',   label: 'Progress',  icon: TrendingUp },
+  { href: '/history',    label: 'History',   icon: ClockArrowUp },
   { href: '/profile',    label: 'Profile',   icon: User },
 ] as const;
 
@@ -17,13 +17,15 @@ export function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-3 z-50 px-4 md:hidden">
-      <div className="mx-auto flex h-[68px] max-w-md items-center justify-around rounded-[26px] border border-white/10 bg-[rgba(9,16,31,0.92)] px-2 shadow-[0_8px_24px_-8px_rgba(2,10,28,0.6)] backdrop-blur-md" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <div className="mx-auto flex h-[68px] max-w-md items-center justify-around rounded-2xl border border-white/10 bg-[rgba(9,16,31,0.92)] px-2 shadow-[0_8px_24px_-8px_rgba(2,10,28,0.6)] backdrop-blur-md" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const isActive = href === '/'
             ? pathname === '/'
             : href === '/templates'
               ? pathname.startsWith('/templates') || pathname.startsWith('/exercises')
-              : pathname.startsWith(href);
+              : href === '/history'
+                ? pathname.startsWith('/history')
+                : pathname.startsWith(href);
           return (
             <Link
               key={href}

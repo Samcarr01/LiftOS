@@ -10,7 +10,6 @@ import {
   Loader2,
   RefreshCw,
   Search,
-  Sparkles,
   Trophy,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -56,9 +55,9 @@ function StatCard({
   value: string;
 }) {
   return (
-    <div className="premium-card px-4 py-4">
-      <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
-      <p className="mt-2 font-display text-2xl font-semibold">{value}</p>
+    <div className="rounded-xl border border-white/8 px-3 py-3 text-center">
+      <p className="font-display text-base font-semibold">{value}</p>
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -98,124 +97,100 @@ export default function ProgressPage() {
   return (
     <div className="page-shell">
       <div className="page-content py-5 md:py-7">
-        <section className="page-hero">
-          <span className="hero-kicker">Progress</span>
-          <h1 className="page-title mt-4">Make your training trend easy to read</h1>
-          <p className="page-subtitle mt-3">
-            Pick an exercise, see the latest result, current best, and a plain-language trend first. Charts and heavier analytics stay there when you want them, but they no longer run the page.
-          </p>
-        </section>
+        <div className="page-header">
+          <h1 className="page-header-title">Progress</h1>
+        </div>
 
-        <div className="mt-8 space-y-8">
-          <section className="section-shell">
-            <div className="premium-card page-reveal delay-2 px-5 py-5">
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/14 text-primary">
-                  <Search className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="font-display text-2xl font-semibold">Pick an exercise</h2>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    Duplicate names are grouped together so the list stays clean. Search by exercise name, muscle group, or the way you track it.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 space-y-3">
-                <Input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search your exercises"
-                  className="h-12 rounded-2xl border-white/10 bg-black/15"
-                />
-
-                {exercises.length === 0 ? (
-                  <Skeleton className="h-12 w-full rounded-2xl" />
-                ) : (
-                  <select
-                    value={exerciseId}
-                    onChange={(event) => setExerciseId(event.target.value)}
-                    className="h-12 w-full rounded-2xl border border-white/10 bg-black/15 px-4 text-sm text-foreground outline-none focus:border-primary/50"
-                  >
-                    <option value="">Choose an exercise...</option>
-                    {filteredExercises.map((exercise) => (
-                      <option key={exercise.id} value={exercise.id}>
-                        {exercise.name}
-                        {exercise.duplicateCount > 1 ? ` (${exercise.duplicateCount} copies)` : ''}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
+        <div className="mt-5 space-y-5">
+          {/* Exercise picker */}
+          <section className="space-y-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search exercises"
+                className="h-10 rounded-xl border-white/10 bg-black/15 pl-10 text-sm"
+              />
             </div>
+
+            {exercises.length === 0 ? (
+              <Skeleton className="h-10 w-full rounded-xl" />
+            ) : (
+              <select
+                value={exerciseId}
+                onChange={(event) => setExerciseId(event.target.value)}
+                className="h-10 w-full rounded-xl border border-white/10 bg-black/15 px-3 text-sm text-foreground outline-none focus:border-primary/50"
+              >
+                <option value="">Choose an exercise...</option>
+                {filteredExercises.map((exercise) => (
+                  <option key={exercise.id} value={exercise.id}>
+                    {exercise.name}
+                    {exercise.duplicateCount > 1 ? ` (${exercise.duplicateCount} copies)` : ''}
+                  </option>
+                ))}
+              </select>
+            )}
           </section>
 
           {selectedExercise && (
-            <section className="section-shell">
-              <div className="premium-card page-reveal delay-3 px-5 py-5">
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <section>
+              <div className="content-card">
+                <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <span className="hero-kicker">Selected Exercise</span>
-                    <h2 className="mt-4 font-display text-3xl font-semibold">{selectedExercise.name}</h2>
-                    <p className="mt-2 text-sm text-muted-foreground">{selectedExercise.trackingLabel}</p>
-                    {selectedExercise.duplicateCount > 1 && (
-                      <p className="mt-2 text-xs uppercase tracking-[0.16em] text-muted-foreground/75">
-                        This view combines {selectedExercise.duplicateCount} saved exercises with the same name.
-                      </p>
-                    )}
+                    <h2 className="font-display text-base font-bold">{selectedExercise.name}</h2>
+                    <p className="text-xs text-muted-foreground">{selectedExercise.trackingLabel}</p>
                   </div>
 
                   <button
                     onClick={() => setShowAdvanced((value) => !value)}
-                    className="premium-button-secondary shrink-0 px-4"
+                    className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-white/10 px-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
                   >
-                    <BarChart3 className="h-4 w-4" />
-                    Advanced
-                    {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    Charts
+                    {showAdvanced ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                   </button>
                 </div>
 
                 {progressLoading ? (
-                  <div className="mt-5 grid gap-3 md:grid-cols-3">
-                    <Skeleton className="h-28 rounded-[28px]" />
-                    <Skeleton className="h-28 rounded-[28px]" />
-                    <Skeleton className="h-28 rounded-[28px]" />
+                  <div className="mt-4 grid gap-2 grid-cols-3">
+                    <Skeleton className="h-16 rounded-xl" />
+                    <Skeleton className="h-16 rounded-xl" />
+                    <Skeleton className="h-16 rounded-xl" />
                   </div>
                 ) : summary ? (
                   <>
-                    <div className="mt-5 grid gap-3 md:grid-cols-3">
-                      <StatCard label="Latest Result" value={summary.latestResult ?? 'No data'} />
-                      <StatCard label="Current Best" value={summary.currentBest ?? 'No data'} />
-                      <StatCard label="Workout Days" value={String(summary.trainingDays)} />
+                    <div className="mt-4 grid gap-2 grid-cols-3">
+                      <StatCard label="Latest" value={summary.latestResult ?? 'No data'} />
+                      <StatCard label="Best" value={summary.currentBest ?? 'No data'} />
+                      <StatCard label="Sessions" value={String(summary.trainingDays)} />
                     </div>
 
-                    <div className="glass-panel mt-4 px-4 py-4">
-                      <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Trend</p>
-                      <p className="mt-2 text-sm leading-relaxed text-foreground">{summary.trendNote}</p>
+                    <div className="mt-3 rounded-xl border border-white/8 px-3 py-2.5">
+                      <p className="text-xs text-muted-foreground">Trend</p>
+                      <p className="mt-1 text-sm text-foreground">{summary.trendNote}</p>
                     </div>
                   </>
                 ) : (
-                  <div className="mt-5">
+                  <div className="mt-4">
                     <ChartEmptyState message="No completed sessions yet for this exercise." />
                   </div>
                 )}
               </div>
 
               {records.length > 0 && (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {records.map((record, index) => (
+                <div className="grid gap-2 grid-cols-2">
+                  {records.map((record) => (
                     <div
                       key={record.record_type}
-                      className={`premium-card page-reveal delay-${Math.min(index + 1, 4)} flex items-center gap-3 px-4 py-4`}
+                      className="flex items-center gap-2 rounded-xl border border-white/8 px-3 py-2.5"
                     >
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-yellow-500/12 text-yellow-300">
-                        <Award className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                      <Award className="h-4 w-4 shrink-0 text-yellow-400" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
                           {PR_LABEL[record.record_type] ?? record.record_type}
                         </p>
-                        <p className="mt-1 font-display text-xl font-semibold">{record.record_value}</p>
+                        <p className="font-display text-sm font-semibold">{record.record_value}</p>
                       </div>
                     </div>
                   ))}
@@ -223,16 +198,16 @@ export default function ProgressPage() {
               )}
 
               {showAdvanced && (
-                <div className="premium-card page-reveal delay-4 px-5 py-5">
-                  <div className="flex flex-wrap gap-2">
+                <div className="content-card mt-3">
+                  <div className="flex flex-wrap gap-1.5">
                     {TIME_RANGES.map((timeRange) => (
                       <button
                         key={timeRange.value}
                         onClick={() => setRange(timeRange.value)}
-                        className={`rounded-2xl px-4 py-2 text-xs font-semibold transition-colors ${
+                        className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
                           range === timeRange.value
                             ? 'bg-primary text-primary-foreground'
-                            : 'border border-white/10 bg-black/10 text-muted-foreground hover:bg-white/5'
+                            : 'border border-white/10 text-muted-foreground hover:bg-white/5'
                         }`}
                       >
                         {timeRange.label}
@@ -240,25 +215,25 @@ export default function ProgressPage() {
                     ))}
                   </div>
 
-                  <div className="mt-5">
+                  <div className="mt-4">
                     {!summary?.chartReady ? (
-                      <ChartEmptyState message="Advanced charts are shown for weighted lifts with reps." />
+                      <ChartEmptyState message="Charts available for weighted lifts with reps." />
                     ) : progressLoading ? (
-                      <Skeleton className="h-52 w-full rounded-[28px]" />
+                      <Skeleton className="h-48 w-full rounded-xl" />
                     ) : points.length === 0 ? (
-                      <ChartEmptyState message="No chart data yet for this exercise." />
+                      <ChartEmptyState message="No chart data yet." />
                     ) : (
-                      <div className="space-y-5">
+                      <div className="space-y-4">
                         <div>
-                          <p className="mb-3 text-xs uppercase tracking-[0.16em] text-muted-foreground">Top Set</p>
+                          <p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">Top Set</p>
                           <TopSetChart points={points} />
                         </div>
                         <div>
-                          <p className="mb-3 text-xs uppercase tracking-[0.16em] text-muted-foreground">Estimated 1RM</p>
+                          <p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">Est. 1RM</p>
                           <E1rmChart points={points} />
                         </div>
                         <div>
-                          <p className="mb-3 text-xs uppercase tracking-[0.16em] text-muted-foreground">Total Weight Lifted</p>
+                          <p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">Volume</p>
                           <VolumeChart points={points} />
                         </div>
                       </div>
@@ -269,86 +244,68 @@ export default function ProgressPage() {
             </section>
           )}
 
-          <section className="section-shell">
-            <div className="premium-card page-reveal delay-2 px-5 py-5">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div className="min-w-0">
-                  <span className="hero-kicker">Weekly Summary</span>
-                  <h2 className="mt-4 font-display text-2xl font-semibold">Plain-language recap</h2>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    Let LiftOS describe the week in normal training language instead of making you reverse-engineer every metric yourself.
-                  </p>
-                </div>
+          <section>
+            <div className="content-card">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-display text-base font-bold">Weekly Summary</h2>
                 <button
                   onClick={() => void generate()}
                   disabled={weeklyLoading}
-                  className="premium-button shrink-0 disabled:opacity-60"
+                  className="flex h-8 items-center gap-1.5 rounded-lg border border-white/10 px-2.5 text-xs font-semibold text-muted-foreground disabled:opacity-60 hover:text-foreground"
                 >
-                  {weeklyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  {weeklyLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                   {generated ? 'Refresh' : 'Generate'}
                 </button>
               </div>
 
               {weeklyError && (
-                <p className="mt-4 text-sm text-destructive">{weeklyError}</p>
+                <p className="mt-3 text-sm text-destructive">{weeklyError}</p>
               )}
 
               {weeklyLoading ? (
-                <div className="mt-5 space-y-3">
-                  <Skeleton className="h-20 w-full rounded-[28px]" />
-                  <Skeleton className="h-20 w-full rounded-[28px]" />
+                <div className="mt-3 space-y-2">
+                  <Skeleton className="h-16 w-full rounded-xl" />
                 </div>
               ) : weeklySummary ? (
-                <div className="mt-5 space-y-4">
-                  <div className="grid gap-3 md:grid-cols-3">
+                <div className="mt-3 space-y-3">
+                  <div className="grid gap-2 grid-cols-3">
                     <StatCard label="Workouts" value={String(weeklySummary.workouts_completed)} />
-                    <StatCard label="Sets Logged" value={String(weeklySummary.total_sets)} />
-                    <StatCard label="Total Weight" value={`${Math.round(weeklySummary.total_volume_kg)}kg`} />
+                    <StatCard label="Sets" value={String(weeklySummary.total_sets)} />
+                    <StatCard label="Volume" value={`${Math.round(weeklySummary.total_volume_kg)}kg`} />
                   </div>
 
-                  <div className="glass-panel px-4 py-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/14 text-primary">
-                        <Sparkles className="h-4 w-4" />
-                      </div>
-                      <div className="space-y-2">
-                        {weeklySummary.strongest_lift && (
-                          <p className="text-sm text-foreground">
-                            <span className="font-medium">Strongest lift:</span> {weeklySummary.strongest_lift.exercise} · {weeklySummary.strongest_lift.value}
-                          </p>
-                        )}
-                        {weeklySummary.most_improved_group && (
-                          <p className="text-sm text-foreground">
-                            <span className="font-medium">Most improved area:</span> {weeklySummary.most_improved_group}
-                          </p>
-                        )}
-                        <p className="text-sm leading-relaxed text-muted-foreground">
-                          {weeklySummary.insight ?? 'Keep logging consistently and LiftOS will build a clearer weekly picture.'}
-                        </p>
-                      </div>
-                    </div>
+                  <div className="rounded-xl border border-white/8 px-3 py-2.5 space-y-1">
+                    {weeklySummary.strongest_lift && (
+                      <p className="text-sm text-foreground">
+                        <span className="font-medium">Strongest:</span> {weeklySummary.strongest_lift.exercise} · {weeklySummary.strongest_lift.value}
+                      </p>
+                    )}
+                    {weeklySummary.most_improved_group && (
+                      <p className="text-sm text-foreground">
+                        <span className="font-medium">Most improved:</span> {weeklySummary.most_improved_group}
+                      </p>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      {weeklySummary.insight ?? 'Keep logging for a clearer weekly picture.'}
+                    </p>
                   </div>
                 </div>
               ) : (
-                <div className="glass-panel mt-5 px-4 py-4 text-sm text-muted-foreground">
-                  Generate a summary after you have logged a few sessions to get a clearer weekly snapshot.
-                </div>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Log a few sessions, then generate your weekly recap.
+                </p>
               )}
             </div>
           </section>
 
           {!selectedExercise && exercises.length > 0 && (
-            <section className="section-shell">
-              <div className="premium-card page-reveal delay-3 flex flex-col items-center gap-3 px-5 py-12 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/14 text-primary">
-                  <Trophy className="h-7 w-7" />
-                </div>
-                <h2 className="font-display text-2xl font-semibold">Choose an exercise to begin</h2>
-                <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-                  Once you pick one, this page will show your latest result, current best, and the trend that matters most.
-                </p>
-              </div>
-            </section>
+            <div className="content-card py-8 text-center">
+              <Trophy className="mx-auto h-6 w-6 text-muted-foreground" />
+              <p className="mt-2 text-sm font-semibold">Choose an exercise above</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                See your latest result, best, and trend.
+              </p>
+            </div>
           )}
         </div>
       </div>
