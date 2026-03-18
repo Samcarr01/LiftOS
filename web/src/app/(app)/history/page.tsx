@@ -33,7 +33,7 @@ function SessionRow({
       onClick={onClick}
       className="list-row w-full"
     >
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/6 text-muted-foreground">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
         <Calendar className="h-4 w-4" />
       </div>
 

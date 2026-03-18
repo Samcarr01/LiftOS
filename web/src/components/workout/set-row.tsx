@@ -85,7 +85,7 @@ export function SetRow({
     <div
       className={cn(
         'rounded-xl border border-white/8 px-3 py-2.5 transition-all duration-200',
-        set.isCompleted && 'border-emerald-500/20 bg-emerald-500/[0.04]',
+        set.isCompleted && 'border-emerald-500/25 bg-emerald-500/[0.04] shadow-[0_0_12px_-4px_oklch(0.72_0.17_170/0.2)]',
         isPrefilled && 'border-primary/15',
       )}
     >

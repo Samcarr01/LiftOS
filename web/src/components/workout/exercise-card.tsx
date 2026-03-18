@@ -56,7 +56,7 @@ export function ExerciseCard({
   }
 
   return (
-    <div className={`premium-card page-reveal px-4 py-4 ${allComplete ? 'border-emerald-500/20' : ''}`}>
+    <div className={`premium-card page-reveal px-4 py-4 ${allComplete ? 'border-emerald-500/25 shadow-[0_0_16px_-6px_oklch(0.72_0.17_170/0.25)]' : ''}`}>
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">

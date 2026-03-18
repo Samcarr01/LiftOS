@@ -41,14 +41,15 @@ export default function WorkoutCompletePage() {
   }
 
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center bg-background px-4 pb-8 pt-8">
+    <div className="relative flex min-h-[100dvh] flex-col items-center bg-background px-4 pb-8 pt-8">
+      <div className="pointer-events-none absolute inset-0" style={{ background: hasPrs ? 'radial-gradient(circle at 50% 15%, oklch(0.80 0.16 85 / 0.06), transparent 50%)' : 'radial-gradient(circle at 50% 15%, oklch(0.72 0.19 252 / 0.05), transparent 50%)' }} />
       {/* Hero */}
       <div
         className={`
-          flex h-20 w-20 items-center justify-center rounded-full
+          relative flex h-20 w-20 items-center justify-center rounded-full
           ${hasPrs
-            ? 'bg-yellow-500/20 animate-bounce-once'
-            : 'bg-primary/20'
+            ? 'bg-yellow-500/20 shadow-[0_0_30px_-4px_oklch(0.80_0.16_85/0.35)] animate-bounce-once'
+            : 'bg-primary/20 shadow-[0_0_24px_-4px_oklch(0.72_0.19_252/0.3)]'
           }
         `}
       >
@@ -58,10 +59,10 @@ export default function WorkoutCompletePage() {
         }
       </div>
 
-      <h1 className="mt-5 text-2xl font-bold tracking-tight">
+      <h1 className="relative mt-5 text-2xl font-bold tracking-tight">
         {hasPrs ? 'Workout Complete' : 'Workout Saved'}
       </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="relative mt-1 text-sm text-muted-foreground">
         Your progress is saved. AI suggestions will use this session next time.
       </p>
 
@@ -105,7 +106,8 @@ export default function WorkoutCompletePage() {
       <div className="mt-auto w-full max-w-sm pt-10">
         <button
           onClick={handleDone}
-          className="flex h-12 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-95"
+          className="flex h-12 w-full items-center justify-center rounded-xl text-sm font-semibold text-primary-foreground shadow-[0_8px_24px_-8px_oklch(0.72_0.19_252/0.35)] transition-all duration-150 hover:brightness-110 hover:shadow-[0_12px_30px_-8px_oklch(0.72_0.19_252/0.45)] active:scale-[0.98] active:brightness-95"
+          style={{ background: 'linear-gradient(135deg, oklch(0.72 0.19 252), oklch(0.62 0.17 240))' }}
         >
           Done
         </button>
@@ -116,7 +118,8 @@ export default function WorkoutCompletePage() {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col items-center rounded-xl bg-muted px-3 py-4">
+    <div className="relative flex flex-col items-center overflow-hidden rounded-xl border border-white/[0.07] bg-card px-3 py-4">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
       <span className="text-lg font-bold">{value}</span>
       <span className="mt-0.5 text-[11px] text-muted-foreground">{label}</span>
     </div>
@@ -125,7 +128,7 @@ function StatCard({ label, value }: { label: string; value: string }) {
 
 function PrCard({ pr }: { pr: CompletionPR }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3">
+    <div className="flex items-center gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 shadow-[0_0_16px_-4px_oklch(0.80_0.16_85/0.25)]">
       <Award className="h-5 w-5 shrink-0 text-yellow-500" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{pr.exercise_name}</p>

@@ -138,16 +138,19 @@ export default function HomePage() {
         {/* Start Workout CTA */}
         <button
           onClick={() => setSheetOpen(true)}
-          className="flex w-full items-center gap-3 rounded-xl bg-primary px-5 py-4 text-left text-primary-foreground transition-transform duration-150 active:scale-[0.99] active:brightness-95"
+          className="group flex w-full items-center gap-3 rounded-xl px-5 py-4 text-left text-primary-foreground shadow-[0_8px_30px_-8px_oklch(0.72_0.19_252/0.4)] transition-all duration-150 hover:shadow-[0_12px_36px_-8px_oklch(0.72_0.19_252/0.5)] active:scale-[0.99] active:brightness-95"
+          style={{ background: 'linear-gradient(135deg, oklch(0.72 0.19 252), oklch(0.60 0.17 235))' }}
         >
-          <Play className="h-5 w-5 shrink-0" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
+            <Play className="h-4 w-4" />
+          </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold">Start Workout</p>
             {data?.suggested && (
-              <p className="truncate text-xs opacity-80">{data.suggested.name}</p>
+              <p className="truncate text-xs opacity-75">{data.suggested.name}</p>
             )}
           </div>
-          <ChevronRight className="h-4 w-4 opacity-60" />
+          <ChevronRight className="h-4 w-4 opacity-60 transition-transform duration-150 group-hover:translate-x-0.5" />
         </button>
 
         {/* Last Session */}
@@ -156,13 +159,19 @@ export default function HomePage() {
         ) : lastSession ? (
           <button
             onClick={() => router.push(`/history/${lastSession.id}`)}
-            className="content-card w-full text-left"
+            className="content-card group w-full overflow-hidden text-left"
           >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Last Session</p>
-            <p className="mt-1.5 font-display text-base font-semibold">{lastSession.template_name ?? 'Custom Workout'} <span className="font-normal text-muted-foreground">· {formatShortDate(lastSession.started_at)}</span></p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {lastSession.exercise_count} exercise{lastSession.exercise_count !== 1 ? 's' : ''} · {lastSession.total_sets} set{lastSession.total_sets !== 1 ? 's' : ''}
-            </p>
+            <div className="flex gap-3">
+              <div className="w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b from-primary to-primary/30" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Last Session</p>
+                <p className="mt-1.5 font-display text-base font-semibold">{lastSession.template_name ?? 'Custom Workout'} <span className="font-normal text-muted-foreground">· {formatShortDate(lastSession.started_at)}</span></p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {lastSession.exercise_count} exercise{lastSession.exercise_count !== 1 ? 's' : ''} · {lastSession.total_sets} set{lastSession.total_sets !== 1 ? 's' : ''}
+                </p>
+              </div>
+              <ChevronRight className="mt-3 h-4 w-4 shrink-0 text-muted-foreground/40 transition-transform duration-150 group-hover:translate-x-0.5" />
+            </div>
           </button>
         ) : !loading && allTemplates.length === 0 ? (
           <div className="content-card text-center py-6">

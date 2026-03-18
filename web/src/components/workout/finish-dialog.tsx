@@ -141,7 +141,8 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(value) => !value && !saving && onClose()}>
-      <DialogContent className="sm:max-w-lg border-white/[0.07] bg-card text-foreground">
+      <DialogContent className="relative sm:max-w-lg overflow-hidden border-white/[0.07] bg-card text-foreground">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
         <DialogHeader>
           <DialogTitle className="font-display text-lg font-bold">Save Workout</DialogTitle>
         </DialogHeader>

@@ -72,16 +72,21 @@ export default function WorkoutPage() {
             <button
               onClick={() => setFinishOpen(true)}
               disabled={workout.isCompleting || workout.exercises.length === 0}
-              className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+              className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-primary-foreground shadow-[0_4px_12px_-4px_oklch(0.72_0.19_252/0.4)] transition-all duration-150 hover:brightness-110 active:scale-[0.97] disabled:opacity-60 disabled:shadow-none"
+              style={{ background: 'linear-gradient(135deg, oklch(0.72 0.19 252), oklch(0.62 0.17 240))' }}
             >
               {workout.isCompleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
               Save
             </button>
           </div>
-          <div className="mt-2.5 h-1 w-full overflow-hidden rounded-full bg-white/[0.06]">
+          <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
             <div
-              className="h-full rounded-full bg-primary transition-all duration-300 ease-out"
-              style={{ width: `${totalSets > 0 ? (savedSets / totalSets) * 100 : 0}%` }}
+              className="h-full rounded-full transition-all duration-300 ease-out"
+              style={{
+                width: `${totalSets > 0 ? (savedSets / totalSets) * 100 : 0}%`,
+                background: 'linear-gradient(90deg, oklch(0.72 0.19 252), oklch(0.72 0.17 170))',
+                boxShadow: savedSets > 0 ? '0 0 8px oklch(0.72 0.19 252 / 0.4)' : 'none',
+              }}
             />
           </div>
         </header>
