@@ -1,0 +1,190 @@
+'use client';
+
+import { Link2, Plus } from 'lucide-react';
+import { useActiveWorkoutStore } from '@/store/active-workout-store';
+import { logSetEntry } from '@/lib/offline';
+import type { ActiveExerciseState, SetValues } from '@/types/app';
+import { SetRow } from './set-row';
+import { cn } from '@/lib/utils';
+
+interface SupersetExercise {
+  state: ActiveExerciseState;
+  exerciseIndex: number;
+}
+
+interface SupersetCardProps {
+  exercises: SupersetExercise[];
+  dismissedSuggestions: number[];
+}
+
+export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardProps) {
+  const addSet = useActiveWorkoutStore((store) => store.addSet);
+  const updateSet = useActiveWorkoutStore((store) => store.updateSet);
+  const deleteSet = useActiveWorkoutStore((store) => store.deleteSet);
+  const completeSet = useActiveWorkoutStore((store) => store.completeSet);
+
+  // Figure out the max number of rounds (sets) across all exercises
+  const maxRounds = Math.max(...exercises.map((ex) => ex.state.sets.length));
+
+  // Total completion tracking
+  const totalSets = exercises.reduce((sum, ex) => sum + ex.state.sets.length, 0);
+  const completedSets = exercises.reduce(
+    (sum, ex) => sum + ex.state.sets.filter((s) => s.isCompleted).length,
+    0,
+  );
+  const allComplete = totalSets > 0 && completedSets === totalSets;
+
+  function handleComplete(exerciseIndex: number, setId: string) {
+    completeSet(exerciseIndex, setId);
+    navigator.vibrate?.(50);
+
+    const completedSet = useActiveWorkoutStore
+      .getState()
+      .workout?.exercises[exerciseIndex]?.sets
+      .find((set) => set.id === setId);
+
+    if (completedSet) void logSetEntry(completedSet);
+  }
+
+  function handleAddRound() {
+    for (const ex of exercises) {
+      addSet(ex.exerciseIndex);
+    }
+  }
+
+  function handleDeleteRound(roundIndex: number) {
+    // Delete the set at this round index from each exercise (in reverse to avoid index shift issues)
+    for (const ex of [...exercises].reverse()) {
+      const set = ex.state.sets[roundIndex];
+      if (set) {
+        deleteSet(ex.exerciseIndex, set.id);
+      }
+    }
+  }
+
+  // Color assignments for exercises within the superset
+  const exerciseColors = [
+    { bg: 'bg-primary/12', text: 'text-primary', border: 'border-primary/20' },
+    { bg: 'bg-[oklch(0.72_0.19_155/0.12)]', text: 'text-[oklch(0.78_0.17_155)]', border: 'border-[oklch(0.72_0.19_155/0.20)]' },
+    { bg: 'bg-[oklch(0.72_0.17_252/0.12)]', text: 'text-[oklch(0.78_0.15_252)]', border: 'border-[oklch(0.72_0.17_252/0.20)]' },
+    { bg: 'bg-[oklch(0.80_0.16_85/0.12)]', text: 'text-[oklch(0.85_0.15_85)]', border: 'border-[oklch(0.80_0.16_85/0.20)]' },
+  ];
+
+  return (
+    <div
+      className={cn(
+        'premium-card page-reveal px-5 py-5',
+        allComplete && 'border-[oklch(0.72_0.19_155/0.25)] bg-[oklch(0.72_0.19_155/0.08)]',
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <Link2 className="h-4 w-4 shrink-0 text-primary" />
+            <h2 className="font-display text-lg font-bold">Superset</h2>
+            <span
+              className={cn(
+                'rounded-full px-2 py-0.5 text-sm font-semibold',
+                allComplete
+                  ? 'bg-[oklch(0.72_0.19_155/0.12)] text-[oklch(0.78_0.17_155)]'
+                  : 'bg-[oklch(0.75_0.18_55/0.12)] text-[oklch(0.80_0.16_55)]',
+              )}
+            >
+              {completedSets}/{totalSets}
+            </span>
+          </div>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {exercises.map((ex, i) => {
+              const color = exerciseColors[i % exerciseColors.length];
+              return (
+                <span
+                  key={ex.state.sessionExercise.id}
+                  className={cn('rounded-md border px-2 py-0.5 text-xs font-semibold', color.bg, color.text, color.border)}
+                >
+                  {ex.state.exercise.name}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+        {allComplete && (
+          <span className="shrink-0 text-sm font-semibold text-[oklch(0.78_0.17_155)]">Done</span>
+        )}
+      </div>
+
+      {/* Rounds */}
+      <div className="mt-4 space-y-4">
+        {Array.from({ length: maxRounds }, (_, roundIndex) => {
+          const roundSets = exercises.map((ex) => ex.state.sets[roundIndex] ?? null);
+          const roundComplete = roundSets.every((s) => s?.isCompleted);
+
+          return (
+            <div
+              key={roundIndex}
+              className={cn(
+                'rounded-xl border px-3 py-3 space-y-2',
+                roundComplete
+                  ? 'border-[oklch(0.72_0.19_155/0.20)] bg-[oklch(0.72_0.19_155/0.06)]'
+                  : 'border-white/[0.08] bg-white/[0.03]',
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground">
+                  Round {roundIndex + 1}
+                </span>
+                {roundComplete && (
+                  <span className="text-xs font-semibold text-[oklch(0.78_0.17_155)]">Done</span>
+                )}
+              </div>
+
+              {exercises.map((ex, exIdx) => {
+                const set = ex.state.sets[roundIndex];
+                if (!set) return null;
+                const fields = ex.state.exercise.tracking_schema.fields;
+                const color = exerciseColors[exIdx % exerciseColors.length];
+
+                return (
+                  <div key={ex.state.sessionExercise.id}>
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <div className={cn('h-1.5 w-1.5 rounded-full', color.bg.replace('/12', ''))} />
+                      <span className={cn('text-xs font-semibold', color.text)}>
+                        {ex.state.exercise.name}
+                      </span>
+                    </div>
+                    <SetRow
+                      set={set}
+                      setNumber={roundIndex + 1}
+                      lastValues={ex.state.lastPerformanceSets?.[roundIndex] ?? null}
+                      fields={fields}
+                      onUpdate={(patch) => {
+                        updateSet(ex.exerciseIndex, set.id, {
+                          ...(patch.values ? { values: patch.values as SetValues } : {}),
+                          ...(patch.setType ? { setType: patch.setType } : {}),
+                        });
+                      }}
+                      onComplete={() => handleComplete(ex.exerciseIndex, set.id)}
+                      onDelete={() => handleDeleteRound(roundIndex)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Add Round */}
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={handleAddRound}
+          className="flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl border border-white/10 text-sm font-semibold text-muted-foreground hover:text-foreground"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Add Round
+        </button>
+      </div>
+    </div>
+  );
+}

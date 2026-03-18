@@ -105,6 +105,51 @@ function ExerciseBlock({ exercise }: { exercise: SessionDetailExercise }) {
   );
 }
 
+function SupersetBlock({ exercises }: { exercises: SessionDetailExercise[] }) {
+  const maxRounds = Math.max(...exercises.map((ex) => ex.sets.length));
+  const exerciseColors = [
+    { text: 'text-primary' },
+    { text: 'text-[oklch(0.78_0.17_155)]' },
+    { text: 'text-[oklch(0.78_0.15_252)]' },
+    { text: 'text-[oklch(0.85_0.15_85)]' },
+  ];
+
+  return (
+    <div className="content-card">
+      <div className="flex items-center gap-2">
+        <Link2 className="h-4 w-4 shrink-0 text-primary" />
+        <h3 className="font-display text-base font-bold">Superset</h3>
+      </div>
+      <div className="mt-1 flex flex-wrap gap-1.5">
+        {exercises.map((ex, i) => (
+          <span key={ex.session_exercise_id} className={`text-xs font-semibold ${exerciseColors[i % exerciseColors.length].text}`}>
+            {ex.exercise_name}{i < exercises.length - 1 ? ' +' : ''}
+          </span>
+        ))}
+      </div>
+
+      <div className="mt-3 space-y-3">
+        {Array.from({ length: maxRounds }, (_, roundIndex) => (
+          <div key={roundIndex} className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 space-y-1.5">
+            <span className="text-xs font-semibold text-muted-foreground">Round {roundIndex + 1}</span>
+            {exercises.map((ex, exIdx) => {
+              const set = ex.sets[roundIndex];
+              if (!set) return null;
+              const color = exerciseColors[exIdx % exerciseColors.length];
+              return (
+                <div key={ex.session_exercise_id}>
+                  <span className={`text-xs font-semibold ${color.text}`}>{ex.exercise_name}</span>
+                  <SetLine set={set} trackingSchema={ex.tracking_schema} />
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function SessionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { detail, loading, error } = useSessionDetail(id);
@@ -217,17 +262,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                   if (!isSuperset) {
                     return <ExerciseBlock key={group.key} exercise={group.exercises[0]} />;
                   }
-                  return (
-                    <div key={group.key} className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-2 space-y-2">
-                      <div className="flex items-center gap-2 px-3 pt-1">
-                        <Link2 className="h-3.5 w-3.5 text-primary" />
-                        <span className="text-xs font-semibold text-primary">Superset</span>
-                      </div>
-                      {group.exercises.map((exercise) => (
-                        <ExerciseBlock key={exercise.session_exercise_id} exercise={exercise} />
-                      ))}
-                    </div>
-                  );
+                  return <SupersetBlock key={group.key} exercises={group.exercises} />;
                 });
               })()}
             </div>
