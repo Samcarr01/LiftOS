@@ -85,7 +85,7 @@ function LoginForm() {
   const buttonLabel = mode === 'forgot' ? 'Send Reset Email' : mode === 'signup' ? 'Create Account' : 'Sign In';
 
   return (
-    <div className="w-full max-w-md premium-card px-6 py-7 sm:px-8">
+    <div className="w-full max-w-md rounded-xl border border-white/[0.10] bg-[oklch(0.24_0.016_264)] px-6 py-7 sm:px-8" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 8px -2px rgba(0,0,0,0.3)' }}>
       <div className="flex items-center gap-3">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl text-primary shadow-[0_0_20px_-4px_oklch(0.72_0.19_252/0.3)]" style={{ background: 'linear-gradient(135deg, oklch(0.72 0.19 252 / 0.18), oklch(0.62 0.17 240 / 0.12))' }}>
           <Zap className="h-6 w-6" />
@@ -112,7 +112,7 @@ function LoginForm() {
 
           <div className="my-5 flex items-center gap-3">
             <div className="h-px flex-1 bg-white/10" />
-            <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">or</span>
+            <span className="text-overline">or</span>
             <div className="h-px flex-1 bg-white/10" />
           </div>
         </>
@@ -120,7 +120,7 @@ function LoginForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <label htmlFor="email" className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+          <label htmlFor="email" className="text-label">
             Email
           </label>
           <Input
@@ -137,7 +137,7 @@ function LoginForm() {
 
         {mode !== 'forgot' && (
           <div className="space-y-2">
-            <label htmlFor="password" className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+            <label htmlFor="password" className="text-label">
               Password
             </label>
             <div className="relative">
@@ -239,12 +239,12 @@ export default function LoginPage() {
           </p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
-            <div className="glass-panel px-5 py-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Clarity first</p>
+            <div className="content-card px-5 py-5">
+              <p className="text-overline">Clarity first</p>
               <p className="mt-2 font-display text-2xl font-semibold">Own exercises, simple logging, better scanability</p>
             </div>
-            <div className="glass-panel px-5 py-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Guided progression</p>
+            <div className="content-card px-5 py-5">
+              <p className="text-overline">Guided progression</p>
               <p className="mt-2 font-display text-2xl font-semibold">Smarter next-time targets without overcomplication</p>
             </div>
           </div>
@@ -263,7 +263,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="pointer-events-none absolute bottom-8 left-1/2 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/20 px-4 py-2 text-xs uppercase tracking-[0.16em] text-muted-foreground backdrop-blur md:flex">
+      <div className="pointer-events-none absolute bottom-8 left-1/2 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/20 px-4 py-2 text-xs uppercase tracking-[0.06em] text-muted-foreground backdrop-blur md:flex">
         <Sparkles className="h-3.5 w-3.5" />
         LiftOS Web App
       </div>

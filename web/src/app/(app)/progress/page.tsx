@@ -55,9 +55,9 @@ function StatCard({
   value: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/8 px-3 py-3 text-center">
-      <p className="font-display text-base font-semibold">{value}</p>
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+    <div className="stat-card">
+      <p className="text-stat">{value}</p>
+      <p className="text-caption">{label}</p>
     </div>
   );
 }
@@ -183,11 +183,11 @@ export default function ProgressPage() {
                   {records.map((record) => (
                     <div
                       key={record.record_type}
-                      className="flex items-center gap-2 rounded-xl border border-white/8 px-3 py-2.5"
+                      className="flex items-center gap-2 rounded-xl border border-[oklch(0.80_0.16_85/0.25)] bg-[oklch(0.80_0.16_85/0.12)] px-3 py-2.5"
                     >
-                      <Award className="h-4 w-4 shrink-0 text-yellow-400" />
+                      <Award className="h-4 w-4 shrink-0 text-[oklch(0.85_0.15_85)]" />
                       <div className="min-w-0">
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <p className="text-caption">
                           {PR_LABEL[record.record_type] ?? record.record_type}
                         </p>
                         <p className="font-display text-sm font-semibold">{record.record_value}</p>
@@ -207,7 +207,7 @@ export default function ProgressPage() {
                         className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
                           range === timeRange.value
                             ? 'bg-primary text-primary-foreground'
-                            : 'border border-white/10 text-muted-foreground hover:bg-white/5'
+                            : 'border border-white/[0.14] bg-white/[0.04] text-muted-foreground hover:bg-white/8'
                         }`}
                       >
                         {timeRange.label}
@@ -225,15 +225,15 @@ export default function ProgressPage() {
                     ) : (
                       <div className="space-y-4">
                         <div>
-                          <p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">Top Set</p>
+                          <p className="mb-2 text-overline">Top Set</p>
                           <TopSetChart points={points} />
                         </div>
                         <div>
-                          <p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">Est. 1RM</p>
+                          <p className="mb-2 text-overline">Est. 1RM</p>
                           <E1rmChart points={points} />
                         </div>
                         <div>
-                          <p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">Volume</p>
+                          <p className="mb-2 text-overline">Volume</p>
                           <VolumeChart points={points} />
                         </div>
                       </div>

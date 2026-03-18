@@ -56,12 +56,12 @@ export function ExerciseCard({
   }
 
   return (
-    <div className={`premium-card page-reveal px-4 py-4 ${allComplete ? 'border-emerald-500/25 shadow-[0_0_16px_-6px_oklch(0.72_0.17_170/0.25)]' : ''}`}>
+    <div className={`premium-card page-reveal px-4 py-4 ${allComplete ? 'border-[oklch(0.72_0.17_170/0.25)] bg-[oklch(0.72_0.17_170/0.08)]' : ''}`}>
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2 className="truncate font-display text-lg font-bold">{exercise.name}</h2>
-            <span className={`text-xs font-semibold ${allComplete ? 'text-primary' : 'text-muted-foreground'}`}>
+            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${allComplete ? 'bg-[oklch(0.72_0.17_170/0.12)] text-[oklch(0.78_0.16_170)]' : 'bg-[oklch(0.72_0.19_252/0.12)] text-[oklch(0.78_0.17_252)]'}`}>
               {completedCount}/{sets.length}
             </span>
           </div>
@@ -113,7 +113,7 @@ export function ExerciseCard({
         <button
           type="button"
           onClick={() => addSet(exerciseIndex)}
-          className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/10 text-xs font-semibold text-muted-foreground hover:text-foreground"
+          className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/10 text-xs font-semibold text-muted-foreground hover:text-foreground"
         >
           <Plus className="h-3.5 w-3.5" />
           Add Set
@@ -122,7 +122,7 @@ export function ExerciseCard({
         <button
           type="button"
           onClick={() => setNotesOpen((value) => !value)}
-          className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-white/10 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
+          className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-white/10 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
         >
           {notesOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           Notes

@@ -17,7 +17,7 @@ export function AISuggestionBanner({
   const progressing = suggestion.decision === 'progress';
 
   return (
-    <div className="rounded-lg border border-primary/15 bg-primary/[0.06] px-3 py-2.5">
+    <div className="rounded-lg border border-[oklch(0.72_0.19_252/0.25)] bg-[oklch(0.72_0.19_252/0.12)] px-3 py-2.5">
       <div className="flex items-start gap-2.5">
         <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
 
@@ -56,7 +56,8 @@ export function AISuggestionBanner({
         <div className="mt-2 flex gap-2 border-t border-primary/10 pt-2">
           <button
             onClick={onAccept}
-            className="flex h-7 flex-1 items-center justify-center rounded-md bg-primary/12 text-xs font-semibold text-primary active:bg-primary/20"
+            className="flex h-7 flex-1 items-center justify-center rounded-lg text-xs font-semibold text-primary-foreground active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, oklch(0.72 0.19 252), oklch(0.62 0.17 240))' }}
           >
             Apply Target
           </button>

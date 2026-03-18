@@ -43,7 +43,7 @@ function SetLine({
 }) {
   return (
     <div className={`flex items-center gap-3 rounded-xl border border-white/8 px-3 py-2 ${!set.is_completed ? 'opacity-50' : ''}`}>
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-xs font-semibold text-primary">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[oklch(0.72_0.19_252/0.12)] text-xs font-semibold text-[oklch(0.78_0.17_252)]">
         {set.set_index + 1}
       </span>
       <div className="min-w-0 flex-1">
@@ -55,7 +55,7 @@ function SetLine({
         </p>
       </div>
       {!set.is_completed && (
-        <span className="text-[10px] uppercase text-muted-foreground">Open</span>
+        <span className="rounded-full border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-2 py-0.5 text-xs font-medium text-[oklch(0.82_0.15_60)]">Open</span>
       )}
     </div>
   );
@@ -68,7 +68,7 @@ function ExerciseBlock({ exercise }: { exercise: SessionDetailExercise }) {
     <div className="content-card">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="truncate font-display text-base font-semibold">{exercise.exercise_name}</h3>
+          <h3 className="truncate text-card-title">{exercise.exercise_name}</h3>
           <div className="mt-1 flex flex-wrap gap-1">
             {exercise.muscle_groups.slice(0, 3).map((muscle) => (
               <MuscleGroupBadge key={muscle} muscle={muscle} />
@@ -85,7 +85,7 @@ function ExerciseBlock({ exercise }: { exercise: SessionDetailExercise }) {
           {exercise.prs.map((pr, index) => (
             <span
               key={`${pr.record_type}-${index}`}
-              className="inline-flex items-center gap-1 rounded-md border border-yellow-500/25 bg-yellow-500/10 px-2 py-0.5 text-[10px] font-semibold text-yellow-300"
+              className="inline-flex items-center gap-1 rounded-md border border-[oklch(0.80_0.16_85/0.25)] bg-[oklch(0.80_0.16_85/0.12)] px-2 py-0.5 text-xs font-semibold text-[oklch(0.85_0.15_85)]"
             >
               <Award className="h-3 w-3" />
               {PR_LABEL[pr.record_type]} · {formatPrValue(pr.record_type, pr.record_value)}
@@ -145,17 +145,17 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
           <>
             {/* Stats row */}
             <div className="grid grid-cols-3 gap-2">
-              <div className="content-card text-center py-3">
-                <p className="font-display text-lg font-semibold">{detail.exercises.length}</p>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Exercises</p>
+              <div className="stat-card">
+                <p className="text-stat">{detail.exercises.length}</p>
+                <p className="text-caption">Exercises</p>
               </div>
-              <div className="content-card text-center py-3">
-                <p className="font-display text-lg font-semibold">{detail.total_sets}</p>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Sets</p>
+              <div className="stat-card">
+                <p className="text-stat">{detail.total_sets}</p>
+                <p className="text-caption">Sets</p>
               </div>
-              <div className="content-card text-center py-3">
-                <p className="font-display text-lg font-semibold">{formatLongDate(detail.started_at).split(',')[0]}</p>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Date</p>
+              <div className="stat-card">
+                <p className="text-stat">{formatLongDate(detail.started_at).split(',')[0]}</p>
+                <p className="text-caption">Date</p>
               </div>
             </div>
 

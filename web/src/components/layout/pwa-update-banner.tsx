@@ -9,14 +9,14 @@ export function PwaUpdateBanner() {
   if (!updateReady) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-24 z-50 mx-4 rounded-xl border border-white/[0.07] bg-card/95 px-4 py-3 backdrop-blur-xl md:bottom-6 md:left-auto md:right-6 md:w-80">
+    <div className="fixed inset-x-0 bottom-24 z-50 mx-4 rounded-xl border border-white/[0.12] bg-[oklch(0.24_0.016_264/0.95)] px-4 py-3 backdrop-blur-xl md:bottom-6 md:left-auto md:right-6 md:w-80">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/12">
           <RefreshCw className="h-4 w-4 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-display text-sm font-semibold">A new version is ready</p>
-          <p className="text-xs text-muted-foreground">Reload to pick up the latest UI polish and fixes.</p>
+          <p className="text-card-title">A new version is ready</p>
+          <p className="text-caption">Reload to pick up the latest UI polish and fixes.</p>
         </div>
       </div>
       <button

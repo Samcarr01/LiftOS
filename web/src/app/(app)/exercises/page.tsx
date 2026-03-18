@@ -88,24 +88,24 @@ export default function ExercisesPage() {
 
         {/* Search */}
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search by name, muscle group, or type"
-            className="h-10 rounded-xl border-white/10 bg-black/15 pl-10 text-sm"
+            className="h-11 rounded-xl border-white/10 bg-black/15 pl-10 text-sm"
           />
         </div>
 
         {/* Duplicates warning */}
         {duplicateGroups.length > 0 && (
-          <div className="content-card flex items-start gap-3">
-            <span className="text-xs font-semibold text-yellow-300">Duplicates</span>
+          <div className="flex items-start gap-3 rounded-xl border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-4 py-4">
+            <span className="text-xs font-semibold text-[oklch(0.82_0.15_60)]">Duplicates</span>
             <div className="flex flex-wrap gap-1.5">
               {duplicateGroups.map((group) => (
                 <span
                   key={group.id}
-                  className="inline-flex items-center rounded-md border border-yellow-500/25 bg-yellow-500/10 px-2 py-0.5 text-[10px] font-semibold text-yellow-300"
+                  className="inline-flex items-center rounded-md border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-2 py-0.5 text-[10px] font-semibold text-[oklch(0.82_0.15_60)]"
                 >
                   {group.name} ({group.duplicateCount})
                 </span>
@@ -121,8 +121,8 @@ export default function ExercisesPage() {
           </div>
         ) : filteredExercises.length === 0 ? (
           <div className="content-card py-8 text-center">
-            <p className="text-sm font-semibold">No exercises match</p>
-            <p className="mt-1 text-xs text-muted-foreground">Try a different search.</p>
+            <p className="text-card-title">No exercises match</p>
+            <p className="mt-1 text-sm text-muted-foreground">Try a different search.</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -160,9 +160,9 @@ export default function ExercisesPage() {
                     ) : (
                       <>
                         <div className="flex items-center gap-2">
-                          <p className="truncate text-sm font-semibold">{exercise.name}</p>
+                          <p className="truncate text-card-title">{exercise.name}</p>
                           {isDuplicate && (
-                            <span className="rounded-md border border-yellow-500/25 bg-yellow-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-300">
+                            <span className="rounded-md border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-1.5 py-0.5 text-[10px] font-semibold text-[oklch(0.82_0.15_60)]">
                               Dup
                             </span>
                           )}
@@ -185,13 +185,13 @@ export default function ExercisesPage() {
                     <div className="flex shrink-0 gap-1.5">
                       <button
                         onClick={() => startEditing(exercise.id, exercise.name)}
-                        className="flex h-8 items-center gap-1 rounded-lg border border-white/10 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                        className="flex h-9 items-center gap-1 rounded-xl border border-white/10 px-2.5 text-xs text-muted-foreground hover:text-foreground"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => void handleArchive(exercise.id, exercise.name)}
-                        className="flex h-8 items-center gap-1 rounded-lg border border-white/10 px-2.5 text-xs text-muted-foreground hover:text-destructive"
+                        className="flex h-9 items-center gap-1 rounded-xl border border-white/10 px-2.5 text-xs text-muted-foreground hover:text-destructive"
                       >
                         <Archive className="h-3.5 w-3.5" />
                       </button>

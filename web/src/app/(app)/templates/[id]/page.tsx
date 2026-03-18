@@ -63,21 +63,21 @@ function SortableExerciseRow({
 
       {/* Exercise info — tap to configure */}
       <button className="flex flex-1 min-w-0 flex-col items-start gap-0.5" onClick={onConfig}>
-        <span className="truncate font-display text-lg font-semibold">{item.exercise.name}</span>
+        <span className="truncate text-card-title">{item.exercise.name}</span>
         <div className="mt-1 flex items-center gap-2">
           <div className="flex gap-1">
             {item.exercise.muscle_groups.slice(0, 2).map((m) => (
               <MuscleGroupBadge key={m} muscle={m} />
             ))}
           </div>
-          <span className="status-pill">{item.default_set_count} sets</span>
+          <span className="text-overline">{item.default_set_count} sets</span>
         </div>
       </button>
 
-      <button onClick={onConfig} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground">
+      <button onClick={onConfig} className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground">
         <Settings2 className="h-4 w-4" />
       </button>
-      <button onClick={onRemove} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
+      <button onClick={onRemove} className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
         <Trash2 className="h-4 w-4" />
       </button>
     </div>
@@ -111,7 +111,7 @@ function ExerciseConfigSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-2xl border-t border-white/[0.06] bg-card p-0">
+      <SheetContent side="bottom" className="rounded-t-2xl border-t border-white/[0.06] bg-[oklch(0.24_0.016_264)] p-0">
         <SheetHeader className="border-b border-white/[0.06] px-5 pb-4 pt-6">
           <SheetTitle className="font-display text-left text-lg font-bold">{item?.exercise.name}</SheetTitle>
           {item && item.exercise.muscle_groups.length > 0 && (
@@ -124,18 +124,18 @@ function ExerciseConfigSheet({
         <div className="flex flex-col gap-5 px-5 py-5">
           {/* Set count */}
           <div className="premium-card px-4 py-4">
-            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Starting Sets</label>
+            <label className="text-label">Starting Sets</label>
             <div className="mt-3 flex items-center gap-4">
               <button
                 onClick={() => setSets((v) => Math.max(1, v - 1))}
-                className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 text-xl hover:bg-white/5"
+                className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 text-xl hover:bg-white/5"
               >
                 −
               </button>
               <span className="flex-1 text-center font-display text-3xl font-semibold">{sets}</span>
               <button
                 onClick={() => setSets((v) => Math.min(20, v + 1))}
-                className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 text-xl hover:bg-white/5"
+                className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 text-xl hover:bg-white/5"
               >
                 +
               </button>
@@ -144,7 +144,7 @@ function ExerciseConfigSheet({
 
           {/* Notes */}
           <div className="premium-card px-4 py-4">
-            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Notes</label>
+            <label className="text-label">Notes</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -293,11 +293,11 @@ export default function TemplateEditorPage() {
             className="min-w-0 flex-1 bg-transparent font-display text-lg font-bold outline-none placeholder:text-muted-foreground"
           />
           {saveStatus === 'saving' && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-          {saveStatus === 'saved' && <span className="text-xs text-emerald-400">Saved</span>}
+          {saveStatus === 'saved' && <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-xs text-emerald-400">Saved</span>}
           <button
             onClick={() => void handleStartWorkout()}
             disabled={isStartingWorkout || exercises.length === 0}
-            className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
           >
             {isStartingWorkout ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
             Start
@@ -335,9 +335,9 @@ export default function TemplateEditorPage() {
             )}
 
             {exercises.length === 0 && !isLoading && (
-              <div className="content-card py-8 text-center">
-                <p className="text-sm font-semibold">No exercises yet</p>
-                <p className="mt-1 text-xs text-muted-foreground">Add your first exercise below.</p>
+              <div className="content-card py-10 text-center">
+                <p className="text-card-title">No exercises yet</p>
+                <p className="mt-1 text-sm text-muted-foreground">Add your first exercise below.</p>
               </div>
             )}
         </section>

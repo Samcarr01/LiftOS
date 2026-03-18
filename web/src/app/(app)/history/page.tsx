@@ -31,14 +31,14 @@ function SessionRow({
   return (
     <button
       onClick={onClick}
-      className="list-row w-full"
+      className="action-card flex items-center gap-3 w-full text-left"
     >
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.72_0.19_252/0.12)] text-[oklch(0.78_0.17_252)]">
         <Calendar className="h-4 w-4" />
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{name}</p>
+        <p className="truncate text-card-title">{name}</p>
         <p className="text-xs text-muted-foreground">
           {formatShortDate(session.started_at)} · {session.exercise_count} ex · {session.total_sets} set{session.total_sets !== 1 ? 's' : ''}
         </p>
@@ -75,12 +75,15 @@ export default function HistoryPage() {
         )}
 
         {!loading && sessions.length === 0 && (
-          <div className="content-card py-10 text-center">
-            <Dumbbell className="mx-auto h-6 w-6 text-muted-foreground" />
-            <p className="mt-2 text-sm font-semibold">No workouts logged yet</p>
-            <p className="mt-1 text-xs text-muted-foreground">
+          <div className="content-card flex flex-col items-center gap-3 py-10 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+              <Dumbbell className="h-6 w-6 text-primary" />
+            </div>
+            <p className="text-card-title">No workouts yet</p>
+            <p className="text-sm text-muted-foreground">
               Finish a workout and it will show up here.
             </p>
+            <a href="/" className="premium-button mt-1">Start your first workout</a>
           </div>
         )}
 
@@ -105,7 +108,7 @@ export default function HistoryPage() {
               <button
                 onClick={loadMore}
                 disabled={loading}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 py-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
+                className="mt-3 premium-button-secondary w-full justify-center"
               >
                 {loading ? (
                   <>

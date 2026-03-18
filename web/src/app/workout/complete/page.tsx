@@ -76,7 +76,7 @@ export default function WorkoutCompletePage() {
       {/* Exercises */}
       {exerciseNames.length > 0 && (
         <div className="mt-6 w-full max-w-sm rounded-2xl border border-border bg-card px-4 py-3">
-          <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          <p className="text-overline mb-2">
             Exercises ({summary.exercise_count})
           </p>
           <ul className="space-y-1">
@@ -93,7 +93,7 @@ export default function WorkoutCompletePage() {
       {/* PR cards */}
       {hasPrs && (
         <div className="mt-6 w-full max-w-sm space-y-3">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          <p className="text-overline">
             Personal Records 🎉
           </p>
           {newPrs.map((pr, i) => (
@@ -118,17 +118,17 @@ export default function WorkoutCompletePage() {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="relative flex flex-col items-center overflow-hidden rounded-xl border border-white/[0.07] bg-card px-3 py-4">
+    <div className="relative flex flex-col items-center overflow-hidden rounded-xl border border-white/[0.10] bg-[oklch(0.19_0.014_264)] px-3 py-4">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-      <span className="text-lg font-bold">{value}</span>
-      <span className="mt-0.5 text-[11px] text-muted-foreground">{label}</span>
+      <span className="font-display text-xl font-bold">{value}</span>
+      <span className="mt-0.5 text-xs text-muted-foreground">{label}</span>
     </div>
   );
 }
 
 function PrCard({ pr }: { pr: CompletionPR }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 shadow-[0_0_16px_-4px_oklch(0.80_0.16_85/0.25)]">
+    <div className="flex items-center gap-3 rounded-xl border border-[oklch(0.80_0.16_85/0.25)] bg-[oklch(0.80_0.16_85/0.12)] px-4 py-3">
       <Award className="h-5 w-5 shrink-0 text-yellow-500" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{pr.exercise_name}</p>

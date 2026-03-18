@@ -50,7 +50,7 @@ export default function WorkoutPage() {
   return (
     <div className="page-shell">
       <div className="page-content py-4 md:py-6">
-        <header className="sticky top-0 z-30 -mx-4 border-b border-white/[0.06] bg-background/95 px-4 py-3 backdrop-blur-lg">
+        <header className="sticky top-0 z-30 -mx-4 border-b border-white/[0.06] bg-[oklch(0.24_0.016_264/0.95)] px-4 py-3 backdrop-blur-lg">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -79,7 +79,7 @@ export default function WorkoutPage() {
               Save
             </button>
           </div>
-          <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+          <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
             <div
               className="h-full rounded-full transition-all duration-300 ease-out"
               style={{

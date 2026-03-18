@@ -149,7 +149,7 @@ function SettingRow({
       className={`list-row w-full ${destructive ? 'text-destructive' : ''}`}
     >
       <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-        destructive ? 'bg-destructive/12 text-destructive' : 'bg-white/6 text-muted-foreground'
+        destructive ? 'bg-[oklch(0.65_0.20_25/0.12)] text-[oklch(0.72_0.18_25)]' : 'bg-white/6 text-muted-foreground'
       }`}>
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
       </div>
@@ -272,6 +272,9 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[oklch(0.72_0.19_252/0.12)] text-[oklch(0.78_0.17_252)] font-display text-lg font-bold">
+                {(displayName || user?.email || '?')[0].toUpperCase()}
+              </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">{displayName || 'Add your name'}</p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
@@ -323,7 +326,7 @@ export default function ProfilePage() {
 
             {failedCount > 0 && (
               <SettingRow
-                icon={<AlertTriangle className="h-4 w-4 text-yellow-300" />}
+                icon={<AlertTriangle className="h-4 w-4 text-[oklch(0.82_0.15_60)]" />}
                 label="Sync issues"
                 description={`${failedCount} change${failedCount !== 1 ? 's' : ''} failed to sync`}
               />

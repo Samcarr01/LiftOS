@@ -149,12 +149,12 @@ function TemplateRow({
     <div className="list-row items-center gap-3">
       <Link href={`/templates/${template.id}`} className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-semibold">{template.name}</p>
+          <p className="truncate text-card-title">{template.name}</p>
           {template.is_pinned && (
             <Pin className="h-3 w-3 shrink-0 text-primary" />
           )}
         </div>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+        <p className="mt-0.5 text-caption">
           {template.exercise_count} exercise{template.exercise_count !== 1 ? 's' : ''}
           {template.last_used_at
             ? ` · ${formatDistanceToNow(template.last_used_at)}`
@@ -165,7 +165,7 @@ function TemplateRow({
       <button
         onClick={handleStart}
         disabled={starting}
-        className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+        className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
         title="Start workout"
       >
         {starting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
@@ -173,7 +173,7 @@ function TemplateRow({
       </button>
 
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground">
+        <DropdownMenuTrigger className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground">
           <MoreHorizontal className="h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
@@ -260,7 +260,7 @@ export default function TemplatesPage() {
           <h1 className="page-header-title">Workouts</h1>
           <button
             onClick={() => setAutoOpenCreate(true)}
-            className="flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground"
+            className="flex h-9 items-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground"
           >
             <Plus className="h-3.5 w-3.5" />
             New
@@ -298,10 +298,13 @@ export default function TemplatesPage() {
             <section>
               <h2 className="section-title mb-2">{pinned.length > 0 ? 'All Workouts' : 'Saved Workouts'}</h2>
               {templates.length === 0 ? (
-                <div className="content-card py-8 text-center">
-                  <Dumbbell className="mx-auto h-6 w-6 text-muted-foreground" />
-                  <p className="mt-2 text-sm font-semibold">No workouts yet</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Tap + New above to create your first workout.</p>
+                <div className="content-card py-10 text-center">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                    <Dumbbell className="h-6 w-6 text-primary" />
+                  </div>
+                  <p className="mt-2 text-card-title">No workouts yet</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Tap + New above to create your first workout.</p>
+                  <button onClick={() => setAutoOpenCreate(true)} className="premium-button mt-3"><Plus className="h-4 w-4" />Create Workout</button>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -321,7 +324,7 @@ export default function TemplatesPage() {
             {/* Exercise Library link */}
             <Link
               href="/exercises"
-              className="list-row w-full"
+              className="action-card flex items-center gap-3 w-full"
             >
               <Library className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="flex-1 text-sm font-medium">Exercise Library</span>

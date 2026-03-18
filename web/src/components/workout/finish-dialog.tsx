@@ -38,9 +38,9 @@ function SummaryStat({
   detail?: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-center">
+    <div className="rounded-xl border border-white/[0.10] bg-[oklch(0.19_0.014_264)] px-4 py-3 text-center">
       <p className="font-display text-lg font-semibold">{value}</p>
-      <p className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{label}</p>
       {detail && <p className="mt-1 text-xs text-muted-foreground">{detail}</p>}
     </div>
   );
@@ -141,7 +141,7 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(value) => !value && !saving && onClose()}>
-      <DialogContent className="relative sm:max-w-lg overflow-hidden border-white/[0.07] bg-card text-foreground">
+      <DialogContent className="relative sm:max-w-lg overflow-hidden border-white/[0.07] bg-[oklch(0.24_0.016_264)] text-foreground">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
         <DialogHeader>
           <DialogTitle className="font-display text-lg font-bold">Save Workout</DialogTitle>
@@ -158,19 +158,12 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
         </div>
 
         {doneSets < totalSets && (
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-sm text-muted-foreground">
+          <div className="rounded-xl border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-4 py-3 text-sm text-[oklch(0.82_0.15_60)]">
             {remainingSets} set{remainingSets !== 1 ? 's are' : ' is'} still open. They will be kept with the workout if you save now.
           </div>
         )}
 
         <DialogFooter className="mt-2 flex-col gap-2 sm:flex-col">
-          <button
-            onClick={onClose}
-            disabled={saving}
-            className="premium-button-secondary w-full justify-center disabled:opacity-60"
-          >
-            Keep Logging
-          </button>
           <button
             onClick={handleConfirm}
             disabled={saving}
@@ -178,6 +171,13 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Save Workout
+          </button>
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="premium-button-secondary w-full justify-center disabled:opacity-60"
+          >
+            Keep Logging
           </button>
         </DialogFooter>
       </DialogContent>

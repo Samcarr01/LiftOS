@@ -18,7 +18,7 @@ export function SidebarNav() {
   return (
     <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-white/[0.06] bg-sidebar md:flex">
       <div className="flex h-16 items-center gap-3 px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl shadow-[0_0_12px_-2px_oklch(0.72_0.19_252/0.3)]" style={{ background: 'linear-gradient(135deg, oklch(0.72 0.19 252 / 0.15), oklch(0.62 0.17 240 / 0.15))' }}>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl shadow-[0_0_12px_-2px_oklch(0.72_0.19_252/0.3)]" style={{ background: 'linear-gradient(135deg, oklch(0.72 0.19 252 / 0.15), oklch(0.62 0.17 240 / 0.15))' }}>
           <Zap className="h-[18px] w-[18px] text-primary" />
         </div>
         <span className="font-display text-lg font-bold tracking-tight">LiftOS</span>
@@ -40,7 +40,7 @@ export function SidebarNav() {
               className={cn(
                 'relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150',
                 isActive
-                  ? 'bg-primary/10 text-primary'
+                  ? 'bg-[oklch(0.72_0.19_252/0.12)] text-[oklch(0.78_0.17_252)]'
                   : 'text-muted-foreground hover:bg-white/[0.04] hover:text-foreground',
               )}
             >

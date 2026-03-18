@@ -87,21 +87,38 @@
   /* Refined dark palette — richer depth, cleaner hierarchy */
   --background: oklch(0.13 0.014 264);
   --foreground: oklch(0.97 0.005 264);
-  --card: oklch(0.175 0.012 264);
+  --card: oklch(0.19 0.014 264);
   --card-foreground: oklch(0.97 0.005 264);
-  --popover: oklch(0.155 0.013 264);
+  --popover: oklch(0.22 0.016 264);
   --popover-foreground: oklch(0.97 0.005 264);
   --primary: oklch(0.72 0.19 252);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.21 0.012 264);
+  --secondary: oklch(0.23 0.014 264);
   --secondary-foreground: oklch(0.97 0.005 264);
   --muted: oklch(0.21 0.012 264);
-  --muted-foreground: oklch(0.63 0.016 264);
+  --muted-foreground: oklch(0.68 0.016 264);
   --accent: oklch(0.23 0.025 254);
   --accent-foreground: oklch(0.97 0.005 264);
   --destructive: oklch(0.65 0.2 25);
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 10%);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 14%);
+
+  /* Semantic states */
+  --state-active: oklch(0.72 0.19 252 / 0.12);
+  --state-active-fg: oklch(0.78 0.17 252);
+  --state-success: oklch(0.72 0.17 170 / 0.12);
+  --state-success-fg: oklch(0.78 0.16 170);
+  --state-achievement: oklch(0.80 0.16 85 / 0.12);
+  --state-achievement-fg: oklch(0.85 0.15 85);
+  --state-warning: oklch(0.75 0.16 60 / 0.12);
+  --state-warning-fg: oklch(0.82 0.15 60);
+  --state-destructive: oklch(0.65 0.20 25 / 0.12);
+  --state-destructive-fg: oklch(0.72 0.18 25);
+
+  /* Surface system */
+  --surface-0: oklch(0.13 0.014 264);
+  --surface-1: oklch(0.19 0.014 264);
+  --surface-2: oklch(0.24 0.016 264);
   --ring: oklch(0.72 0.19 252);
   --chart-1: oklch(0.72 0.19 252);
   --chart-2: oklch(0.72 0.17 170);
@@ -150,11 +167,11 @@
   }
 
   .page-content {
-    @apply relative z-10 mx-auto w-full max-w-2xl px-4 md:max-w-6xl;
+    @apply relative z-10 mx-auto w-full max-w-2xl px-5 md:max-w-6xl;
   }
 
   .page-header {
-    @apply flex items-center justify-between gap-3 py-1;
+    @apply flex items-center justify-between gap-3 py-2;
   }
 
   .page-header-title {
@@ -164,13 +181,30 @@
   /* ── Cards & surfaces ────────────────────────────────────── */
 
   .content-card {
-    @apply rounded-xl border border-white/[0.07] bg-card px-4 py-4;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    @apply rounded-xl border border-white/[0.10] bg-[oklch(0.19_0.014_264)] px-4 py-4;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 8px -2px rgba(0, 0, 0, 0.3);
+  }
+
+  .action-card {
+    @apply rounded-xl border border-white/[0.10] bg-[oklch(0.19_0.014_264)] px-4 py-4 transition-all duration-150;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 8px -2px rgba(0, 0, 0, 0.3);
+  }
+
+  @media (hover: hover) {
+    .action-card:hover {
+      background: oklch(0.21 0.015 264);
+      border-color: oklch(1 0 0 / 15%);
+    }
+  }
+
+  .stat-card {
+    @apply flex flex-col items-center rounded-xl border border-white/[0.10] bg-[oklch(0.19_0.014_264)] px-3 py-4 text-center;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 
   .premium-card {
-    @apply rounded-xl border border-white/[0.07] bg-card;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    @apply rounded-xl border border-white/[0.10] bg-[oklch(0.19_0.014_264)];
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 8px -2px rgba(0, 0, 0, 0.3);
   }
 
   .glass-panel {
@@ -179,25 +213,27 @@
   }
 
   .elevated-surface {
-    @apply rounded-xl border border-white/[0.07] bg-card transition-all duration-150;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    @apply rounded-xl border border-white/[0.10] bg-[oklch(0.19_0.014_264)] transition-all duration-150;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 8px -2px rgba(0, 0, 0, 0.3);
   }
 
   @media (hover: hover) {
     .elevated-surface:hover {
-      background: oklch(0.20 0.014 264);
+      background: oklch(0.21 0.015 264);
+      border-color: oklch(1 0 0 / 15%);
     }
   }
 
   /* ── List rows ───────────────────────────────────────────── */
 
   .list-row {
-    @apply flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left transition-colors duration-150;
+    @apply flex w-full items-center gap-3 rounded-xl border border-white/[0.10] bg-[oklch(0.19_0.014_264)] px-3.5 py-3 text-left transition-all duration-150;
   }
 
   @media (hover: hover) {
     .list-row:hover {
-      background: rgba(255, 255, 255, 0.035);
+      background: oklch(0.21 0.015 264);
+      border-color: oklch(1 0 0 / 14%);
     }
   }
 
@@ -212,13 +248,13 @@
   }
 
   .section-title {
-    @apply text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground;
+    @apply text-sm font-semibold text-foreground;
   }
 
   /* ── Buttons ─────────────────────────────────────────────── */
 
   .premium-button {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-primary-foreground transition-all duration-150 active:scale-[0.98] active:brightness-95;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-semibold text-primary-foreground transition-all duration-150 active:scale-[0.98] active:brightness-95;
     background: linear-gradient(135deg, oklch(0.72 0.19 252), oklch(0.62 0.17 240));
     touch-action: manipulation;
   }
@@ -231,7 +267,7 @@
   }
 
   .premium-button-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-foreground transition-all duration-150 active:bg-white/10;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/7 px-5 py-3.5 text-sm font-semibold text-foreground transition-all duration-150 active:bg-white/10;
     touch-action: manipulation;
   }
 
@@ -244,11 +280,77 @@
   /* ── Pills & badges ──────────────────────────────────────── */
 
   .hero-kicker {
-    @apply inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/90;
+    @apply inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-primary/90;
   }
 
   .status-pill {
-    @apply inline-flex items-center gap-1 rounded-full border border-white/8 bg-white/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground;
+    @apply inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs font-semibold text-muted-foreground;
+  }
+
+  /* ── Typography system ─────────────────────────────────────── */
+
+  .text-page-title {
+    @apply font-display text-2xl font-bold tracking-tight;
+  }
+
+  .text-section-heading {
+    @apply text-sm font-semibold text-foreground;
+  }
+
+  .text-card-title {
+    @apply font-display text-base font-semibold;
+  }
+
+  .text-body {
+    @apply text-sm text-foreground;
+  }
+
+  .text-label {
+    @apply text-xs font-medium text-muted-foreground;
+  }
+
+  .text-caption {
+    @apply text-xs text-muted-foreground;
+  }
+
+  .text-overline {
+    @apply text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground;
+  }
+
+  .text-stat {
+    @apply font-display text-xl font-bold;
+  }
+
+  /* ── Semantic states ───────────────────────────────────────── */
+
+  .state-active {
+    background: var(--state-active);
+    border-color: oklch(0.72 0.19 252 / 0.25);
+    color: var(--state-active-fg);
+  }
+
+  .state-success {
+    background: var(--state-success);
+    border-color: oklch(0.72 0.17 170 / 0.25);
+    color: var(--state-success-fg);
+  }
+
+  .state-achievement {
+    background: var(--state-achievement);
+    border-color: oklch(0.80 0.16 85 / 0.25);
+    color: var(--state-achievement-fg);
+  }
+
+  .state-warning {
+    background: var(--state-warning);
+    border-color: oklch(0.75 0.16 60 / 0.25);
+    color: var(--state-warning-fg);
+  }
+
+  .state-destructive {
+    background: var(--state-destructive);
+    border-color: oklch(0.65 0.20 25 / 0.25);
+    color: var(--state-destructive-fg);
   }
 
   /* ── Animation stagger ───────────────────────────────────── */
