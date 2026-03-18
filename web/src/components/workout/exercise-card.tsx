@@ -56,35 +56,26 @@ export function ExerciseCard({
   }
 
   return (
-    <div className={`premium-card page-reveal px-5 py-5 ${allComplete ? 'border-primary/20' : ''}`}>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div className={`premium-card page-reveal px-4 py-4 ${allComplete ? 'border-primary/20' : ''}`}>
+      <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="truncate font-display text-3xl font-semibold">{exercise.name}</h2>
-            <span className={`status-pill ${allComplete ? 'border-primary/20 bg-primary/10 text-primary' : ''}`}>
-              {completedCount}/{sets.length} sets saved
+          <div className="flex items-center gap-2">
+            <h2 className="truncate font-display text-lg font-bold">{exercise.name}</h2>
+            <span className={`text-xs font-semibold ${allComplete ? 'text-primary' : 'text-muted-foreground'}`}>
+              {completedCount}/{sets.length}
             </span>
           </div>
-
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {exercise.muscle_groups.slice(0, 3).map((muscle) => (
-              <MuscleGroupBadge key={muscle} muscle={muscle} />
-            ))}
-          </div>
-
-          <div className="glass-panel mt-4 px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Log This Exercise</p>
-            <p className="mt-2 text-sm text-foreground">{fieldSummary}</p>
-            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              Fill in the values for each set, then press <span className="font-medium text-foreground">Save Set</span> when that row is done.
-            </p>
+          <div className="mt-1 flex items-center gap-2">
+            <div className="flex gap-1">
+              {exercise.muscle_groups.slice(0, 2).map((muscle) => (
+                <MuscleGroupBadge key={muscle} muscle={muscle} />
+              ))}
+            </div>
+            <span className="text-xs text-muted-foreground">{fieldSummary}</span>
           </div>
         </div>
-
         {allComplete && (
-          <div className="flex h-12 items-center justify-center rounded-2xl bg-primary/12 px-4 text-sm font-semibold text-primary">
-            Exercise Saved
-          </div>
+          <span className="shrink-0 text-xs font-semibold text-primary">Done</span>
         )}
       </div>
 
@@ -98,7 +89,7 @@ export function ExerciseCard({
         </div>
       )}
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-3 space-y-2">
         {sets.map((set, index) => (
           <SetRow
             key={set.id}
@@ -118,35 +109,34 @@ export function ExerciseCard({
         ))}
       </div>
 
-      <div className="mt-5 flex flex-col gap-3 lg:flex-row">
+      <div className="mt-3 flex gap-2">
         <button
           type="button"
           onClick={() => addSet(exerciseIndex)}
-          className="premium-button-secondary flex-1 justify-center"
+          className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/10 text-xs font-semibold text-muted-foreground hover:text-foreground"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-3.5 w-3.5" />
           Add Set
         </button>
 
         <button
           type="button"
           onClick={() => setNotesOpen((value) => !value)}
-          className="premium-button-secondary justify-center px-4"
+          className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-white/10 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
         >
-          {notesOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          {notesOpen ? 'Hide Notes' : 'Notes'}
+          {notesOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          Notes
         </button>
       </div>
 
       {notesOpen && (
-        <div className="glass-panel mt-4 px-4 py-4">
-          <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Exercise Notes</p>
+        <div className="mt-2">
           <textarea
             value={cardNotes}
             onChange={(event) => setCardNotes(event.target.value)}
-            placeholder="Form cues, reminders, or setup notes..."
-            rows={3}
-            className="mt-3 w-full resize-none rounded-2xl border border-white/10 bg-black/15 px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-primary/50 focus-visible:outline-none"
+            placeholder="Form cues, reminders..."
+            rows={2}
+            className="w-full resize-none rounded-xl border border-white/10 bg-black/15 px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary/50 focus-visible:outline-none"
           />
         </div>
       )}

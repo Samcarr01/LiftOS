@@ -187,26 +187,37 @@ export default function HomePage() {
               <h2 className="section-title">Your Workouts</h2>
               <Link href="/templates" className="text-xs font-semibold text-primary">View all</Link>
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+            <div className="space-y-2">
               {allTemplates.map((template) => (
                 <button
                   key={template.id}
                   onClick={() => void handleQuickStart(template.id)}
                   disabled={starting !== null}
-                  className="flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-card/82 px-3 py-2.5 text-left disabled:opacity-60"
+                  className="list-row w-full disabled:opacity-60"
                 >
-                  {starting === template.id
-                    ? <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                    : <Dumbbell className="h-3.5 w-3.5 text-primary" />}
-                  <span className="whitespace-nowrap text-sm font-semibold">{template.name}</span>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/14 text-primary">
+                    {starting === template.id
+                      ? <Loader2 className="h-4 w-4 animate-spin" />
+                      : <Dumbbell className="h-4 w-4" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">{template.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {template.exercise_count} exercise{template.exercise_count !== 1 ? 's' : ''}
+                      {template.last_used_at ? ` · ${formatShortDate(template.last_used_at)}` : ''}
+                    </p>
+                  </div>
+                  <Play className="h-4 w-4 shrink-0 text-primary" />
                 </button>
               ))}
               <button
                 onClick={() => router.push('/templates?create=1')}
-                className="flex shrink-0 items-center gap-2 rounded-xl border border-dashed border-white/10 px-3 py-2.5 text-muted-foreground hover:text-foreground"
+                className="list-row w-full text-muted-foreground hover:text-foreground"
               >
-                <Plus className="h-3.5 w-3.5" />
-                <span className="whitespace-nowrap text-sm">New</span>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-dashed border-white/15">
+                  <Plus className="h-4 w-4" />
+                </div>
+                <span className="text-sm font-semibold">Create New Workout</span>
               </button>
             </div>
           </section>

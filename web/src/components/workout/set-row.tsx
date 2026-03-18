@@ -84,46 +84,35 @@ export function SetRow({
   return (
     <div
       className={cn(
-        'rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(14,24,42,0.9),rgba(10,18,32,0.86))] px-3 py-3 shadow-[0_24px_60px_-42px_rgba(2,10,28,0.95)] transition-all duration-300',
-        set.isCompleted && 'border-primary/20 bg-[linear-gradient(180deg,rgba(17,31,55,0.92),rgba(10,18,32,0.86))]',
-        isPrefilled && 'shadow-[0_28px_64px_-46px_rgba(91,163,255,0.9)]',
+        'rounded-xl border border-white/8 px-3 py-2.5 transition-all duration-200',
+        set.isCompleted && 'border-primary/20 bg-primary/5',
+        isPrefilled && 'border-primary/15',
       )}
     >
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-end">
-        <div className="flex items-center gap-3 xl:w-[168px] xl:shrink-0">
-          <button
-            type="button"
-            onClick={cycleType}
-            title="Tap to change set type"
-            className={cn(
-              'flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-2xl border text-[10px] font-bold leading-tight',
-              SET_TYPE_COLOR[set.setType],
-            )}
-          >
-            <span className="text-sm font-semibold">{setNumber}</span>
-            <span className="text-[9px] font-semibold tracking-[0.12em]">{SET_TYPE_LABEL[set.setType]}</span>
-          </button>
+      {/* Row 1: set badge, previous, inputs */}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={cycleType}
+          title={`${SET_TYPE_NAME[set.setType]} — tap to change`}
+          className={cn(
+            'flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg border text-[10px] font-bold leading-tight',
+            SET_TYPE_COLOR[set.setType],
+          )}
+        >
+          <span className="text-xs font-semibold">{setNumber}</span>
+          <span className="text-[8px] font-semibold tracking-[0.08em]">{SET_TYPE_LABEL[set.setType]}</span>
+        </button>
 
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Set {setNumber}</p>
-            <p className="mt-1 text-sm font-medium text-foreground">{SET_TYPE_NAME[set.setType]}</p>
-          </div>
+        <div className="min-w-[60px] shrink-0">
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Last</p>
+          <p className="text-xs font-medium text-foreground">{lastValues ? formatLast(lastValues, fields) : '—'}</p>
         </div>
 
-        <div className="glass-panel flex min-w-[110px] flex-col justify-center px-4 py-3 xl:w-[150px] xl:shrink-0">
-          <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Previous</p>
-          <p className="mt-1 text-sm font-medium text-foreground">{lastValues ? formatLast(lastValues, fields) : '—'}</p>
-        </div>
-
-        <div className="grid min-w-0 flex-1 gap-2 md:grid-cols-2 xl:grid-cols-none xl:grid-flow-col">
+        <div className="flex min-w-0 flex-1 gap-1.5">
           {fields.map((field) => (
-            <div key={field.key} className="flex min-w-[104px] flex-col gap-1">
-              <span
-                title={formatFieldLabel(field)}
-                className="px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
-              >
-                {formatFieldLabel(field)}
-              </span>
+            <div key={field.key} className="min-w-0 flex-1">
+              <span className="block text-[9px] uppercase tracking-wider text-muted-foreground truncate">{field.label}</span>
               <NumericInput
                 value={typeof set.values[field.key] === 'number' ? set.values[field.key] as number : ''}
                 onChange={(value) => handleValueChange(field.key, value)}
@@ -135,31 +124,27 @@ export function SetRow({
           ))}
         </div>
 
-        <div className="flex gap-2 xl:w-[174px] xl:shrink-0 xl:flex-col">
-          <button
-            type="button"
-            onClick={onComplete}
-            disabled={set.isCompleted}
-            className={cn(
-              'flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition-colors xl:w-full',
-              set.isCompleted
-                ? 'border-primary/25 bg-primary text-primary-foreground shadow-[0_18px_36px_-24px_rgba(91,163,255,0.8)]'
-                : 'border-white/10 bg-white/[0.04] text-foreground hover:border-primary/35 hover:bg-primary/10',
-            )}
-          >
-            <Check className="h-4 w-4" />
-            {set.isCompleted ? 'Saved' : 'Save Set'}
-          </button>
+        <button
+          type="button"
+          onClick={onComplete}
+          disabled={set.isCompleted}
+          className={cn(
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors',
+            set.isCompleted
+              ? 'border-primary/25 bg-primary text-primary-foreground'
+              : 'border-white/10 text-muted-foreground hover:border-primary/35 hover:bg-primary/10 hover:text-foreground',
+          )}
+        >
+          <Check className="h-4 w-4" />
+        </button>
 
-          <button
-            type="button"
-            onClick={onDelete}
-            className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive xl:w-full"
-          >
-            <Trash2 className="h-4 w-4" />
-            Remove
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onDelete}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/8 text-muted-foreground/50 hover:bg-destructive/10 hover:text-destructive"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
       </div>
     </div>
   );

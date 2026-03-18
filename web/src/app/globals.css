@@ -134,7 +134,7 @@
 
 @layer components {
   .page-shell {
-    @apply relative min-h-[100dvh] overflow-x-hidden;
+    @apply relative overflow-x-hidden;
   }
 
   .page-shell::before {
