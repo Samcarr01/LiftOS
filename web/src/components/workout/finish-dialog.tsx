@@ -38,10 +38,10 @@ function SummaryStat({
   detail?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.10] bg-white/[0.06] backdrop-blur-2xl px-4 py-4 text-center">
-      <p className="font-display text-2xl font-semibold">{value}</p>
-      <p className="mt-1 text-sm text-muted-foreground">{label}</p>
-      {detail && <p className="mt-1 text-sm text-muted-foreground">{detail}</p>}
+    <div className="rounded-xl border border-white/[0.10] bg-white/[0.06] px-3 py-3 text-center">
+      <p className="font-display text-xl font-semibold">{value}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{label}</p>
+      {detail && <p className="text-xs text-muted-foreground">{detail}</p>}
     </div>
   );
 }
@@ -141,7 +141,7 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(value) => !value && !saving && onClose()}>
-      <DialogContent className="relative sm:max-w-lg overflow-hidden border-white/[0.07] bg-white/[0.10] backdrop-blur-2xl text-foreground">
+      <DialogContent className="relative sm:max-w-lg border-white/[0.07] bg-white/[0.10] backdrop-blur-2xl text-foreground">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
         <DialogHeader>
           <DialogTitle className="font-display text-lg font-bold">Save Workout</DialogTitle>
@@ -151,7 +151,7 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
           Open sets will be kept with the session.
         </p>
 
-        <div className="grid gap-3 py-2 md:grid-cols-3">
+        <div className="grid grid-cols-3 gap-2 py-1">
           <SummaryStat label="Exercises" value={String(workout.exercises.length)} />
           <SummaryStat label="Sets Saved" value={`${doneSets}/${totalSets}`} detail={`${remainingSets} left open`} />
           <SummaryStat label="Session Status" value={remainingSets === 0 ? 'Ready' : 'Partial'} />
