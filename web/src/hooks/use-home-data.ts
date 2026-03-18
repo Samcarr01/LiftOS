@@ -46,8 +46,7 @@ async function fetchHomeData(): Promise<HomeData> {
         completed_at,
         duration_seconds,
         workout_templates ( name ),
-        session_exercises ( count ),
-        set_entries ( count )
+        session_exercises ( id, set_entries ( count ) )
       `)
       .not('completed_at', 'is', null)
       .order('started_at', { ascending: false })
@@ -92,8 +91,7 @@ async function fetchHomeData(): Promise<HomeData> {
     completed_at: string | null;
     duration_seconds: number | null;
     workout_templates: { name: string } | null;
-    session_exercises: { count: number }[];
-    set_entries: { count: number }[];
+    session_exercises: { id: string; set_entries: { count: number }[] }[];
   }>;
 
   const recentSessions: HistorySessionSummary[] = rawSessions.map((s) => ({
@@ -102,8 +100,8 @@ async function fetchHomeData(): Promise<HomeData> {
     completed_at:     s.completed_at,
     duration_seconds: s.duration_seconds,
     template_name:    s.workout_templates?.name ?? null,
-    exercise_count:   s.session_exercises?.[0]?.count ?? 0,
-    total_sets:       s.set_entries?.[0]?.count ?? 0,
+    exercise_count:   s.session_exercises?.length ?? 0,
+    total_sets:       s.session_exercises?.reduce((sum, se) => sum + (se.set_entries?.[0]?.count ?? 0), 0) ?? 0,
     volume_kg:        0,
     primary_exercise_name: null,
     primary_result: null,

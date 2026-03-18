@@ -33,8 +33,7 @@ export function useHistory() {
         duration_seconds,
         template_id,
         workout_templates ( name ),
-        session_exercises ( count ),
-        set_entries ( count )
+        session_exercises ( id, set_entries ( count ) )
       `)
       .not('completed_at', 'is', null)
       .order('started_at', { ascending: false })
@@ -51,18 +50,16 @@ export function useHistory() {
       completed_at: string | null;
       duration_seconds: number | null;
       workout_templates: { name: string } | null;
-      session_exercises: { count: number }[];
-      set_entries: { count: number }[];
-      // volume_kg not in this query — computed separately or omitted
+      session_exercises: { id: string; set_entries: { count: number }[] }[];
     }) => ({
       id:               row.id,
       started_at:       row.started_at,
       completed_at:     row.completed_at,
       duration_seconds: row.duration_seconds,
       template_name:    row.workout_templates?.name ?? null,
-      exercise_count:   row.session_exercises?.[0]?.count ?? 0,
-      total_sets:       row.set_entries?.[0]?.count ?? 0,
-      volume_kg:        0, // will be enriched below
+      exercise_count:   row.session_exercises?.length ?? 0,
+      total_sets:       row.session_exercises?.reduce((sum, se) => sum + (se.set_entries?.[0]?.count ?? 0), 0) ?? 0,
+      volume_kg:        0,
       primary_exercise_name: null,
       primary_result: null,
     }));
