@@ -1,8 +1,10 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Award, Trophy } from 'lucide-react';
+import { ArrowLeft, Award, Loader2, Trash2, Trophy } from 'lucide-react';
+import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
 import { useSessionDetail } from '@/hooks/use-session-detail';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
@@ -107,6 +109,27 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
   const { id } = use(params);
   const { detail, loading, error } = useSessionDetail(id);
   const router = useRouter();
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  async function handleDelete() {
+    setDeleting(true);
+    const supabase = createClient();
+    const { error: deleteError } = await supabase
+      .from('workout_sessions')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      toast.error('Failed to delete workout');
+      setDeleting(false);
+      setConfirmDelete(false);
+      return;
+    }
+
+    toast.success('Workout deleted');
+    router.replace('/history');
+  }
 
   return (
     <div className="page-shell">
@@ -127,6 +150,15 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
               <p className="text-sm text-muted-foreground">{formatLongDate(detail.started_at)}</p>
             )}
           </div>
+          {detail && (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground transition-colors duration-150 hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
+              aria-label="Delete workout"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {error && (
@@ -166,6 +198,35 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
               ))}
             </div>
           </>
+        )}
+
+        {/* Delete confirmation */}
+        {confirmDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+            <div className="w-full max-w-sm rounded-2xl border border-white/[0.10] bg-[oklch(0.16_0.015_260)] p-5 space-y-4">
+              <h3 className="font-display text-lg font-bold">Delete workout?</h3>
+              <p className="text-sm text-muted-foreground">
+                This will permanently delete this workout session and all its sets. This cannot be undone.
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-500/90 text-sm font-semibold text-white transition-all duration-150 hover:bg-red-500 active:scale-[0.98] disabled:opacity-60"
+                >
+                  {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  Delete Workout
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={deleting}
+                  className="premium-button-secondary w-full justify-center disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

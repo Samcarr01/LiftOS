@@ -11,7 +11,6 @@ import {
   Loader2,
   Play,
   Plus,
-  Settings,
   TrendingUp,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -167,30 +166,21 @@ export default function HomePage() {
 
   return (
     <div className="page-shell">
-      <div className="page-content space-y-6 py-6 pb-28 md:py-8">
+      <div className="page-content space-y-6 py-6 md:py-8">
 
         {/* ── Header ──────────────────────────────── */}
-        <div className="page-reveal flex items-start justify-between gap-3">
-          <div>
-            {loading ? (
-              <>
-                <Skeleton className="h-8 w-48 rounded-lg" />
-                <Skeleton className="mt-1.5 h-4 w-36 rounded-md" />
-              </>
-            ) : (
-              <>
-                <h1 className="page-header-title">{greeting(data?.displayName ?? null)}</h1>
-                <p className="mt-0.5 text-caption">{formatToday()}</p>
-              </>
-            )}
-          </div>
-          <Link
-            href="/profile"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.07] text-muted-foreground transition-colors duration-150 hover:bg-white/[0.04] hover:text-foreground"
-            aria-label="Settings"
-          >
-            <Settings className="h-[18px] w-[18px]" />
-          </Link>
+        <div className="page-reveal">
+          {loading ? (
+            <>
+              <Skeleton className="h-8 w-48 rounded-lg" />
+              <Skeleton className="mt-1.5 h-4 w-36 rounded-md" />
+            </>
+          ) : (
+            <>
+              <h1 className="page-header-title">{greeting(data?.displayName ?? null)}</h1>
+              <p className="mt-0.5 text-caption">{formatToday()}</p>
+            </>
+          )}
         </div>
 
         {/* ── Start Workout CTA ──────────────────── */}
