@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Trash2 } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NumericInput } from './numeric-input';
 import type { SetEntry, SetValues } from '@/types/app';
@@ -29,13 +29,6 @@ const SET_TYPE_COLOR: Record<SetEntry['setType'], string> = {
   failure: 'bg-red-500/12 text-red-300 border-red-500/20',
 };
 
-function formatFieldLabel(field: TrackingField): string {
-  if (!field.unit) return field.label;
-  if (field.unit === 'seconds') return `${field.label} (sec)`;
-  if (field.unit === 'metres') return `${field.label} (m)`;
-  return `${field.label} (${field.unit})`;
-}
-
 function formatLast(values: SetValues, fields: TrackingField[]): string {
   const parts = fields.map((field) => {
     const value = values[field.key];
@@ -58,6 +51,7 @@ interface SetRowProps {
   onUpdate: (patch: { values?: SetValues; setType?: SetEntry['setType'] }) => void;
   onComplete: () => void;
   onDelete: () => void;
+  borderless?: boolean;
 }
 
 export function SetRow({
@@ -67,7 +61,7 @@ export function SetRow({
   fields,
   onUpdate,
   onComplete,
-  onDelete,
+  borderless,
 }: SetRowProps) {
   const isPrefilled = set.loggedAt === '' && !set.isCompleted;
 
@@ -84,12 +78,16 @@ export function SetRow({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-white/8 px-3 py-3 transition-all duration-200',
-        set.isCompleted && 'border-[oklch(0.72_0.19_155/0.25)] bg-[oklch(0.72_0.19_155/0.12)]',
-        isPrefilled && 'border-primary/15',
+        'px-3 py-3 transition-all duration-200',
+        borderless
+          ? 'rounded-xl'
+          : 'rounded-2xl border border-white/8',
+        set.isCompleted && (borderless
+          ? 'bg-[oklch(0.72_0.19_155/0.08)]'
+          : 'border-[oklch(0.72_0.19_155/0.25)] bg-[oklch(0.72_0.19_155/0.12)]'),
+        !set.isCompleted && !borderless && isPrefilled && 'border-primary/15',
       )}
     >
-      {/* Row 1: set badge, previous, inputs */}
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -117,7 +115,7 @@ export function SetRow({
                 value={typeof set.values[field.key] === 'number' ? set.values[field.key] as number : ''}
                 onChange={(value) => handleValueChange(field.key, value)}
                 field={field}
-                disabled={set.isCompleted}
+                disabled={false}
                 prefilled={isPrefilled}
               />
             </div>
@@ -127,7 +125,6 @@ export function SetRow({
         <button
           type="button"
           onClick={onComplete}
-          disabled={set.isCompleted}
           className={cn(
             'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors',
             set.isCompleted
@@ -136,14 +133,6 @@ export function SetRow({
           )}
         >
           <Check className="h-4 w-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={onDelete}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/8 text-muted-foreground/50 hover:bg-[oklch(0.65_0.20_25/0.12)] hover:text-[oklch(0.72_0.18_25)]"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>

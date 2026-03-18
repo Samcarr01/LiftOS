@@ -174,7 +174,9 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()((set, get) => 
       if (!ex) return {};
       const sets = ex.sets.map((st) =>
         st.id === setId
-          ? { ...st, isCompleted: true, loggedAt: new Date().toISOString() }
+          ? st.isCompleted
+            ? { ...st, isCompleted: false, loggedAt: '' }
+            : { ...st, isCompleted: true, loggedAt: new Date().toISOString() }
           : st,
       );
       exercises[exerciseIndex] = { ...ex, sets };
