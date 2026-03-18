@@ -155,7 +155,7 @@ function SettingRow({
       </div>
       <div className="min-w-0 flex-1 text-left">
         <p className="text-sm font-semibold">{label}</p>
-        {description && <p className="text-xs text-muted-foreground">{description}</p>}
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>
       {right ?? (onClick && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />)}
     </Wrapper>
@@ -272,12 +272,12 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[oklch(0.72_0.19_252/0.12)] text-[oklch(0.78_0.17_252)] font-display text-lg font-bold">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[oklch(0.75_0.18_55/0.12)] text-[oklch(0.80_0.16_55)] font-display text-lg font-bold">
                 {(displayName || user?.email || '?')[0].toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">{displayName || 'Add your name'}</p>
-                <p className="text-xs text-muted-foreground">{user?.email}</p>
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
               </div>
               <button
                 onClick={() => setEditingName(true)}

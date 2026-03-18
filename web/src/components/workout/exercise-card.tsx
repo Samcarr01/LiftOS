@@ -56,12 +56,12 @@ export function ExerciseCard({
   }
 
   return (
-    <div className={`premium-card page-reveal px-4 py-4 ${allComplete ? 'border-[oklch(0.72_0.17_170/0.25)] bg-[oklch(0.72_0.17_170/0.08)]' : ''}`}>
+    <div className={`premium-card page-reveal px-5 py-5 ${allComplete ? 'border-[oklch(0.72_0.19_155/0.25)] bg-[oklch(0.72_0.19_155/0.08)]' : ''}`}>
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2 className="truncate font-display text-lg font-bold">{exercise.name}</h2>
-            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${allComplete ? 'bg-[oklch(0.72_0.17_170/0.12)] text-[oklch(0.78_0.16_170)]' : 'bg-[oklch(0.72_0.19_252/0.12)] text-[oklch(0.78_0.17_252)]'}`}>
+            <span className={`rounded-full px-2 py-0.5 text-sm font-semibold ${allComplete ? 'bg-[oklch(0.72_0.19_155/0.12)] text-[oklch(0.78_0.17_155)]' : 'bg-[oklch(0.75_0.18_55/0.12)] text-[oklch(0.80_0.16_55)]'}`}>
               {completedCount}/{sets.length}
             </span>
           </div>
@@ -71,11 +71,11 @@ export function ExerciseCard({
                 <MuscleGroupBadge key={muscle} muscle={muscle} />
               ))}
             </div>
-            <span className="text-xs text-muted-foreground">{fieldSummary}</span>
+            <span className="text-sm text-muted-foreground">{fieldSummary}</span>
           </div>
         </div>
         {allComplete && (
-          <span className="shrink-0 text-xs font-semibold text-emerald-400">Done</span>
+          <span className="shrink-0 text-sm font-semibold text-[oklch(0.78_0.17_155)]">Done</span>
         )}
       </div>
 
@@ -113,7 +113,7 @@ export function ExerciseCard({
         <button
           type="button"
           onClick={() => addSet(exerciseIndex)}
-          className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/10 text-xs font-semibold text-muted-foreground hover:text-foreground"
+          className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-2xl border border-white/10 text-sm font-semibold text-muted-foreground hover:text-foreground"
         >
           <Plus className="h-3.5 w-3.5" />
           Add Set
@@ -122,7 +122,7 @@ export function ExerciseCard({
         <button
           type="button"
           onClick={() => setNotesOpen((value) => !value)}
-          className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-white/10 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
+          className="flex h-10 items-center justify-center gap-1.5 rounded-2xl border border-white/10 px-3 text-sm font-semibold text-muted-foreground hover:text-foreground"
         >
           {notesOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           Notes
@@ -136,7 +136,7 @@ export function ExerciseCard({
             onChange={(event) => setCardNotes(event.target.value)}
             placeholder="Form cues, reminders..."
             rows={2}
-            className="w-full resize-none rounded-xl border border-white/10 bg-black/15 px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary/50 focus-visible:outline-none"
+            className="w-full resize-none rounded-2xl border border-white/10 bg-black/15 px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary/50 focus-visible:outline-none"
           />
         </div>
       )}

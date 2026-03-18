@@ -63,13 +63,13 @@ export function RestTimer() {
   const secs = (remaining % 60).toString().padStart(2, '0');
 
   const barColor =
-    progress > 0.5  ? 'bg-emerald-500' :
+    progress > 0.5  ? 'bg-[oklch(0.72_0.19_155)]' :
     progress > 0.25 ? 'bg-yellow-500'  :
                       'bg-red-500';
 
   return (
     <div className="fixed bottom-16 left-4 right-4 z-40 md:bottom-6 md:left-auto md:right-6 md:w-72">
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+      <div className="overflow-hidden rounded-2xl border border-white/[0.10] bg-white/[0.10] backdrop-blur-2xl shadow-xl">
         {/* Progress bar */}
         <div className="h-1 w-full bg-muted">
           <div
@@ -80,10 +80,10 @@ export function RestTimer() {
 
         <div className="flex items-center gap-3 px-4 py-3">
           <span className="flex-1 text-2xl font-bold tabular-nums">{mins}:{secs}</span>
-          <span className="text-xs text-muted-foreground">Rest</span>
+          <span className="text-sm text-muted-foreground">Rest</span>
           <button
             onClick={stopTimer}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground hover:bg-muted/80"
+            className="flex h-9 w-9 items-center justify-center rounded-2xl bg-muted text-muted-foreground hover:bg-muted/80"
           >
             <X className="h-4 w-4" />
           </button>

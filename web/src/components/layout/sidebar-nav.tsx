@@ -16,9 +16,9 @@ export function SidebarNav() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-white/[0.06] bg-sidebar md:flex">
+    <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-white/[0.12] bg-white/[0.06] backdrop-blur-xl saturate-150 md:flex">
       <div className="flex h-16 items-center gap-3 px-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl shadow-[0_0_12px_-2px_oklch(0.72_0.19_252/0.3)]" style={{ background: 'linear-gradient(135deg, oklch(0.72 0.19 252 / 0.15), oklch(0.62 0.17 240 / 0.15))' }}>
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl shadow-[0_0_12px_-2px_oklch(0.75_0.18_55/0.3)]" style={{ background: 'linear-gradient(135deg, oklch(0.75 0.18 55 / 0.18), oklch(0.65 0.16 45 / 0.15))' }}>
           <Zap className="h-[18px] w-[18px] text-primary" />
         </div>
         <span className="font-display text-lg font-bold tracking-tight">LiftOS</span>
@@ -38,14 +38,14 @@ export function SidebarNav() {
               key={href}
               href={href}
               className={cn(
-                'relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150',
+                'relative flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium transition-colors duration-150',
                 isActive
-                  ? 'bg-[oklch(0.72_0.19_252/0.12)] text-[oklch(0.78_0.17_252)]'
+                  ? 'bg-[oklch(0.75_0.18_55/0.15)] text-[oklch(0.80_0.16_55)]'
                   : 'text-muted-foreground hover:bg-white/[0.04] hover:text-foreground',
               )}
             >
               {isActive && (
-                <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-primary shadow-[0_0_8px_0px_oklch(0.72_0.19_252/0.5)]" />
+                <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-primary shadow-[0_0_8px_0px_oklch(0.75_0.18_55/0.5)]" />
               )}
               <Icon className="h-[18px] w-[18px] flex-shrink-0" />
               <span>{label}</span>

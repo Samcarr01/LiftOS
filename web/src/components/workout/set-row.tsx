@@ -84,8 +84,8 @@ export function SetRow({
   return (
     <div
       className={cn(
-        'rounded-xl border border-white/8 px-3 py-2.5 transition-all duration-200',
-        set.isCompleted && 'border-[oklch(0.72_0.17_170/0.25)] bg-[oklch(0.72_0.17_170/0.12)]',
+        'rounded-2xl border border-white/8 px-3 py-3 transition-all duration-200',
+        set.isCompleted && 'border-[oklch(0.72_0.19_155/0.25)] bg-[oklch(0.72_0.19_155/0.12)]',
         isPrefilled && 'border-primary/15',
       )}
     >
@@ -96,23 +96,23 @@ export function SetRow({
           onClick={cycleType}
           title={`${SET_TYPE_NAME[set.setType]} — tap to change`}
           className={cn(
-            'flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg border text-[10px] font-bold leading-tight',
+            'flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg border text-xs font-bold leading-tight',
             SET_TYPE_COLOR[set.setType],
           )}
         >
           <span className="text-xs font-semibold">{setNumber}</span>
-          <span className="text-[10px] font-semibold tracking-[0.08em]">{SET_TYPE_LABEL[set.setType]}</span>
+          <span className="text-xs font-semibold tracking-[0.08em]">{SET_TYPE_LABEL[set.setType]}</span>
         </button>
 
         <div className="min-w-[60px] shrink-0">
-          <p className="text-xs text-muted-foreground">Last</p>
-          <p className="text-xs font-medium text-foreground">{lastValues ? formatLast(lastValues, fields) : '—'}</p>
+          <p className="text-sm text-muted-foreground">Last</p>
+          <p className="text-sm font-medium text-foreground">{lastValues ? formatLast(lastValues, fields) : '—'}</p>
         </div>
 
         <div className="flex min-w-0 flex-1 gap-1.5">
           {fields.map((field) => (
             <div key={field.key} className="min-w-0 flex-1">
-              <span className="block text-[11px] font-medium text-muted-foreground truncate">{field.label}</span>
+              <span className="block text-sm font-medium text-muted-foreground truncate">{field.label}</span>
               <NumericInput
                 value={typeof set.values[field.key] === 'number' ? set.values[field.key] as number : ''}
                 onChange={(value) => handleValueChange(field.key, value)}
@@ -131,7 +131,7 @@ export function SetRow({
           className={cn(
             'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors',
             set.isCompleted
-              ? 'border-[oklch(0.72_0.17_170/0.25)] bg-[oklch(0.72_0.17_170)] text-white'
+              ? 'border-[oklch(0.72_0.19_155/0.25)] bg-[oklch(0.72_0.19_155)] text-white'
               : 'border-white/10 text-muted-foreground hover:border-primary/35 hover:bg-primary/10 hover:text-foreground',
           )}
         >

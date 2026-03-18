@@ -90,7 +90,7 @@ function StartWorkoutSheet({
 
   return (
     <Sheet open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <SheetContent side="bottom" className="flex h-[70dvh] flex-col overflow-hidden rounded-t-2xl border-t border-white/[0.06] bg-[oklch(0.24_0.016_264)] p-0">
+      <SheetContent side="bottom" className="flex h-[70dvh] flex-col overflow-hidden rounded-t-2xl border-t border-white/[0.06] bg-white/[0.10] backdrop-blur-xl p-0">
         <SheetHeader className="shrink-0 border-b border-white/[0.06] px-5 pb-4 pt-5 text-left">
           <SheetTitle className="font-display text-lg font-bold text-left">Choose a workout</SheetTitle>
         </SheetHeader>
@@ -118,9 +118,9 @@ function StartWorkoutSheet({
                   key={template.id}
                   onClick={() => void handleStart(template.id)}
                   disabled={starting !== null}
-                  className="group flex w-full items-center gap-3.5 rounded-xl border border-white/[0.05] bg-white/[0.03] px-4 py-3.5 text-left transition-all duration-150 hover:border-white/[0.1] hover:bg-white/[0.05] active:scale-[0.995] disabled:opacity-60"
+                  className="group flex w-full items-center gap-3.5 rounded-2xl border border-white/[0.05] bg-white/[0.03] px-4 py-3.5 text-left transition-all duration-150 hover:border-white/[0.1] hover:bg-white/[0.08] active:scale-[0.995] disabled:opacity-60"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/14 text-primary">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-primary">
                     {starting === template.id
                       ? <Loader2 className="h-4 w-4 animate-spin" />
                       : <Dumbbell className="h-4 w-4" />}
@@ -196,8 +196,8 @@ export default function HomePage() {
         {/* ── Start Workout CTA ──────────────────── */}
         <button
           onClick={() => setSheetOpen(true)}
-          className="page-reveal delay-1 group relative w-full overflow-hidden rounded-2xl px-6 py-6 text-left text-primary-foreground shadow-[0_8px_32px_-8px_oklch(0.72_0.19_252/0.4)] transition-all duration-150 hover:shadow-[0_14px_40px_-8px_oklch(0.72_0.19_252/0.5)] active:scale-[0.99] active:brightness-95"
-          style={{ background: 'linear-gradient(135deg, oklch(0.72 0.19 252), oklch(0.56 0.16 235))' }}
+          className="page-reveal delay-1 group relative w-full overflow-hidden rounded-2xl px-6 py-6 text-left text-primary-foreground shadow-[0_8px_32px_-8px_oklch(0.75_0.18_55/0.4)] transition-all duration-150 hover:shadow-[0_14px_40px_-8px_oklch(0.75_0.18_55/0.5)] active:scale-[0.99] active:brightness-95"
+          style={{ background: 'linear-gradient(135deg, oklch(0.75 0.18 55), oklch(0.56 0.16 40))' }}
         >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.1),transparent_60%)]" />
           <div className="relative flex items-center gap-4">
@@ -227,7 +227,7 @@ export default function HomePage() {
         ) : (data?.recentSessions?.length ?? 0) > 0 ? (
           <div className="page-reveal delay-2 grid grid-cols-2 gap-3">
             <div className="action-card flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.72_0.19_252/0.12)] text-[oklch(0.78_0.17_252)]">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-[oklch(0.80_0.16_55)]">
                 <Flame className="h-[18px] w-[18px]" />
               </div>
               <div>
@@ -240,7 +240,7 @@ export default function HomePage() {
                 onClick={() => router.push(`/history/${lastSession.id}`)}
                 className="action-card flex items-center gap-3 text-left transition-colors duration-150"
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.72_0.17_170/0.12)] text-[oklch(0.78_0.16_170)]">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.72_0.19_155/0.15)] text-[oklch(0.78_0.17_155)]">
                   <TrendingUp className="h-[18px] w-[18px]" />
                 </div>
                 <div className="min-w-0">
@@ -261,7 +261,7 @@ export default function HomePage() {
               {days.map((label, i) => (
                 <div key={i} className="flex flex-col items-center gap-1.5">
                   <div className={`h-2 w-2 rounded-full ${flags[i] ? 'bg-primary' : 'bg-white/[0.08]'}`} />
-                  <span className="text-[10px] text-muted-foreground">{label}</span>
+                  <span className="text-xs text-muted-foreground">{label}</span>
                 </div>
               ))}
             </div>
@@ -287,9 +287,9 @@ export default function HomePage() {
                   key={template.id}
                   onClick={() => void handleQuickStart(template.id)}
                   disabled={starting !== null}
-                  className="action-card group flex w-full items-center gap-3.5 rounded-xl px-4 py-3.5 text-left active:scale-[0.995] disabled:opacity-60"
+                  className="action-card group flex w-full items-center gap-3.5 rounded-2xl px-4 py-3.5 text-left active:scale-[0.995] disabled:opacity-60"
                 >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-primary">
                     {starting === template.id
                       ? <Loader2 className="h-5 w-5 animate-spin" />
                       : <Dumbbell className="h-5 w-5" />}
@@ -301,14 +301,14 @@ export default function HomePage() {
                       {template.last_used_at ? ` · ${formatShortDate(template.last_used_at)}` : ''}
                     </p>
                   </div>
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary opacity-60 transition-opacity duration-150 group-hover:opacity-100">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[oklch(0.75_0.18_55/0.15)] text-primary opacity-60 transition-opacity duration-150 group-hover:opacity-100">
                     <Play className="h-3.5 w-3.5" />
                   </div>
                 </button>
               ))}
               <button
                 onClick={() => router.push('/templates?create=1')}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.15] px-4 py-3.5 text-sm font-semibold text-muted-foreground transition-all duration-150 hover:border-white/[0.2] hover:bg-white/[0.03] hover:text-foreground active:scale-[0.995]"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] px-4 py-3.5 text-sm font-semibold text-muted-foreground transition-all duration-150 hover:border-white/[0.2] hover:bg-white/[0.03] hover:text-foreground active:scale-[0.995]"
               >
                 <Plus className="h-4 w-4" />
                 Create New Workout
@@ -318,7 +318,7 @@ export default function HomePage() {
         ) : (
           <section className="page-reveal delay-2">
             <div className="content-card flex flex-col items-center gap-4 rounded-2xl px-6 py-10 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[oklch(0.75_0.18_55/0.15)] text-primary">
                 <Dumbbell className="h-6 w-6" />
               </div>
               <div>
@@ -350,9 +350,9 @@ export default function HomePage() {
                 <button
                   key={session.id}
                   onClick={() => router.push(`/history/${session.id}`)}
-                  className="action-card group flex w-full items-center gap-3.5 rounded-xl px-4 py-3.5 text-left transition-all duration-150 active:scale-[0.995]"
+                  className="action-card group flex w-full items-center gap-3.5 rounded-2xl px-4 py-3.5 text-left transition-all duration-150 active:scale-[0.995]"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary/70">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-primary/70">
                     <Calendar className="h-[18px] w-[18px]" />
                   </div>
                   <div className="min-w-0 flex-1">

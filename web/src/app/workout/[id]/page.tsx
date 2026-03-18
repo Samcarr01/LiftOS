@@ -50,7 +50,7 @@ export default function WorkoutPage() {
   return (
     <div className="page-shell">
       <div className="page-content py-4 md:py-6">
-        <header className="sticky top-0 z-30 -mx-4 border-b border-white/[0.06] bg-[oklch(0.24_0.016_264/0.95)] px-4 py-3 backdrop-blur-lg">
+        <header className="sticky top-0 z-30 -mx-4 border-b border-white/[0.06] bg-white/[0.10] px-4 py-3 backdrop-blur-2xl">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -59,21 +59,21 @@ export default function WorkoutPage() {
                   router.back();
                 }
               }}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
 
             <div className="min-w-0 flex-1">
               <h1 className="truncate font-display text-base font-bold">{templateName}</h1>
-              <p className="text-xs text-muted-foreground">{savedSets}/{totalSets} sets</p>
+              <p className="text-sm text-muted-foreground">{savedSets}/{totalSets} sets</p>
             </div>
 
             <button
               onClick={() => setFinishOpen(true)}
               disabled={workout.isCompleting || workout.exercises.length === 0}
-              className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-primary-foreground shadow-[0_4px_12px_-4px_oklch(0.72_0.19_252/0.4)] transition-all duration-150 hover:brightness-110 active:scale-[0.97] disabled:opacity-60 disabled:shadow-none"
-              style={{ background: 'linear-gradient(135deg, oklch(0.72 0.19 252), oklch(0.62 0.17 240))' }}
+              className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-primary-foreground shadow-[0_4px_12px_-4px_oklch(0.75_0.18_55/0.4)] transition-all duration-150 hover:brightness-110 active:scale-[0.97] disabled:opacity-60 disabled:shadow-none"
+              style={{ background: 'linear-gradient(135deg, oklch(0.75 0.18 55), oklch(0.62 0.17 40))' }}
             >
               {workout.isCompleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
               Save
@@ -84,8 +84,8 @@ export default function WorkoutPage() {
               className="h-full rounded-full transition-all duration-300 ease-out"
               style={{
                 width: `${totalSets > 0 ? (savedSets / totalSets) * 100 : 0}%`,
-                background: 'linear-gradient(90deg, oklch(0.72 0.19 252), oklch(0.72 0.17 170))',
-                boxShadow: savedSets > 0 ? '0 0 8px oklch(0.72 0.19 252 / 0.4)' : 'none',
+                background: 'linear-gradient(90deg, oklch(0.75 0.18 55), oklch(0.72 0.19 155))',
+                boxShadow: savedSets > 0 ? '0 0 8px oklch(0.75 0.18 55 / 0.4)' : 'none',
               }}
             />
           </div>

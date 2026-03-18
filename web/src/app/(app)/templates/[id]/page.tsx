@@ -56,7 +56,7 @@ function SortableExerciseRow({
       <button
         {...attributes}
         {...listeners}
-        className="flex h-9 w-7 cursor-grab items-center justify-center rounded-xl text-muted-foreground/50 active:cursor-grabbing touch-none hover:bg-white/5"
+        className="flex h-9 w-7 cursor-grab items-center justify-center rounded-2xl text-muted-foreground/50 active:cursor-grabbing touch-none hover:bg-white/[0.08]"
       >
         <GripVertical className="h-4 w-4" />
       </button>
@@ -74,10 +74,10 @@ function SortableExerciseRow({
         </div>
       </button>
 
-      <button onClick={onConfig} className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground">
+      <button onClick={onConfig} className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-white/[0.08] hover:text-foreground">
         <Settings2 className="h-4 w-4" />
       </button>
-      <button onClick={onRemove} className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
+      <button onClick={onRemove} className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
         <Trash2 className="h-4 w-4" />
       </button>
     </div>
@@ -111,7 +111,7 @@ function ExerciseConfigSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-2xl border-t border-white/[0.06] bg-[oklch(0.24_0.016_264)] p-0">
+      <SheetContent side="bottom" className="rounded-t-2xl border-t border-white/[0.06] bg-white/[0.10] backdrop-blur-xl p-0">
         <SheetHeader className="border-b border-white/[0.06] px-5 pb-4 pt-6">
           <SheetTitle className="font-display text-left text-lg font-bold">{item?.exercise.name}</SheetTitle>
           {item && item.exercise.muscle_groups.length > 0 && (
@@ -128,14 +128,14 @@ function ExerciseConfigSheet({
             <div className="mt-3 flex items-center gap-4">
               <button
                 onClick={() => setSets((v) => Math.max(1, v - 1))}
-                className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 text-xl hover:bg-white/5"
+                className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 text-xl hover:bg-white/[0.08]"
               >
                 −
               </button>
               <span className="flex-1 text-center font-display text-3xl font-semibold">{sets}</span>
               <button
                 onClick={() => setSets((v) => Math.min(20, v + 1))}
-                className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 text-xl hover:bg-white/5"
+                className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 text-xl hover:bg-white/[0.08]"
               >
                 +
               </button>
@@ -150,7 +150,7 @@ function ExerciseConfigSheet({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Form cues, target weight…"
               rows={3}
-              className="mt-3 w-full resize-none rounded-2xl border border-white/10 bg-black/15 px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-primary/50 focus-visible:outline-none"
+              className="mt-3 w-full resize-none rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-primary/50 focus-visible:outline-none"
             />
           </div>
 
@@ -282,7 +282,7 @@ export default function TemplateEditorPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-white/[0.08] hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -297,7 +297,7 @@ export default function TemplateEditorPage() {
           <button
             onClick={() => void handleStartWorkout()}
             disabled={isStartingWorkout || exercises.length === 0}
-            className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-2xl bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
           >
             {isStartingWorkout ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
             Start
@@ -348,7 +348,7 @@ export default function TemplateEditorPage() {
           defaultMode="create"
           trigger={
             <button className="list-row w-full">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/14 text-primary">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-primary">
                 <Plus className="h-4 w-4" />
               </div>
               <span className="text-sm font-semibold">Add Exercise</span>

@@ -33,13 +33,13 @@ function SessionRow({
       onClick={onClick}
       className="action-card flex items-center gap-3 w-full text-left"
     >
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.72_0.19_252/0.12)] text-[oklch(0.78_0.17_252)]">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.12)] text-[oklch(0.80_0.16_55)]">
         <Calendar className="h-4 w-4" />
       </div>
 
       <div className="min-w-0 flex-1">
         <p className="truncate text-card-title">{name}</p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {formatShortDate(session.started_at)} · {session.exercise_count} ex · {session.total_sets} set{session.total_sets !== 1 ? 's' : ''}
         </p>
       </div>

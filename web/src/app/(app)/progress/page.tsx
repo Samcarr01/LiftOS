@@ -139,7 +139,7 @@ export default function ProgressPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h2 className="font-display text-base font-bold">{selectedExercise.name}</h2>
-                    <p className="text-xs text-muted-foreground">{selectedExercise.trackingLabel}</p>
+                    <p className="text-sm text-muted-foreground">{selectedExercise.trackingLabel}</p>
                   </div>
 
                   <button
@@ -166,8 +166,8 @@ export default function ProgressPage() {
                       <StatCard label="Sessions" value={String(summary.trainingDays)} />
                     </div>
 
-                    <div className="mt-3 rounded-xl border border-white/8 px-3 py-2.5">
-                      <p className="text-xs text-muted-foreground">Trend</p>
+                    <div className="mt-3 rounded-2xl border border-white/8 px-3 py-2.5">
+                      <p className="text-sm text-muted-foreground">Trend</p>
                       <p className="mt-1 text-sm text-foreground">{summary.trendNote}</p>
                     </div>
                   </>
@@ -183,7 +183,7 @@ export default function ProgressPage() {
                   {records.map((record) => (
                     <div
                       key={record.record_type}
-                      className="flex items-center gap-2 rounded-xl border border-[oklch(0.80_0.16_85/0.25)] bg-[oklch(0.80_0.16_85/0.12)] px-3 py-2.5"
+                      className="flex items-center gap-2 rounded-2xl border border-[oklch(0.80_0.16_85/0.25)] bg-[oklch(0.80_0.16_85/0.12)] px-3 py-2.5"
                     >
                       <Award className="h-4 w-4 shrink-0 text-[oklch(0.85_0.15_85)]" />
                       <div className="min-w-0">
@@ -204,7 +204,7 @@ export default function ProgressPage() {
                       <button
                         key={timeRange.value}
                         onClick={() => setRange(timeRange.value)}
-                        className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                        className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
                           range === timeRange.value
                             ? 'bg-primary text-primary-foreground'
                             : 'border border-white/[0.14] bg-white/[0.04] text-muted-foreground hover:bg-white/8'
@@ -274,7 +274,7 @@ export default function ProgressPage() {
                     <StatCard label="Volume" value={`${Math.round(weeklySummary.total_volume_kg)}kg`} />
                   </div>
 
-                  <div className="rounded-xl border border-white/8 px-3 py-2.5 space-y-1">
+                  <div className="rounded-2xl border border-white/8 px-3 py-2.5 space-y-1">
                     {weeklySummary.strongest_lift && (
                       <p className="text-sm text-foreground">
                         <span className="font-medium">Strongest:</span> {weeklySummary.strongest_lift.exercise} · {weeklySummary.strongest_lift.value}
@@ -302,7 +302,7 @@ export default function ProgressPage() {
             <div className="content-card py-8 text-center">
               <Trophy className="mx-auto h-6 w-6 text-muted-foreground" />
               <p className="mt-2 text-sm font-semibold">Choose an exercise above</p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-sm text-muted-foreground">
                 See your latest result, best, and trend.
               </p>
             </div>

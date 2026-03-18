@@ -17,13 +17,13 @@ export function AISuggestionBanner({
   const progressing = suggestion.decision === 'progress';
 
   return (
-    <div className="rounded-lg border border-[oklch(0.72_0.19_252/0.25)] bg-[oklch(0.72_0.19_252/0.12)] px-3 py-2.5">
+    <div className="rounded-2xl border border-[oklch(0.75_0.18_55/0.25)] bg-[oklch(0.75_0.18_55/0.12)] px-4 py-3">
       <div className="flex items-start gap-2.5">
         <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-semibold text-foreground">
+            <span className="text-sm font-semibold text-foreground">
               {progressing ? 'Progress' : 'Hold'} next time
             </span>
             {progressing
@@ -32,7 +32,7 @@ export function AISuggestionBanner({
           </div>
 
           {suggestion.next_target && (
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-sm text-muted-foreground">
               Target: <span className="font-medium text-foreground">{suggestion.next_target.display}</span>
               {suggestion.last_result && (
                 <span> (was {suggestion.last_result.display})</span>
@@ -40,7 +40,7 @@ export function AISuggestionBanner({
             </p>
           )}
 
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">{suggestion.reason}</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground line-clamp-2">{suggestion.reason}</p>
         </div>
 
         <button
@@ -56,14 +56,14 @@ export function AISuggestionBanner({
         <div className="mt-2 flex gap-2 border-t border-primary/10 pt-2">
           <button
             onClick={onAccept}
-            className="flex h-7 flex-1 items-center justify-center rounded-lg text-xs font-semibold text-primary-foreground active:scale-[0.98]"
-            style={{ background: 'linear-gradient(135deg, oklch(0.72 0.19 252), oklch(0.62 0.17 240))' }}
+            className="flex h-7 flex-1 items-center justify-center rounded-lg text-sm font-semibold text-primary-foreground active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, oklch(0.75 0.18 55), oklch(0.62 0.17 40))' }}
           >
             Apply Target
           </button>
           <button
             onClick={onDismiss}
-            className="flex h-7 items-center rounded-md px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
+            className="flex h-7 items-center rounded-md px-3 text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             Dismiss
           </button>

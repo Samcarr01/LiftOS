@@ -42,14 +42,14 @@ export default function WorkoutCompletePage() {
 
   return (
     <div className="relative flex min-h-[100dvh] flex-col items-center bg-background px-4 pb-8 pt-8">
-      <div className="pointer-events-none absolute inset-0" style={{ background: hasPrs ? 'radial-gradient(circle at 50% 15%, oklch(0.80 0.16 85 / 0.06), transparent 50%)' : 'radial-gradient(circle at 50% 15%, oklch(0.72 0.19 252 / 0.05), transparent 50%)' }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: hasPrs ? 'radial-gradient(circle at 50% 15%, oklch(0.80 0.16 85 / 0.06), transparent 50%)' : 'radial-gradient(circle at 50% 15%, oklch(0.75 0.18 55 / 0.05), transparent 50%)' }} />
       {/* Hero */}
       <div
         className={`
           relative flex h-20 w-20 items-center justify-center rounded-full
           ${hasPrs
             ? 'bg-yellow-500/20 shadow-[0_0_30px_-4px_oklch(0.80_0.16_85/0.35)] animate-bounce-once'
-            : 'bg-primary/20 shadow-[0_0_24px_-4px_oklch(0.72_0.19_252/0.3)]'
+            : 'bg-primary/20 shadow-[0_0_24px_-4px_oklch(0.75_0.18_55/0.3)]'
           }
         `}
       >
@@ -59,7 +59,7 @@ export default function WorkoutCompletePage() {
         }
       </div>
 
-      <h1 className="relative mt-5 text-2xl font-bold tracking-tight">
+      <h1 className="relative mt-5 text-3xl font-bold tracking-tight">
         {hasPrs ? 'Workout Complete' : 'Workout Saved'}
       </h1>
       <p className="relative mt-1 text-sm text-muted-foreground">
@@ -67,7 +67,7 @@ export default function WorkoutCompletePage() {
       </p>
 
       {/* Stats strip */}
-      <div className="mt-8 grid w-full max-w-sm grid-cols-3 gap-3">
+      <div className="mt-8 grid w-full max-w-sm grid-cols-3 gap-4">
         <StatCard label="Exercises" value={String(summary.exercise_count)} />
         <StatCard label="Sets" value={String(summary.total_sets)} />
         <StatCard label="Volume" value={`${Math.round(summary.total_volume_kg)}kg`} />
@@ -75,7 +75,7 @@ export default function WorkoutCompletePage() {
 
       {/* Exercises */}
       {exerciseNames.length > 0 && (
-        <div className="mt-6 w-full max-w-sm rounded-2xl border border-border bg-card px-4 py-3">
+        <div className="mt-6 w-full max-w-sm rounded-2xl border border-white/[0.10] bg-white/[0.06] backdrop-blur-2xl px-4 py-4">
           <p className="text-overline mb-2">
             Exercises ({summary.exercise_count})
           </p>
@@ -106,8 +106,8 @@ export default function WorkoutCompletePage() {
       <div className="mt-auto w-full max-w-sm pt-10">
         <button
           onClick={handleDone}
-          className="flex h-12 w-full items-center justify-center rounded-xl text-sm font-semibold text-primary-foreground shadow-[0_8px_24px_-8px_oklch(0.72_0.19_252/0.35)] transition-all duration-150 hover:brightness-110 hover:shadow-[0_12px_30px_-8px_oklch(0.72_0.19_252/0.45)] active:scale-[0.98] active:brightness-95"
-          style={{ background: 'linear-gradient(135deg, oklch(0.72 0.19 252), oklch(0.62 0.17 240))' }}
+          className="flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold text-primary-foreground shadow-[0_8px_24px_-8px_oklch(0.75_0.18_55/0.35)] transition-all duration-150 hover:brightness-110 hover:shadow-[0_12px_30px_-8px_oklch(0.75_0.18_55/0.45)] active:scale-[0.98] active:brightness-95"
+          style={{ background: 'linear-gradient(135deg, oklch(0.75 0.18 55), oklch(0.62 0.17 40))' }}
         >
           Done
         </button>
@@ -118,17 +118,17 @@ export default function WorkoutCompletePage() {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="relative flex flex-col items-center overflow-hidden rounded-xl border border-white/[0.10] bg-[oklch(0.19_0.014_264)] px-3 py-4">
+    <div className="relative flex flex-col items-center overflow-hidden rounded-2xl border border-white/[0.10] bg-white/[0.06] backdrop-blur-2xl px-3 py-5">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-      <span className="font-display text-xl font-bold">{value}</span>
-      <span className="mt-0.5 text-xs text-muted-foreground">{label}</span>
+      <span className="font-display text-2xl font-bold">{value}</span>
+      <span className="mt-0.5 text-sm text-muted-foreground">{label}</span>
     </div>
   );
 }
 
 function PrCard({ pr }: { pr: CompletionPR }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-[oklch(0.80_0.16_85/0.25)] bg-[oklch(0.80_0.16_85/0.12)] px-4 py-3">
+    <div className="flex items-center gap-3 rounded-2xl border border-[oklch(0.80_0.16_85/0.25)] bg-[oklch(0.80_0.16_85/0.12)] px-4 py-3">
       <Award className="h-5 w-5 shrink-0 text-yellow-500" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{pr.exercise_name}</p>

@@ -82,7 +82,7 @@ export default function ExercisesPage() {
         <div className="page-header">
           <h1 className="page-header-title">Exercise Library</h1>
           {!isLoading && exercises.length > 0 && (
-            <span className="text-xs text-muted-foreground">{exercises.length} exercises</span>
+            <span className="text-sm text-muted-foreground">{exercises.length} exercises</span>
           )}
         </div>
 
@@ -93,19 +93,19 @@ export default function ExercisesPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search by name, muscle group, or type"
-            className="h-11 rounded-xl border-white/10 bg-black/15 pl-10 text-sm"
+            className="h-11 rounded-2xl border-white/10 bg-white/[0.06] backdrop-blur-xl pl-10 text-sm"
           />
         </div>
 
         {/* Duplicates warning */}
         {duplicateGroups.length > 0 && (
-          <div className="flex items-start gap-3 rounded-xl border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-4 py-4">
+          <div className="flex items-start gap-3 rounded-2xl border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-4 py-4">
             <span className="text-xs font-semibold text-[oklch(0.82_0.15_60)]">Duplicates</span>
             <div className="flex flex-wrap gap-1.5">
               {duplicateGroups.map((group) => (
                 <span
                   key={group.id}
-                  className="inline-flex items-center rounded-md border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-2 py-0.5 text-[10px] font-semibold text-[oklch(0.82_0.15_60)]"
+                  className="inline-flex items-center rounded-md border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-2 py-0.5 text-xs font-semibold text-[oklch(0.82_0.15_60)]"
                 >
                   {group.name} ({group.duplicateCount})
                 </span>
@@ -138,7 +138,7 @@ export default function ExercisesPage() {
                         <Input
                           value={draftName}
                           onChange={(event) => setDraftName(event.target.value)}
-                          className="h-9 rounded-xl border-white/10 bg-black/15 text-sm"
+                          className="h-9 rounded-2xl border-white/10 bg-white/[0.06] backdrop-blur-xl text-sm"
                           autoFocus
                         />
                         <div className="flex gap-2">
@@ -162,19 +162,19 @@ export default function ExercisesPage() {
                         <div className="flex items-center gap-2">
                           <p className="truncate text-card-title">{exercise.name}</p>
                           {isDuplicate && (
-                            <span className="rounded-md border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-1.5 py-0.5 text-[10px] font-semibold text-[oklch(0.82_0.15_60)]">
+                            <span className="rounded-md border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-1.5 py-0.5 text-xs font-semibold text-[oklch(0.82_0.15_60)]">
                               Dup
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground">{describeTrackingSchema(exercise.tracking_schema)}</p>
+                        <p className="text-sm text-muted-foreground">{describeTrackingSchema(exercise.tracking_schema)}</p>
                         <div className="mt-1.5 flex flex-wrap gap-1">
                           {exercise.muscle_groups.length > 0 ? (
                             exercise.muscle_groups.map((muscle) => (
                               <MuscleGroupBadge key={muscle} muscle={muscle} />
                             ))
                           ) : (
-                            <span className="text-[10px] text-muted-foreground">No muscle groups</span>
+                            <span className="text-xs text-muted-foreground">No muscle groups</span>
                           )}
                         </div>
                       </>

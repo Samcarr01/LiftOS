@@ -58,7 +58,7 @@ function DesktopInput({ value, onChange, field, disabled, prefilled }: NumericIn
         className={cn(
           'h-9 w-20 rounded-lg border border-input bg-card px-2 text-center text-sm font-medium',
           'focus:outline-none focus:ring-2 focus:ring-ring',
-          prefilled && value !== '' && 'border-[oklch(0.72_0.19_252/0.25)] bg-[oklch(0.72_0.19_252/0.12)]',
+          prefilled && value !== '' && 'border-[oklch(0.75_0.18_55/0.25)] bg-[oklch(0.75_0.18_55/0.12)]',
           disabled && 'opacity-50',
         )}
       />
@@ -119,9 +119,9 @@ function MobileNumpad({
       <div className="flex-1" onClick={onClose} />
 
       {/* Numpad panel */}
-      <div className="rounded-t-2xl border-t border-border bg-[oklch(0.24_0.016_264)] px-4 pb-safe-area-inset-bottom pt-4">
+      <div className="rounded-t-2xl border-t border-border bg-white/[0.10] backdrop-blur-2xl px-4 pb-safe-area-inset-bottom pt-4">
         {/* Label + display */}
-        <p className="mb-2 text-center text-xs font-medium text-muted-foreground">{displayLabel}</p>
+        <p className="mb-2 text-center text-sm font-medium text-muted-foreground">{displayLabel}</p>
         <div
           className="mb-4 flex min-h-14 items-center justify-end rounded-xl bg-muted px-4 text-3xl font-bold tracking-tight"
         >
@@ -255,7 +255,7 @@ export function NumericInput({ value, onChange, field, disabled, prefilled }: Nu
         className={cn(
           'flex min-h-[44px] min-w-[60px] items-center justify-center rounded-xl border border-border bg-card px-3 text-sm font-semibold',
           'active:bg-muted transition-colors',
-          prefilled && value !== '' && 'border-[oklch(0.72_0.19_252/0.25)] bg-[oklch(0.72_0.19_252/0.12)] text-[oklch(0.78_0.17_252)]',
+          prefilled && value !== '' && 'border-[oklch(0.75_0.18_55/0.25)] bg-[oklch(0.75_0.18_55/0.12)] text-[oklch(0.80_0.16_55)]',
           disabled && 'opacity-50',
         )}
       >

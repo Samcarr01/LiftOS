@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono, Space_Grotesk } from 'next/font/google';
+import { Inter, Barlow_Condensed, Geist_Mono } from 'next/font/google';
 import { AuthGate } from '@/components/layout/auth-gate';
 import { OfflineProvider } from '@/components/layout/offline-indicator';
 import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const inter = Inter({
+  variable: '--font-inter',
   subsets: ['latin'],
   display: 'swap',
 });
@@ -17,10 +17,11 @@ const geistMono = Geist_Mono({
   display: 'swap',
 });
 
-const spaceGrotesk = Space_Grotesk({
-  variable: '--font-space-grotesk',
+const barlowCondensed = Barlow_Condensed({
+  variable: '--font-barlow-condensed',
   subsets: ['latin'],
   display: 'swap',
+  weight: ['400', '500', '600', '700'],
 });
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://liftos.app';
@@ -77,8 +78,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: [
-    { media: '(prefers-color-scheme: dark)',  color: '#2563EB' },
-    { media: '(prefers-color-scheme: light)', color: '#2563EB' },
+    { media: '(prefers-color-scheme: dark)',  color: '#1a1a2e' },
+    { media: '(prefers-color-scheme: light)', color: '#1a1a2e' },
   ],
 };
 
@@ -99,9 +100,9 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="LiftOS" />
         {/* Splash screens — iOS 15+ uses the manifest theme_color; older devices */}
-        <meta name="msapplication-TileColor" content="#2563EB" />
+        <meta name="msapplication-TileColor" content="#1a1a2e" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} min-h-[100dvh] antialiased`}>
+      <body className={`${inter.variable} ${barlowCondensed.variable} ${geistMono.variable} min-h-[100dvh] antialiased`}>
         <OfflineProvider />
         <AuthGate>
           {children}

@@ -17,7 +17,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden">
-      <div className="relative mx-auto flex h-[60px] max-w-md items-center justify-around overflow-hidden rounded-2xl border border-white/[0.07] bg-[oklch(0.14_0.013_264/0.96)] backdrop-blur-xl">
+      <div className="relative mx-auto flex h-16 max-w-md items-center justify-around overflow-hidden rounded-2xl border border-white/[0.12] bg-white/[0.06] backdrop-blur-2xl saturate-150">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const isActive = href === '/'
@@ -39,7 +39,7 @@ export function BottomNav() {
               )}
             >
               <Icon className="h-5 w-5" />
-              <span className={cn('text-[11px]', isActive ? 'font-semibold' : 'font-medium')}>{label}</span>
+              <span className={cn('text-sm', isActive ? 'font-semibold' : 'font-medium')}>{label}</span>
               {isActive && (
                 <span className="absolute bottom-0.5 h-1 w-5 rounded-full bg-primary" />
               )}
