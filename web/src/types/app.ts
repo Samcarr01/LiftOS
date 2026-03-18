@@ -159,6 +159,7 @@ export interface SessionDetailExercise {
   exercise_name:       string;
   muscle_groups:       string[];
   order_index:         number;
+  superset_group_id:   string | null;
   tracking_schema:     TrackingSchema;
   notes:               string | null;
   sets:                SessionDetailSet[];

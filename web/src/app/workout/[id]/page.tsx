@@ -2,10 +2,45 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, Loader2, Sparkles } from 'lucide-react';
+import { ChevronLeft, Link2, Loader2, Sparkles } from 'lucide-react';
 import { ExerciseCard } from '@/components/workout/exercise-card';
 import { FinishDialog } from '@/components/workout/finish-dialog';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
+import type { ActiveExerciseState } from '@/types/app';
+
+type ExerciseGroup = {
+  type: 'single' | 'superset';
+  key: string;
+  exercises: { state: ActiveExerciseState; exerciseIndex: number }[];
+};
+
+function groupExercises(exercises: ActiveExerciseState[]): ExerciseGroup[] {
+  const groups: ExerciseGroup[] = [];
+  let current: ExerciseGroup | null = null;
+
+  exercises.forEach((exercise, index) => {
+    const groupId = exercise.sessionExercise.superset_group_id;
+
+    if (groupId && current?.type === 'superset' && current.key === groupId) {
+      current.exercises.push({ state: exercise, exerciseIndex: index });
+    } else {
+      if (current) groups.push(current);
+      current = {
+        type: groupId ? 'superset' : 'single',
+        key: groupId ?? exercise.sessionExercise.id,
+        exercises: [{ state: exercise, exerciseIndex: index }],
+      };
+    }
+  });
+
+  if (current) groups.push(current);
+
+  return groups.map((g) =>
+    g.type === 'superset' && g.exercises.length === 1
+      ? { ...g, type: 'single' as const }
+      : g,
+  );
+}
 
 export default function WorkoutPage() {
   const params = useParams<{ id: string }>();
@@ -87,14 +122,36 @@ export default function WorkoutPage() {
         </header>
 
         <main className="mt-5 space-y-5 pb-28">
-          {workout.exercises.map((exercise, index) => (
-            <ExerciseCard
-              key={exercise.sessionExercise.id}
-              state={exercise}
-              exerciseIndex={index}
-              isSuggestionDismissed={dismissedSuggestions.includes(index)}
-            />
-          ))}
+          {groupExercises(workout.exercises).map((group) => {
+            if (group.type === 'single') {
+              const { state, exerciseIndex } = group.exercises[0];
+              return (
+                <ExerciseCard
+                  key={state.sessionExercise.id}
+                  state={state}
+                  exerciseIndex={exerciseIndex}
+                  isSuggestionDismissed={dismissedSuggestions.includes(exerciseIndex)}
+                />
+              );
+            }
+
+            return (
+              <div key={group.key} className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-2 space-y-2">
+                <div className="flex items-center gap-2 px-3 pt-1">
+                  <Link2 className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs font-semibold text-primary">Superset</span>
+                </div>
+                {group.exercises.map(({ state, exerciseIndex }) => (
+                  <ExerciseCard
+                    key={state.sessionExercise.id}
+                    state={state}
+                    exerciseIndex={exerciseIndex}
+                    isSuggestionDismissed={dismissedSuggestions.includes(exerciseIndex)}
+                  />
+                ))}
+              </div>
+            );
+          })}
 
           {workout.exercises.length === 0 && (
             <div className="premium-card flex flex-col items-center gap-3 px-5 py-14 text-center">

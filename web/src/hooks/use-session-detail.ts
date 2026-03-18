@@ -31,6 +31,7 @@ export function useSessionDetail(sessionId: string) {
           session_exercises (
             id,
             order_index,
+            superset_group_id,
             notes,
             exercises (
               id,
@@ -75,6 +76,7 @@ export function useSessionDetail(sessionId: string) {
         session_exercises: Array<{
           id: string;
           order_index: number;
+          superset_group_id: string | null;
           notes: string | null;
           exercises: {
             id: string;
@@ -129,6 +131,7 @@ export function useSessionDetail(sessionId: string) {
             exercise_name:       ex.name,
             muscle_groups:       ex.muscle_groups as string[],
             order_index:         se.order_index,
+            superset_group_id:   se.superset_group_id,
             tracking_schema,
             notes:               se.notes,
             sets,

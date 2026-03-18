@@ -2,7 +2,7 @@
 
 import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Award, Loader2, Trash2, Trophy } from 'lucide-react';
+import { ArrowLeft, Award, Link2, Loader2, Trash2, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { useSessionDetail } from '@/hooks/use-session-detail';
@@ -191,11 +191,45 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
 
-            {/* Exercise blocks */}
+            {/* Exercise blocks — grouped by superset */}
             <div className="space-y-3">
-              {detail.exercises.map((exercise) => (
-                <ExerciseBlock key={exercise.session_exercise_id} exercise={exercise} />
-              ))}
+              {(() => {
+                const groups: { key: string; isSuperset: boolean; exercises: SessionDetailExercise[] }[] = [];
+                let current: typeof groups[0] | null = null;
+
+                for (const exercise of detail.exercises) {
+                  const gid = exercise.superset_group_id;
+                  if (gid && current?.isSuperset && current.key === gid) {
+                    current.exercises.push(exercise);
+                  } else {
+                    if (current) groups.push(current);
+                    current = {
+                      key: gid ?? exercise.session_exercise_id,
+                      isSuperset: gid != null,
+                      exercises: [exercise],
+                    };
+                  }
+                }
+                if (current) groups.push(current);
+
+                return groups.map((group) => {
+                  const isSuperset = group.isSuperset && group.exercises.length > 1;
+                  if (!isSuperset) {
+                    return <ExerciseBlock key={group.key} exercise={group.exercises[0]} />;
+                  }
+                  return (
+                    <div key={group.key} className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-2 space-y-2">
+                      <div className="flex items-center gap-2 px-3 pt-1">
+                        <Link2 className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-xs font-semibold text-primary">Superset</span>
+                      </div>
+                      {group.exercises.map((exercise) => (
+                        <ExerciseBlock key={exercise.session_exercise_id} exercise={exercise} />
+                      ))}
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </>
         )}

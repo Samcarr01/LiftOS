@@ -13,7 +13,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   GripVertical, Trash2, ChevronLeft, Plus, Loader2, Settings2,
-  Play,
+  Play, Link2, Unlink2,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
@@ -35,13 +35,16 @@ function SortableExerciseRow({
   item,
   onConfig,
   onRemove,
+  supersetPosition,
 }: {
   item: TemplateExerciseWithDetails;
   onConfig: () => void;
   onRemove: () => void;
+  supersetPosition: 'none' | 'first' | 'middle' | 'last';
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
+  const inSuperset = supersetPosition !== 'none';
 
   return (
     <div
@@ -50,6 +53,10 @@ function SortableExerciseRow({
       className={cn(
         'elevated-surface flex items-center gap-4 px-4 py-4 transition-all duration-300',
         isDragging && 'scale-[0.99] opacity-70 shadow-2xl',
+        inSuperset && 'border-l-2 border-l-primary/60',
+        supersetPosition === 'first' && 'rounded-b-none border-b-0',
+        supersetPosition === 'middle' && 'rounded-none border-b-0',
+        supersetPosition === 'last' && 'rounded-t-none',
       )}
     >
       {/* Drag handle */}
@@ -81,6 +88,31 @@ function SortableExerciseRow({
         <Trash2 className="h-4 w-4" />
       </button>
     </div>
+  );
+}
+
+// ── Superset link button between exercise rows ────────────────────────────────
+
+function SupersetLinkButton({
+  linked,
+  onToggle,
+}: {
+  linked: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className={cn(
+        'mx-auto flex h-7 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-all duration-150',
+        linked
+          ? 'border-primary/40 bg-primary/15 text-primary hover:bg-primary/25'
+          : 'border-white/10 bg-white/[0.04] text-muted-foreground hover:border-white/20 hover:bg-white/[0.08] hover:text-foreground',
+      )}
+    >
+      {linked ? <Unlink2 className="h-3 w-3" /> : <Link2 className="h-3 w-3" />}
+      {linked ? 'Unlink' : 'Superset'}
+    </button>
   );
 }
 
@@ -252,6 +284,60 @@ export default function TemplateEditorPage() {
     try { await removeExercise(itemId); } catch { toast.error('Failed to remove exercise'); }
   }
 
+  async function toggleSupersetLink(indexA: number, indexB: number) {
+    const a = exercises[indexA];
+    const b = exercises[indexB];
+    if (!a || !b) return;
+
+    const sameGroup = a.superset_group_id && a.superset_group_id === b.superset_group_id;
+
+    if (sameGroup) {
+      // Unlink: check if removing this link splits a group
+      const groupId = a.superset_group_id!;
+      const groupMembers = exercises.filter((e) => e.superset_group_id === groupId);
+      if (groupMembers.length <= 2) {
+        // Only 2 members — remove group from both
+        try {
+          await Promise.all(
+            groupMembers.map((e) => updateExercise(e.id, { superset_group_id: null })),
+          );
+        } catch { toast.error('Failed to unlink'); }
+      } else {
+        // Split: remove group from b and everything after b in the group
+        try {
+          const bIdx = exercises.indexOf(b);
+          const toUnlink = exercises.filter(
+            (e, i) => e.superset_group_id === groupId && i >= bIdx,
+          );
+          await Promise.all(
+            toUnlink.map((e) => updateExercise(e.id, { superset_group_id: null })),
+          );
+        } catch { toast.error('Failed to unlink'); }
+      }
+    } else {
+      // Link: use existing group if one has one, otherwise create new
+      const groupId = a.superset_group_id ?? b.superset_group_id ?? crypto.randomUUID();
+      try {
+        const updates: Promise<void>[] = [];
+        if (a.superset_group_id !== groupId) updates.push(updateExercise(a.id, { superset_group_id: groupId }));
+        if (b.superset_group_id !== groupId) updates.push(updateExercise(b.id, { superset_group_id: groupId }));
+        await Promise.all(updates);
+      } catch { toast.error('Failed to link'); }
+    }
+  }
+
+  function getSupersetPosition(index: number): 'none' | 'first' | 'middle' | 'last' {
+    const item = exercises[index];
+    if (!item?.superset_group_id) return 'none';
+    const gid = item.superset_group_id;
+    const prev = exercises[index - 1]?.superset_group_id === gid;
+    const next = exercises[index + 1]?.superset_group_id === gid;
+    if (prev && next) return 'middle';
+    if (prev) return 'last';
+    if (next) return 'first';
+    return 'none'; // solo member — shouldn't happen but safe
+  }
+
   async function handleConfigSave(patch: Parameters<typeof updateExercise>[1]) {
     if (!configItem) return;
     try { await updateExercise(configItem.id, patch); } catch { toast.error('Failed to save'); }
@@ -317,18 +403,42 @@ export default function TemplateEditorPage() {
             ) : (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={exercises.map((exercise) => exercise.id)} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-3">
-                    {exercises.map((item) => (
-                      <SortableExerciseRow
-                        key={item.id}
-                        item={item}
-                        onConfig={() => {
-                          setConfigItem(item);
-                          setConfigOpen(true);
-                        }}
-                        onRemove={() => void handleRemove(item.id)}
-                      />
-                    ))}
+                  <div className="space-y-1">
+                    {exercises.map((item, index) => {
+                      const pos = getSupersetPosition(index);
+                      const showLabel = pos === 'first';
+                      const showLinkButton = index < exercises.length - 1;
+                      const isLinkedWithNext = item.superset_group_id != null &&
+                        item.superset_group_id === exercises[index + 1]?.superset_group_id;
+
+                      return (
+                        <div key={item.id}>
+                          {showLabel && (
+                            <div className="mb-1 flex items-center gap-2 px-1">
+                              <Link2 className="h-3 w-3 text-primary" />
+                              <span className="text-xs font-semibold text-primary">Superset</span>
+                            </div>
+                          )}
+                          <SortableExerciseRow
+                            item={item}
+                            supersetPosition={pos}
+                            onConfig={() => {
+                              setConfigItem(item);
+                              setConfigOpen(true);
+                            }}
+                            onRemove={() => void handleRemove(item.id)}
+                          />
+                          {showLinkButton && pos !== 'first' && pos !== 'middle' && (
+                            <div className="flex justify-center py-1">
+                              <SupersetLinkButton
+                                linked={isLinkedWithNext}
+                                onToggle={() => void toggleSupersetLink(index, index + 1)}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </SortableContext>
               </DndContext>
