@@ -114,7 +114,7 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
       </div>
 
       {/* Rounds */}
-      <div className="mt-4 space-y-4">
+      <div className="mt-3 space-y-2.5">
         {Array.from({ length: maxRounds }, (_, roundIndex) => {
           const roundSets = exercises.map((ex) => ex.state.sets[roundIndex] ?? null);
           const roundComplete = roundSets.every((s) => s?.isCompleted);
@@ -123,52 +123,54 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
             <div
               key={roundIndex}
               className={cn(
-                'rounded-xl border px-3 py-3 space-y-2',
+                'rounded-xl border px-2.5 py-2.5',
                 roundComplete
                   ? 'border-[oklch(0.72_0.19_155/0.20)] bg-[oklch(0.72_0.19_155/0.06)]'
                   : 'border-white/[0.08] bg-white/[0.03]',
               )}
             >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-muted-foreground">
+              <div className="mb-1.5 flex items-center justify-between px-0.5">
+                <span className="text-[11px] font-semibold text-muted-foreground">
                   Round {roundIndex + 1}
                 </span>
                 {roundComplete && (
-                  <span className="text-xs font-semibold text-[oklch(0.78_0.17_155)]">Done</span>
+                  <span className="text-[11px] font-semibold text-[oklch(0.78_0.17_155)]">Done</span>
                 )}
               </div>
 
-              {exercises.map((ex, exIdx) => {
-                const set = ex.state.sets[roundIndex];
-                if (!set) return null;
-                const fields = ex.state.exercise.tracking_schema.fields;
-                const color = exerciseColors[exIdx % exerciseColors.length];
+              <div className="space-y-1.5">
+                {exercises.map((ex, exIdx) => {
+                  const set = ex.state.sets[roundIndex];
+                  if (!set) return null;
+                  const fields = ex.state.exercise.tracking_schema.fields;
+                  const color = exerciseColors[exIdx % exerciseColors.length];
 
-                return (
-                  <div key={ex.state.sessionExercise.id}>
-                    <div className="mb-1 flex items-center gap-1.5">
-                      <div className={cn('h-1.5 w-1.5 rounded-full', color.bg.replace('/12', ''))} />
-                      <span className={cn('text-xs font-semibold', color.text)}>
-                        {ex.state.exercise.name}
-                      </span>
+                  return (
+                    <div key={ex.state.sessionExercise.id}>
+                      <div className="mb-0.5 flex items-center gap-1.5 px-0.5">
+                        <div className={cn('h-1.5 w-1.5 rounded-full', color.bg.replace('/12', ''))} />
+                        <span className={cn('text-[11px] font-semibold', color.text)}>
+                          {ex.state.exercise.name}
+                        </span>
+                      </div>
+                      <SetRow
+                        set={set}
+                        setNumber={roundIndex + 1}
+                        lastValues={ex.state.lastPerformanceSets?.[roundIndex] ?? null}
+                        fields={fields}
+                        onUpdate={(patch) => {
+                          updateSet(ex.exerciseIndex, set.id, {
+                            ...(patch.values ? { values: patch.values as SetValues } : {}),
+                            ...(patch.setType ? { setType: patch.setType } : {}),
+                          });
+                        }}
+                        onComplete={() => handleComplete(ex.exerciseIndex, set.id)}
+                        onDelete={() => handleDeleteRound(roundIndex)}
+                      />
                     </div>
-                    <SetRow
-                      set={set}
-                      setNumber={roundIndex + 1}
-                      lastValues={ex.state.lastPerformanceSets?.[roundIndex] ?? null}
-                      fields={fields}
-                      onUpdate={(patch) => {
-                        updateSet(ex.exerciseIndex, set.id, {
-                          ...(patch.values ? { values: patch.values as SetValues } : {}),
-                          ...(patch.setType ? { setType: patch.setType } : {}),
-                        });
-                      }}
-                      onComplete={() => handleComplete(ex.exerciseIndex, set.id)}
-                      onDelete={() => handleDeleteRound(roundIndex)}
-                    />
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           );
         })}
