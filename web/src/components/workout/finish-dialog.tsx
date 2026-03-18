@@ -6,7 +6,6 @@ import { Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -141,29 +140,34 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(value) => !value && !saving && onClose()}>
-      <DialogContent className="relative sm:max-w-lg border-white/[0.07] bg-white/[0.10] backdrop-blur-2xl text-foreground">
+      <DialogContent className="relative sm:max-w-lg border-white/[0.07] bg-white/[0.10] backdrop-blur-2xl text-foreground flex flex-col overflow-hidden">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
         <DialogHeader>
           <DialogTitle className="font-display text-lg font-bold">Save Workout</DialogTitle>
         </DialogHeader>
 
-        <p className="text-sm text-muted-foreground">
-          Open sets will be kept with the session.
-        </p>
+        {/* Scrollable content area */}
+        <div className="overflow-y-auto min-h-0 flex-1 -mx-5 px-5 space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Open sets will be kept with the session.
+          </p>
 
-        <div className="grid grid-cols-3 gap-2 py-1">
-          <SummaryStat label="Exercises" value={String(workout.exercises.length)} />
-          <SummaryStat label="Sets Saved" value={`${doneSets}/${totalSets}`} detail={`${remainingSets} left open`} />
-          <SummaryStat label="Session Status" value={remainingSets === 0 ? 'Ready' : 'Partial'} />
+          <div className="grid grid-cols-3 gap-2">
+            <SummaryStat label="Exercises" value={String(workout.exercises.length)} />
+            <SummaryStat label="Sets Saved" value={`${doneSets}/${totalSets}`} detail={`${remainingSets} left open`} />
+            <SummaryStat label="Session Status" value={remainingSets === 0 ? 'Ready' : 'Partial'} />
+          </div>
+
+          {doneSets < totalSets && (
+            <div className="rounded-xl border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-3 py-2.5 text-sm text-[oklch(0.82_0.15_60)]">
+              {remainingSets} set{remainingSets !== 1 ? 's are' : ' is'} still open. They will be kept with the workout if you save now.
+            </div>
+          )}
         </div>
 
-        {doneSets < totalSets && (
-          <div className="rounded-2xl border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-4 py-3 text-sm text-[oklch(0.82_0.15_60)]">
-            {remainingSets} set{remainingSets !== 1 ? 's are' : ' is'} still open. They will be kept with the workout if you save now.
-          </div>
-        )}
-
-        <DialogFooter className="mt-2 flex-col gap-2 sm:flex-col">
+        {/* Pinned footer — always visible */}
+        <div className="shrink-0 flex flex-col gap-2 pt-3 border-t border-white/[0.08]">
           <button
             onClick={handleConfirm}
             disabled={saving}
@@ -179,7 +183,7 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
           >
             Keep Logging
           </button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
