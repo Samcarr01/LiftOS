@@ -85,7 +85,7 @@ export function SetRow({
     <div
       className={cn(
         'rounded-xl border border-white/8 px-3 py-2.5 transition-all duration-200',
-        set.isCompleted && 'border-primary/20 bg-primary/5',
+        set.isCompleted && 'border-emerald-500/20 bg-emerald-500/[0.04]',
         isPrefilled && 'border-primary/15',
       )}
     >
@@ -131,7 +131,7 @@ export function SetRow({
           className={cn(
             'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors',
             set.isCompleted
-              ? 'border-primary/25 bg-primary text-primary-foreground'
+              ? 'border-emerald-500/30 bg-emerald-500 text-white'
               : 'border-white/10 text-muted-foreground hover:border-primary/35 hover:bg-primary/10 hover:text-foreground',
           )}
         >

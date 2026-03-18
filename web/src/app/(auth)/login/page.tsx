@@ -87,7 +87,7 @@ function LoginForm() {
   return (
     <div className="w-full max-w-md premium-card px-6 py-7 sm:px-8">
       <div className="flex items-center gap-3">
-        <div className="flex h-14 w-14 items-center justify-center rounded-[22px] bg-primary/14 text-primary shadow-[0_24px_60px_-30px_rgba(91,163,255,0.8)]">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/14 text-primary">
           <Zap className="h-6 w-6" />
         </div>
         <div>

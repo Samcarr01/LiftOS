@@ -56,7 +56,7 @@ export function ExerciseCard({
   }
 
   return (
-    <div className={`premium-card page-reveal px-4 py-4 ${allComplete ? 'border-primary/20' : ''}`}>
+    <div className={`premium-card page-reveal px-4 py-4 ${allComplete ? 'border-emerald-500/20' : ''}`}>
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -75,12 +75,12 @@ export function ExerciseCard({
           </div>
         </div>
         {allComplete && (
-          <span className="shrink-0 text-xs font-semibold text-primary">Done</span>
+          <span className="shrink-0 text-xs font-semibold text-emerald-400">Done</span>
         )}
       </div>
 
       {aiSuggestion && !isSuggestionDismissed && (
-        <div className="mt-5">
+        <div className="mt-3">
           <AISuggestionBanner
             suggestion={aiSuggestion}
             onAccept={() => acceptSuggestion(exerciseIndex)}

@@ -50,7 +50,7 @@ export default function WorkoutPage() {
   return (
     <div className="page-shell">
       <div className="page-content py-4 md:py-6">
-        <header className="sticky top-0 z-30 rounded-2xl border border-white/10 bg-[rgba(10,18,34,0.96)] px-4 py-3 backdrop-blur-md shadow-[0_4px_12px_-4px_rgba(2,10,28,0.5)]">
+        <header className="sticky top-0 z-30 -mx-4 border-b border-white/[0.06] bg-background/95 px-4 py-3 backdrop-blur-lg">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -78,9 +78,15 @@ export default function WorkoutPage() {
               Save
             </button>
           </div>
+          <div className="mt-2.5 h-1 w-full overflow-hidden rounded-full bg-white/[0.06]">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-300 ease-out"
+              style={{ width: `${totalSets > 0 ? (savedSets / totalSets) * 100 : 0}%` }}
+            />
+          </div>
         </header>
 
-        <main className="mt-6 space-y-5 pb-28">
+        <main className="mt-5 space-y-5 pb-28">
           {workout.exercises.map((exercise, index) => (
             <ExerciseCard
               key={exercise.sessionExercise.id}

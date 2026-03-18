@@ -105,7 +105,7 @@ export default function WorkoutCompletePage() {
       <div className="mt-auto w-full max-w-sm pt-10">
         <button
           onClick={handleDone}
-          className="flex h-12 w-full items-center justify-center rounded-2xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-transform"
+          className="flex h-12 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-95"
         >
           Done
         </button>

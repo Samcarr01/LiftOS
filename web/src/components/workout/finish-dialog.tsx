@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -38,8 +38,8 @@ function SummaryStat({
   detail?: string;
 }) {
   return (
-    <div className="premium-card px-4 py-4 text-center">
-      <p className="font-display text-2xl font-semibold">{value}</p>
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-center">
+      <p className="font-display text-lg font-semibold">{value}</p>
       <p className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
       {detail && <p className="mt-1 text-xs text-muted-foreground">{detail}</p>}
     </div>
@@ -141,21 +141,13 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(value) => !value && !saving && onClose()}>
-      <DialogContent className="sm:max-w-lg border-white/10 bg-[linear-gradient(180deg,rgba(10,18,34,0.98),rgba(10,18,34,0.94))] text-foreground shadow-[0_50px_110px_-60px_rgba(2,10,28,1)]">
+      <DialogContent className="sm:max-w-lg border-white/[0.07] bg-card text-foreground">
         <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/14 text-primary">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="hero-kicker">Finish Workout</p>
-              <DialogTitle className="font-display pt-2 text-3xl">Save this session</DialogTitle>
-            </div>
-          </div>
+          <DialogTitle className="font-display text-lg font-bold">Save Workout</DialogTitle>
         </DialogHeader>
 
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          Review what you logged, then save the workout. Any open sets stay attached to the session, so you do not lose the structure you built.
+        <p className="text-sm text-muted-foreground">
+          Open sets will be kept with the session.
         </p>
 
         <div className="grid gap-3 py-2 md:grid-cols-3">
@@ -165,7 +157,7 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
         </div>
 
         {doneSets < totalSets && (
-          <div className="glass-panel px-4 py-4 text-sm text-muted-foreground">
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-sm text-muted-foreground">
             {remainingSets} set{remainingSets !== 1 ? 's are' : ' is'} still open. They will be kept with the workout if you save now.
           </div>
         )}

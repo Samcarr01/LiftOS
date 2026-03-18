@@ -111,10 +111,9 @@ function ExerciseConfigSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-[30px] border-t border-white/10 bg-[linear-gradient(180deg,rgba(10,18,34,0.98),rgba(10,18,34,0.94))] p-0 shadow-[0_-30px_80px_-40px_rgba(2,10,28,0.95)]">
-        <SheetHeader className="border-b border-white/10 px-5 pb-4 pt-6">
-          <span className="hero-kicker w-fit">Exercise Settings</span>
-          <SheetTitle className="font-display pt-3 text-left text-2xl">{item?.exercise.name}</SheetTitle>
+      <SheetContent side="bottom" className="rounded-t-2xl border-t border-white/[0.06] bg-card p-0">
+        <SheetHeader className="border-b border-white/[0.06] px-5 pb-4 pt-6">
+          <SheetTitle className="font-display text-left text-lg font-bold">{item?.exercise.name}</SheetTitle>
           {item && item.exercise.muscle_groups.length > 0 && (
             <div className="mt-2 flex gap-1">
               {item.exercise.muscle_groups.map((m) => <MuscleGroupBadge key={m} muscle={m} />)}

@@ -15,63 +15,56 @@ export function AISuggestionBanner({
   onDismiss,
 }: AISuggestionBannerProps) {
   const progressing = suggestion.decision === 'progress';
-  const decisionLabel = progressing ? 'Increase Next Time' : 'Hold Next Time';
 
   return (
-    <div className="relative overflow-hidden rounded-[28px] border border-primary/20 bg-[linear-gradient(135deg,rgba(54,114,255,0.18),rgba(11,20,37,0.92))] px-4 py-4 shadow-[0_8px_24px_-8px_rgba(91,163,255,0.4)]">
-      <div className="absolute right-0 top-0 h-24 w-24 bg-[radial-gradient(circle_at_center,rgba(91,163,255,0.22),transparent_70%)]" />
-
-      <div className="relative flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/16 text-primary">
-          <Sparkles className="h-5 w-5" />
-        </div>
+    <div className="rounded-lg border border-primary/15 bg-primary/[0.06] px-3 py-2.5">
+      <div className="flex items-start gap-2.5">
+        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="font-display text-xl font-semibold text-foreground">Next Session Guide</p>
-            <span className="status-pill border-primary/20 bg-primary/10 text-primary">
-              {progressing ? <ArrowUpRight className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}
-              {decisionLabel}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-foreground">
+              {progressing ? 'Progress' : 'Hold'} next time
             </span>
+            {progressing
+              ? <ArrowUpRight className="h-3 w-3 text-primary" />
+              : <Minus className="h-3 w-3 text-muted-foreground" />}
           </div>
 
-          {suggestion.last_result && (
-            <p className="mt-3 text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Last time:</span> {suggestion.last_result.display}
-            </p>
-          )}
-
           {suggestion.next_target && (
-            <p className="mt-1 text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Next time:</span> {suggestion.next_target.display}
+            <p className="mt-1 text-xs text-muted-foreground">
+              Target: <span className="font-medium text-foreground">{suggestion.next_target.display}</span>
+              {suggestion.last_result && (
+                <span> (was {suggestion.last_result.display})</span>
+              )}
             </p>
           )}
 
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{suggestion.reason}</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">{suggestion.reason}</p>
         </div>
 
         <button
           onClick={onDismiss}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+          className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
           aria-label="Hide suggestion"
         >
-          <X className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" />
         </button>
       </div>
 
       {suggestion.next_target && (
-        <div className="relative mt-4 flex gap-2 border-t border-white/10 pt-4">
+        <div className="mt-2 flex gap-2 border-t border-primary/10 pt-2">
           <button
             onClick={onAccept}
-            className="premium-button flex-1 justify-center"
+            className="flex h-7 flex-1 items-center justify-center rounded-md bg-primary/12 text-xs font-semibold text-primary active:bg-primary/20"
           >
-            Use Target
+            Apply Target
           </button>
           <button
             onClick={onDismiss}
-            className="premium-button-secondary px-4"
+            className="flex h-7 items-center rounded-md px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
           >
-            Hide
+            Dismiss
           </button>
         </div>
       )}

@@ -16,8 +16,8 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-3 z-50 px-4 md:hidden">
-      <div className="mx-auto flex h-[68px] max-w-md items-center justify-around rounded-2xl border border-white/10 bg-[rgba(9,16,31,0.92)] px-2 shadow-[0_8px_24px_-8px_rgba(2,10,28,0.6)] backdrop-blur-md" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+    <nav className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden">
+      <div className="mx-auto flex h-[60px] max-w-md items-center justify-around rounded-2xl border border-white/[0.06] bg-[oklch(0.14_0.013_264/0.94)] backdrop-blur-xl">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const isActive = href === '/'
             ? pathname === '/'
@@ -31,14 +31,17 @@ export function BottomNav() {
               key={href}
               href={href}
               className={cn(
-                'flex min-h-11 min-w-[72px] flex-col items-center justify-center gap-1 rounded-2xl px-3 transition-all duration-300',
+                'relative flex flex-col items-center justify-center gap-0.5 rounded-xl px-5 py-1.5 transition-colors duration-150',
                 isActive
-                  ? 'bg-primary/14 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
-                  : 'text-muted-foreground hover:bg-white/6 hover:text-foreground',
+                  ? 'text-primary'
+                  : 'text-muted-foreground active:text-foreground',
               )}
             >
               <Icon className="h-5 w-5" />
-              <span className="text-[10px] font-semibold tracking-[0.08em]">{label}</span>
+              <span className={cn('text-[10px]', isActive ? 'font-semibold' : 'font-medium')}>{label}</span>
+              {isActive && (
+                <span className="absolute bottom-0 h-1 w-1 rounded-full bg-primary" />
+              )}
             </Link>
           );
         })}

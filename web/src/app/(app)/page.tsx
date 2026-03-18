@@ -50,8 +50,8 @@ function StartWorkoutSheet({
 
   return (
     <Sheet open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <SheetContent side="bottom" className="flex h-[70dvh] flex-col overflow-hidden rounded-t-2xl border-t border-white/10 bg-[rgba(10,18,34,0.98)] p-0">
-        <SheetHeader className="shrink-0 border-b border-white/8 px-5 pb-4 pt-5 text-left">
+      <SheetContent side="bottom" className="flex h-[70dvh] flex-col overflow-hidden rounded-t-2xl border-t border-white/[0.06] bg-card p-0">
+        <SheetHeader className="shrink-0 border-b border-white/[0.06] px-5 pb-4 pt-5 text-left">
           <SheetTitle className="font-display text-lg font-bold text-left">Choose a workout</SheetTitle>
         </SheetHeader>
 
@@ -138,7 +138,7 @@ export default function HomePage() {
         {/* Start Workout CTA */}
         <button
           onClick={() => setSheetOpen(true)}
-          className="flex w-full items-center gap-3 rounded-2xl bg-primary px-5 py-4 text-left text-primary-foreground shadow-[0_8px_20px_-8px_rgba(91,163,255,0.5)] active:brightness-90"
+          className="flex w-full items-center gap-3 rounded-xl bg-primary px-5 py-4 text-left text-primary-foreground transition-transform duration-150 active:scale-[0.99] active:brightness-95"
         >
           <Play className="h-5 w-5 shrink-0" />
           <div className="min-w-0 flex-1">
