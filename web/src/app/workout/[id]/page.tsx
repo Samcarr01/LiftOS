@@ -99,16 +99,6 @@ export default function WorkoutPage() {
               <h1 className="truncate font-display text-base font-bold">{templateName}</h1>
               <p className="text-sm text-muted-foreground">{savedSets}/{totalSets} sets</p>
             </div>
-
-            <button
-              onClick={() => setFinishOpen(true)}
-              disabled={workout.isCompleting || workout.exercises.length === 0}
-              className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-primary-foreground shadow-[0_4px_12px_-4px_oklch(0.75_0.18_55/0.4)] transition-all duration-150 hover:brightness-110 active:scale-[0.97] disabled:opacity-60 disabled:shadow-none"
-              style={{ background: 'linear-gradient(135deg, oklch(0.75 0.18 55), oklch(0.62 0.17 40))' }}
-            >
-              {workout.isCompleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              Save
-            </button>
           </div>
           <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
             <div

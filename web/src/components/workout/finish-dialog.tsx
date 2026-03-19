@@ -3,12 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import { addToQueue } from '@/lib/offline';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
@@ -25,24 +20,6 @@ function computeSummary(workout: ActiveWorkoutState) {
   const doneSets = workout.exercises.reduce((count, exercise) => count + exercise.sets.filter((set) => set.isCompleted).length, 0);
   const remainingSets = totalSets - doneSets;
   return { totalSets, doneSets, remainingSets };
-}
-
-function SummaryStat({
-  label,
-  value,
-  detail,
-}: {
-  label: string;
-  value: string;
-  detail?: string;
-}) {
-  return (
-    <div className="rounded-xl border border-white/[0.10] bg-white/[0.06] px-3 py-3 text-center">
-      <p className="font-display text-xl font-semibold">{value}</p>
-      <p className="mt-0.5 text-xs text-muted-foreground">{label}</p>
-      {detail && <p className="text-xs text-muted-foreground">{detail}</p>}
-    </div>
-  );
 }
 
 export function FinishDialog({ open, onClose }: FinishDialogProps) {
@@ -139,52 +116,66 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={(value) => !value && !saving && onClose()}>
-      <DialogContent className="relative sm:max-w-lg border-white/[0.07] bg-white/[0.10] backdrop-blur-2xl text-foreground flex flex-col overflow-hidden">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+    <Sheet open={open} onOpenChange={(nextOpen) => !nextOpen && !saving && onClose()}>
+      <SheetContent
+        side="bottom"
+        showCloseButton={false}
+        className="rounded-t-2xl border-t border-white/[0.08] bg-white/[0.10] backdrop-blur-2xl p-0"
+      >
+        <div className="relative px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5">
+          {/* Drag handle */}
+          <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-white/20" />
 
-        <DialogHeader>
-          <DialogTitle className="font-display text-lg font-bold">Save Workout</DialogTitle>
-        </DialogHeader>
+          {/* Title */}
+          <h2 className="font-display text-lg font-bold">Save Workout</h2>
 
-        {/* Scrollable content area */}
-        <div className="overflow-y-auto min-h-0 flex-1 -mx-5 px-5 space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Open sets will be kept with the session.
-          </p>
-
-          <div className="grid grid-cols-3 gap-2">
-            <SummaryStat label="Exercises" value={String(workout.exercises.length)} />
-            <SummaryStat label="Sets Saved" value={`${doneSets}/${totalSets}`} detail={`${remainingSets} left open`} />
-            <SummaryStat label="Session Status" value={remainingSets === 0 ? 'Ready' : 'Partial'} />
+          {/* Summary stats */}
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="rounded-xl border border-white/[0.10] bg-white/[0.06] px-3 py-3 text-center">
+              <p className="font-display text-xl font-bold">{workout.exercises.length}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Exercises</p>
+            </div>
+            <div className="rounded-xl border border-white/[0.10] bg-white/[0.06] px-3 py-3 text-center">
+              <p className="font-display text-xl font-bold">{doneSets}/{totalSets}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Sets Done</p>
+            </div>
+            <div className="rounded-xl border border-white/[0.10] bg-white/[0.06] px-3 py-3 text-center">
+              <p className={`font-display text-xl font-bold ${remainingSets === 0 ? 'text-[oklch(0.78_0.17_155)]' : 'text-[oklch(0.82_0.15_60)]'}`}>
+                {remainingSets === 0 ? 'Ready' : remainingSets}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {remainingSets === 0 ? 'All complete' : `Open set${remainingSets !== 1 ? 's' : ''}`}
+              </p>
+            </div>
           </div>
 
-          {doneSets < totalSets && (
-            <div className="rounded-xl border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-3 py-2.5 text-sm text-[oklch(0.82_0.15_60)]">
-              {remainingSets} set{remainingSets !== 1 ? 's are' : ' is'} still open. They will be kept with the workout if you save now.
+          {/* Warning for open sets */}
+          {remainingSets > 0 && (
+            <div className="mt-3 rounded-xl border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.08)] px-4 py-3 text-sm text-[oklch(0.82_0.15_60)]">
+              {remainingSets} open set{remainingSets !== 1 ? 's' : ''} will be kept with the workout.
             </div>
           )}
-        </div>
 
-        {/* Pinned footer — always visible */}
-        <div className="shrink-0 flex flex-col gap-2 pt-3 border-t border-white/[0.08]">
-          <button
-            onClick={handleConfirm}
-            disabled={saving}
-            className="premium-button w-full justify-center disabled:opacity-60"
-          >
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Save Workout
-          </button>
-          <button
-            onClick={onClose}
-            disabled={saving}
-            className="premium-button-secondary w-full justify-center disabled:opacity-60"
-          >
-            Keep Logging
-          </button>
+          {/* Buttons */}
+          <div className="mt-5 flex flex-col gap-2.5">
+            <button
+              onClick={handleConfirm}
+              disabled={saving}
+              className="premium-button w-full justify-center disabled:opacity-60"
+            >
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              Save Workout
+            </button>
+            <button
+              onClick={onClose}
+              disabled={saving}
+              className="flex h-12 w-full items-center justify-center rounded-2xl border border-white/10 text-sm font-semibold text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground disabled:opacity-60"
+            >
+              Keep Logging
+            </button>
+          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
