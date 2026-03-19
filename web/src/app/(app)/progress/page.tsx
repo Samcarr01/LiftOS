@@ -2,21 +2,21 @@
 
 import dynamic from 'next/dynamic';
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   Award,
   BarChart3,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
-  Loader2,
-  RefreshCw,
   Search,
+  Sparkles,
   Trophy,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { ChartEmptyState } from '@/components/progress/chart-empty-state';
 import { useExerciseList, usePersonalRecords, useProgress } from '@/hooks/use-progress';
-import { useWeeklySummary } from '@/hooks/use-weekly-summary';
 import type { TimeRange } from '@/hooks/use-progress';
 
 const TopSetChart = dynamic(
@@ -86,13 +86,6 @@ export default function ProgressPage() {
     range,
   );
   const records = usePersonalRecords(selectedExercise?.exerciseIds ?? null);
-  const {
-    summary: weeklySummary,
-    loading: weeklyLoading,
-    error: weeklyError,
-    generated,
-    generate,
-  } = useWeeklySummary();
 
   return (
     <div className="page-shell">
@@ -245,57 +238,19 @@ export default function ProgressPage() {
           )}
 
           <section>
-            <div className="content-card">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="font-display text-base font-bold">Weekly Summary</h2>
-                <button
-                  onClick={() => void generate()}
-                  disabled={weeklyLoading}
-                  className="flex h-8 items-center gap-1.5 rounded-lg border border-white/10 px-2.5 text-xs font-semibold text-muted-foreground disabled:opacity-60 hover:text-foreground"
-                >
-                  {weeklyLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                  {generated ? 'Refresh' : 'Generate'}
-                </button>
+            <Link
+              href="/progress/weekly"
+              className="action-card group flex items-center gap-3.5 rounded-2xl px-4 py-4"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-primary">
+                <Sparkles className="h-[18px] w-[18px]" />
               </div>
-
-              {weeklyError && (
-                <p className="mt-3 text-sm text-destructive">{weeklyError}</p>
-              )}
-
-              {weeklyLoading ? (
-                <div className="mt-3 space-y-2">
-                  <Skeleton className="h-16 w-full rounded-xl" />
-                </div>
-              ) : weeklySummary ? (
-                <div className="mt-3 space-y-3">
-                  <div className="grid gap-2 grid-cols-3">
-                    <StatCard label="Workouts" value={String(weeklySummary.workouts_completed)} />
-                    <StatCard label="Sets" value={String(weeklySummary.total_sets)} />
-                    <StatCard label="Volume" value={`${Math.round(weeklySummary.total_volume_kg)}kg`} />
-                  </div>
-
-                  <div className="rounded-2xl border border-white/8 px-3 py-2.5 space-y-1">
-                    {weeklySummary.strongest_lift && (
-                      <p className="text-sm text-foreground">
-                        <span className="font-medium">Strongest:</span> {weeklySummary.strongest_lift.exercise} · {weeklySummary.strongest_lift.value}
-                      </p>
-                    )}
-                    {weeklySummary.most_improved_group && (
-                      <p className="text-sm text-foreground">
-                        <span className="font-medium">Most improved:</span> {weeklySummary.most_improved_group}
-                      </p>
-                    )}
-                    <p className="text-sm text-muted-foreground">
-                      {weeklySummary.insight ?? 'Keep logging for a clearer weekly picture.'}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Log a few sessions, then generate your weekly recap.
-                </p>
-              )}
-            </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-card-title">Weekly Summary</p>
+                <p className="mt-0.5 text-caption">View your training recap, muscle volume, and AI insight</p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40 transition-transform duration-150 group-hover:translate-x-0.5" />
+            </Link>
           </section>
 
           {!selectedExercise && exercises.length > 0 && (

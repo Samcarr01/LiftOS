@@ -12,6 +12,7 @@ interface NumericInputProps {
   field:    TrackingField;
   disabled?: boolean;
   prefilled?: boolean; // subtle highlight if value was pre-filled from last session
+  ghostValue?: number; // AI-suggested target shown as placeholder
 }
 
 /** Step amount for ± buttons based on field unit */
@@ -29,9 +30,10 @@ function getInputLabel(field: TrackingField): string {
 
 // ── Desktop input ─────────────────────────────────────────────────────────────
 
-function DesktopInput({ value, onChange, field, disabled, prefilled }: NumericInputProps) {
+function DesktopInput({ value, onChange, field, disabled, prefilled, ghostValue }: NumericInputProps) {
   const step = getStep(field);
   const numVal = typeof value === 'number' ? value : 0;
+  const placeholder = ghostValue !== undefined ? String(ghostValue) : '—';
 
   return (
     <div className="flex items-center gap-1">
@@ -54,10 +56,11 @@ function DesktopInput({ value, onChange, field, disabled, prefilled }: NumericIn
           onChange(v === '' ? '' : Number(v));
         }}
         disabled={disabled}
-        placeholder="—"
+        placeholder={placeholder}
         className={cn(
           'h-9 w-20 rounded-lg border border-input bg-card px-2 text-center text-sm font-medium',
           'focus:outline-none focus:ring-2 focus:ring-ring',
+          'placeholder:text-[oklch(0.80_0.16_55/0.45)]',
           prefilled && value !== '' && 'border-[oklch(0.75_0.18_55/0.25)] bg-[oklch(0.75_0.18_55/0.12)]',
           disabled && 'opacity-50',
         )}
@@ -205,7 +208,7 @@ function MobileNumpad({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function NumericInput({ value, onChange, field, disabled, prefilled }: NumericInputProps) {
+export function NumericInput({ value, onChange, field, disabled, prefilled, ghostValue }: NumericInputProps) {
   const [isMobile, setIsMobile]   = useState(false);
   const [mounted,  setMounted]    = useState(false);
   const [numpadOpen, setNumpadOpen] = useState(false);
@@ -237,6 +240,7 @@ export function NumericInput({ value, onChange, field, disabled, prefilled }: Nu
         field={field}
         disabled={disabled}
         prefilled={prefilled}
+        ghostValue={ghostValue}
       />
     );
   }
@@ -260,7 +264,14 @@ export function NumericInput({ value, onChange, field, disabled, prefilled }: Nu
         )}
       >
         {displayValue === null ? (
-          <span className="text-muted-foreground">—</span>
+          ghostValue !== undefined ? (
+            <span className="text-[oklch(0.80_0.16_55/0.45)]">
+              {ghostValue}
+              {field.unit && <span className="ml-0.5 text-xs font-normal">{field.unit}</span>}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )
         ) : (
           <span>
             {displayValue}

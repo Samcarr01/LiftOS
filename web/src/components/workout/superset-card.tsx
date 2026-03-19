@@ -159,6 +159,7 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
                         lastValues={ex.state.lastPerformanceSets?.[roundIndex] ?? null}
                         fields={fields}
                         borderless
+                        aiTarget={ex.state.aiSuggestion?.next_target?.values ?? null}
                         onUpdate={(patch) => {
                           updateSet(ex.exerciseIndex, set.id, {
                             ...(patch.values ? { values: patch.values as SetValues } : {}),

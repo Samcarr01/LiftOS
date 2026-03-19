@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Archive, Loader2, Pencil, Save, Search, X } from 'lucide-react';
+import Link from 'next/link';
+import { Archive, BarChart3, Loader2, Pencil, Save, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
@@ -183,6 +184,12 @@ export default function ExercisesPage() {
 
                   {!isEditing && (
                     <div className="flex shrink-0 gap-1.5">
+                      <Link
+                        href={`/exercises/${exercise.id}`}
+                        className="flex h-9 items-center gap-1 rounded-xl border border-white/10 px-2.5 text-xs text-muted-foreground hover:text-primary"
+                      >
+                        <BarChart3 className="h-3.5 w-3.5" />
+                      </Link>
                       <button
                         onClick={() => startEditing(exercise.id, exercise.name)}
                         className="flex h-9 items-center gap-1 rounded-xl border border-white/10 px-2.5 text-xs text-muted-foreground hover:text-foreground"
