@@ -659,17 +659,24 @@ Deno.serve(async (req: Request) => {
       return json({ error: 'exercise_id required' }, 400);
     }
 
+    // Validate UUID format to prevent injection
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(exerciseId)) {
+      return json({ error: 'Invalid exercise_id format' }, 400);
+    }
+
     // Service-role client for data operations (writes to ai_suggestions etc.)
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // ── Fetch exercise ───────────────────────────────────────────────────────
+    // ── Fetch exercise (must belong to this user) ────────────────────────────
     const { data: exercise, error: exErr } = await supabase
       .from('exercises')
       .select('id, name, tracking_schema')
       .eq('id', exerciseId)
+      .eq('user_id', userId)
       .single();
 
     if (exErr || !exercise) return json({ error: 'Exercise not found' }, 404);

@@ -80,6 +80,7 @@ export default function WeeklySummaryPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
+            aria-label="Go back"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-xl text-muted-foreground hover:bg-white/10 hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />

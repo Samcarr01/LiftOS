@@ -109,7 +109,7 @@ function MobileNumpad({
 
   const confirm = useCallback(() => {
     const n = parseFloat(str);
-    onChange(isNaN(n) ? '' : n);
+    onChange(isNaN(n) || !isFinite(n) || n < 0 ? '' : n);
     onClose();
   }, [str, onChange, onClose]);
 

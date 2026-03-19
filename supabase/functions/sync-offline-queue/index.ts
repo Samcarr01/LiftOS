@@ -29,6 +29,12 @@ interface MutationResult {
   message?: string;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isValidUUID(value: unknown): boolean {
+  return typeof value === 'string' && UUID_RE.test(value);
+}
+
 // ── Table handlers ─────────────────────────────────────────────────────────────
 
 async function applySetEntry(
@@ -36,6 +42,10 @@ async function applySetEntry(
   mutation: IncomingMutation,
 ): Promise<MutationResult> {
   const { data: d } = mutation;
+
+  if (!isValidUUID(d.session_exercise_id)) {
+    return { client_id: mutation.client_id, status: 'error', message: 'Invalid session_exercise_id' };
+  }
 
   if (mutation.operation === 'delete') {
     const { error } = await supabase
@@ -72,6 +82,10 @@ async function applyWorkoutSession(
 ): Promise<MutationResult> {
   const { data: d } = mutation;
 
+  if (!isValidUUID(d.id)) {
+    return { client_id: mutation.client_id, status: 'error', message: 'Invalid session id' };
+  }
+
   if (mutation.operation === 'update') {
     const patch: Record<string, unknown> = {};
     if (d.completed_at !== undefined) patch.completed_at = d.completed_at;
@@ -93,6 +107,10 @@ async function applySessionExercise(
   mutation: IncomingMutation,
 ): Promise<MutationResult> {
   const { data: d } = mutation;
+
+  if (!isValidUUID(d.session_id) || !isValidUUID(d.exercise_id)) {
+    return { client_id: mutation.client_id, status: 'error', message: 'Invalid session_id or exercise_id' };
+  }
 
   const row = {
     session_id: d.session_id,
@@ -153,11 +171,15 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    const allowedTables = new Set(['set_entries', 'workout_sessions', 'session_exercises']);
     const deduplicated = Array.from(seen.values());
 
     const results: MutationResult[] = await Promise.all(
       deduplicated.map(async (mutation) => {
         try {
+          if (!allowedTables.has(mutation.table)) {
+            return { client_id: mutation.client_id, status: 'error' as const, message: `Unknown table: ${mutation.table}` };
+          }
           switch (mutation.table) {
             case 'set_entries':
               return await applySetEntry(supabase, mutation);
@@ -166,11 +188,8 @@ Deno.serve(async (req: Request) => {
             case 'session_exercises':
               return await applySessionExercise(supabase, mutation);
             default:
-              return {
-                client_id: mutation.client_id,
-                status: 'error' as const,
-                message: `Unknown table: ${mutation.table}`,
-              };
+              // Already guarded above; unreachable
+              return { client_id: mutation.client_id, status: 'error' as const, message: 'Unknown table' };
           }
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : 'Unknown error';

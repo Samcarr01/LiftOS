@@ -84,15 +84,44 @@ export function useExerciseInsights(exerciseId: string) {
         tracking_schema: schemaParsed.data,
       };
 
-      // 2. Personal records
-      const { data: prRows } = await supabase
-        .from('personal_records')
-        .select('record_type, record_value, achieved_at')
-        .eq('exercise_id', exerciseId)
-        .order('achieved_at', { ascending: false });
+      // 2-5. Fetch remaining data in parallel (no dependency on each other)
+      const [prResult, aiResult, sessionResult, countResult] = await Promise.all([
+        // 2. Personal records
+        supabase
+          .from('personal_records')
+          .select('record_type, record_value, achieved_at')
+          .eq('exercise_id', exerciseId)
+          .order('achieved_at', { ascending: false }),
+        // 3. Latest AI suggestion
+        supabase
+          .from('ai_suggestions')
+          .select('suggestion_data, created_at')
+          .eq('exercise_id', exerciseId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        // 4. Recent sessions with this exercise
+        supabase
+          .from('session_exercises')
+          .select(`
+            id,
+            workout_sessions!inner ( id, started_at, completed_at ),
+            set_entries ( values, is_completed, set_type )
+          `)
+          .eq('exercise_id', exerciseId)
+          .not('workout_sessions.completed_at', 'is', null)
+          .order('workout_sessions(started_at)', { ascending: false })
+          .limit(10),
+        // 5. Total session count
+        supabase
+          .from('session_exercises')
+          .select('id', { count: 'exact', head: true })
+          .eq('exercise_id', exerciseId),
+      ]);
 
+      // Process PRs
       const bestByType = new Map<string, ExercisePR>();
-      for (const row of (prRows ?? []) as ExercisePR[]) {
+      for (const row of ((prResult.data ?? []) as ExercisePR[])) {
         const existing = bestByType.get(row.record_type);
         if (!existing || row.record_value > existing.record_value) {
           bestByType.set(row.record_type, row);
@@ -100,18 +129,10 @@ export function useExerciseInsights(exerciseId: string) {
       }
       const prs = Array.from(bestByType.values());
 
-      // 3. Latest AI suggestion
+      // Process AI suggestion
       let aiSuggestion: AISuggestionData | null = null;
       let suggestionAge: string | null = null;
-
-      const { data: aiRow } = await supabase
-        .from('ai_suggestions')
-        .select('suggestion_data, created_at')
-        .eq('exercise_id', exerciseId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
+      const aiRow = aiResult.data;
       if (aiRow?.suggestion_data) {
         const parsed = AISuggestionDataSchema.safeParse(aiRow.suggestion_data);
         if (parsed.success) {
@@ -120,26 +141,14 @@ export function useExerciseInsights(exerciseId: string) {
         }
       }
 
-      // 4. Recent sessions with this exercise
-      const { data: sessionRows } = await supabase
-        .from('session_exercises')
-        .select(`
-          id,
-          workout_sessions!inner ( id, started_at, completed_at ),
-          set_entries ( values, is_completed, set_type )
-        `)
-        .eq('exercise_id', exerciseId)
-        .not('workout_sessions.completed_at', 'is', null)
-        .order('workout_sessions(started_at)', { ascending: false })
-        .limit(10);
-
+      // Process recent sessions
       type SessionRow = {
         id: string;
         workout_sessions: { id: string; started_at: string; completed_at: string };
         set_entries: Array<{ values: SetValues; is_completed: boolean; set_type: string }>;
       };
 
-      const recentSessions: RecentSession[] = ((sessionRows ?? []) as SessionRow[]).map((row) => {
+      const recentSessions: RecentSession[] = ((sessionResult.data ?? []) as SessionRow[]).map((row) => {
         const completedSets = row.set_entries.filter((s) => s.is_completed);
         const topSet = completedSets.reduce<{ values: SetValues } | null>((best, s) => {
           const w = typeof s.values.weight === 'number' ? s.values.weight : 0;
@@ -157,11 +166,7 @@ export function useExerciseInsights(exerciseId: string) {
         };
       });
 
-      // 5. Total session count
-      const { count } = await supabase
-        .from('session_exercises')
-        .select('id', { count: 'exact', head: true })
-        .eq('exercise_id', exerciseId);
+      const { count } = countResult;
 
       if (!cancelled) {
         setData({

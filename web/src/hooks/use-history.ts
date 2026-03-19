@@ -15,16 +15,18 @@ export interface HistoryPage {
 export function useHistory() {
   const [sessions, setSessions]   = useState<HistorySessionSummary[]>([]);
   const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState<string | null>(null);
   const [hasMore, setHasMore]     = useState(true);
   const pageRef                   = useRef(0);
 
   const load = useCallback(async (reset = false) => {
     setLoading(true);
+    setError(null);
     const supabase = createClient();
     const currentPage = reset ? 0 : pageRef.current;
     const offset   = currentPage * PAGE_SIZE;
 
-    const { data, error } = await supabase
+    const { data, error: queryError } = await supabase
       .from('workout_sessions')
       .select(`
         id,
@@ -39,7 +41,8 @@ export function useHistory() {
       .order('started_at', { ascending: false })
       .range(offset, offset + PAGE_SIZE - 1);
 
-    if (error || !data) {
+    if (queryError || !data) {
+      setError(queryError?.message ?? 'Failed to load history');
       setLoading(false);
       return;
     }
@@ -90,5 +93,5 @@ export function useHistory() {
   const refresh = useCallback(() => load(true), [load]);
   const loadMore = useCallback(() => { if (!loading && hasMore) load(false); }, [load, loading, hasMore]);
 
-  return { sessions, loading, hasMore, refresh, loadMore };
+  return { sessions, loading, error, hasMore, refresh, loadMore };
 }

@@ -120,6 +120,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
+            aria-label="Go back"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-xl text-muted-foreground hover:bg-white/10 hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -269,6 +270,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
         <div className="content-card">
           <button
             onClick={() => setShowCharts((v) => !v)}
+            aria-expanded={showCharts}
             className="flex w-full items-center justify-between"
           >
             <div className="flex items-center gap-2">

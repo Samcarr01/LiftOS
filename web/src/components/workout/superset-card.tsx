@@ -17,6 +17,14 @@ interface SupersetCardProps {
   dismissedSuggestions: number[];
 }
 
+// Color assignments for exercises within the superset (static, no need to recreate per render)
+const EXERCISE_COLORS = [
+  { bg: 'bg-primary/12', text: 'text-primary', border: 'border-primary/20' },
+  { bg: 'bg-[oklch(0.72_0.19_155/0.12)]', text: 'text-[oklch(0.78_0.17_155)]', border: 'border-[oklch(0.72_0.19_155/0.20)]' },
+  { bg: 'bg-[oklch(0.72_0.17_252/0.12)]', text: 'text-[oklch(0.78_0.15_252)]', border: 'border-[oklch(0.72_0.17_252/0.20)]' },
+  { bg: 'bg-[oklch(0.80_0.16_85/0.12)]', text: 'text-[oklch(0.85_0.15_85)]', border: 'border-[oklch(0.80_0.16_85/0.20)]' },
+];
+
 export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardProps) {
   const addSet = useActiveWorkoutStore((store) => store.addSet);
   const updateSet = useActiveWorkoutStore((store) => store.updateSet);
@@ -24,7 +32,9 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
   const completeSet = useActiveWorkoutStore((store) => store.completeSet);
 
   // Figure out the max number of rounds (sets) across all exercises
-  const maxRounds = Math.max(...exercises.map((ex) => ex.state.sets.length));
+  const maxRounds = exercises.length > 0
+    ? Math.max(...exercises.map((ex) => ex.state.sets.length))
+    : 0;
 
   // Total completion tracking
   const totalSets = exercises.reduce((sum, ex) => sum + ex.state.sets.length, 0);
@@ -62,14 +72,6 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
     }
   }
 
-  // Color assignments for exercises within the superset
-  const exerciseColors = [
-    { bg: 'bg-primary/12', text: 'text-primary', border: 'border-primary/20' },
-    { bg: 'bg-[oklch(0.72_0.19_155/0.12)]', text: 'text-[oklch(0.78_0.17_155)]', border: 'border-[oklch(0.72_0.19_155/0.20)]' },
-    { bg: 'bg-[oklch(0.72_0.17_252/0.12)]', text: 'text-[oklch(0.78_0.15_252)]', border: 'border-[oklch(0.72_0.17_252/0.20)]' },
-    { bg: 'bg-[oklch(0.80_0.16_85/0.12)]', text: 'text-[oklch(0.85_0.15_85)]', border: 'border-[oklch(0.80_0.16_85/0.20)]' },
-  ];
-
   return (
     <div
       className={cn(
@@ -96,7 +98,7 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
           </div>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {exercises.map((ex, i) => {
-              const color = exerciseColors[i % exerciseColors.length];
+              const color = EXERCISE_COLORS[i % EXERCISE_COLORS.length];
               return (
                 <span
                   key={ex.state.sessionExercise.id}
@@ -143,7 +145,7 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
                   const set = ex.state.sets[roundIndex];
                   if (!set) return null;
                   const fields = ex.state.exercise.tracking_schema.fields;
-                  const color = exerciseColors[exIdx % exerciseColors.length];
+                  const color = EXERCISE_COLORS[exIdx % EXERCISE_COLORS.length];
 
                   return (
                     <div key={ex.state.sessionExercise.id}>
@@ -183,6 +185,7 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
         <button
           type="button"
           onClick={handleAddRound}
+          aria-label="Add round to superset"
           className="flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl border border-white/10 text-sm font-semibold text-muted-foreground hover:text-foreground"
         >
           <Plus className="h-3.5 w-3.5" />

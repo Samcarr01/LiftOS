@@ -50,7 +50,7 @@ function SessionRow({
 }
 
 export default function HistoryPage() {
-  const { sessions, loading, hasMore, refresh, loadMore } = useHistory();
+  const { sessions, loading, error, hasMore, refresh, loadMore } = useHistory();
   const router = useRouter();
 
   useEffect(() => {
@@ -74,7 +74,16 @@ export default function HistoryPage() {
           <h1 className="page-header-title">History</h1>
         </div>
 
-        {loading && sessions.length === 0 && (
+        {error && (
+          <div className="content-card flex flex-col items-center gap-3 py-6 text-center">
+            <p className="text-sm text-destructive">{error}</p>
+            <button onClick={() => void refresh()} className="premium-button-secondary">
+              Retry
+            </button>
+          </div>
+        )}
+
+        {loading && sessions.length === 0 && !error && (
           <div className="space-y-2">
             {[...Array(5)].map((_, index) => (
               <Skeleton key={index} className="h-14 w-full rounded-2xl" />
@@ -82,7 +91,7 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {!loading && sessions.length === 0 && (
+        {!loading && !error && sessions.length === 0 && (
           <div className="content-card flex flex-col items-center gap-3 py-10 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
               <Dumbbell className="h-6 w-6 text-primary" />

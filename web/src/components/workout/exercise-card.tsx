@@ -58,7 +58,7 @@ export function ExerciseCard({
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h2 className="truncate font-display text-lg font-bold">{exercise.name}</h2>
+            <h2 className="truncate font-display text-lg font-bold" title={exercise.name}>{exercise.name}</h2>
             <span className={`rounded-full px-2 py-0.5 text-sm font-semibold ${allComplete ? 'bg-[oklch(0.72_0.19_155/0.12)] text-[oklch(0.78_0.17_155)]' : 'bg-[oklch(0.75_0.18_55/0.12)] text-[oklch(0.80_0.16_55)]'}`}>
               {completedCount}/{sets.length}
             </span>
