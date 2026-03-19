@@ -50,6 +50,24 @@ export async function clearSynced(): Promise<void> {
   await db.syncQueue.where('status').equals('synced').delete();
 }
 
+export async function retryFailed(): Promise<number> {
+  if (typeof window === 'undefined') return 0;
+  const failed = await db.syncQueue.where('status').equals('failed').toArray();
+  await Promise.all(
+    failed.map((m) =>
+      db.syncQueue.update(m.id, { status: 'pending', retries: 0, nextRetryAt: 0 }),
+    ),
+  );
+  return failed.length;
+}
+
+export async function clearFailed(): Promise<number> {
+  if (typeof window === 'undefined') return 0;
+  const count = await db.syncQueue.where('status').equals('failed').count();
+  await db.syncQueue.where('status').equals('failed').delete();
+  return count;
+}
+
 // ── Backoff helper ────────────────────────────────────────────────────────────
 
 async function backoffMutation(m: QueuedMutation): Promise<void> {

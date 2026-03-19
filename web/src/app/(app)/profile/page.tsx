@@ -26,6 +26,8 @@ import { useUnitStore } from '@/store/unit-store';
 import { usePwaInstall } from '@/hooks/use-pwa-install';
 import { exportUserData } from '@/lib/export';
 import { db } from '@/lib/offline/indexed-db';
+import { retryFailed, clearFailed } from '@/lib/offline/sync-queue';
+import { processQueue } from '@/lib/offline/sync-queue';
 
 const APP_VERSION = '0.1.0';
 
@@ -325,11 +327,42 @@ export default function ProfilePage() {
             />
 
             {failedCount > 0 && (
-              <SettingRow
-                icon={<AlertTriangle className="h-4 w-4 text-[oklch(0.82_0.15_60)]" />}
-                label="Sync issues"
-                description={`${failedCount} change${failedCount !== 1 ? 's' : ''} failed to sync`}
-              />
+              <div className="list-row flex-col items-stretch gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.75_0.16_60/0.12)] text-[oklch(0.82_0.15_60)]">
+                    <AlertTriangle className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">Sync issues</p>
+                    <p className="text-sm text-muted-foreground">{failedCount} change{failedCount !== 1 ? 's' : ''} failed to sync</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 pl-12">
+                  <button
+                    onClick={async () => {
+                      const count = await retryFailed();
+                      if (count > 0) {
+                        toast.success(`${count} item${count !== 1 ? 's' : ''} re-queued for sync`);
+                        void processQueue();
+                      }
+                      setFailedCount(0);
+                    }}
+                    className="flex h-8 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
+                  >
+                    Retry All
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await clearFailed();
+                      setFailedCount(0);
+                      toast.success('Failed items cleared');
+                    }}
+                    className="flex h-8 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
+                  >
+                    Discard
+                  </button>
+                </div>
+              </div>
             )}
 
             <SettingRow
