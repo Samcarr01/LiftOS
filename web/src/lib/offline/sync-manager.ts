@@ -50,6 +50,9 @@ export function startSyncManager(): void {
     if (document.visibilityState === 'visible') void processIfOnline();
   });
 
+  // Periodic sync every 30s — picks up backed-off items whose timers have expired
+  setInterval(() => void processIfOnline(), 30_000);
+
   // Attempt sync immediately in case there are items from a previous session
   void processIfOnline();
 }

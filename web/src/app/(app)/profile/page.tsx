@@ -26,8 +26,7 @@ import { useUnitStore } from '@/store/unit-store';
 import { usePwaInstall } from '@/hooks/use-pwa-install';
 import { exportUserData } from '@/lib/export';
 import { db } from '@/lib/offline/indexed-db';
-import { retryFailed, clearFailed } from '@/lib/offline/sync-queue';
-import { processQueue } from '@/lib/offline/sync-queue';
+import { clearFailed, getQueueSize, processQueue } from '@/lib/offline/sync-queue';
 
 const APP_VERSION = '0.1.0';
 
@@ -175,7 +174,7 @@ export default function ProfilePage() {
   const [savingName, setSavingName] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [failedCount, setFailedCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -190,7 +189,7 @@ export default function ProfilePage() {
   }, [user]);
 
   useEffect(() => {
-    db.syncQueue.where('status').equals('failed').count().then(setFailedCount);
+    getQueueSize().then(setPendingCount);
   }, []);
 
   async function saveDisplayName() {
@@ -326,40 +325,42 @@ export default function ProfilePage() {
               loading={exporting}
             />
 
-            {failedCount > 0 && (
+            {pendingCount > 0 && (
               <div className="list-row flex-col items-stretch gap-2">
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.75_0.16_60/0.12)] text-[oklch(0.82_0.15_60)]">
                     <AlertTriangle className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">Sync issues</p>
-                    <p className="text-sm text-muted-foreground">{failedCount} change{failedCount !== 1 ? 's' : ''} failed to sync</p>
+                    <p className="text-sm font-semibold">Pending sync</p>
+                    <p className="text-sm text-muted-foreground">{pendingCount} change{pendingCount !== 1 ? 's' : ''} waiting to sync</p>
                   </div>
                 </div>
                 <div className="flex gap-2 pl-12">
                   <button
                     onClick={async () => {
-                      const count = await retryFailed();
-                      if (count > 0) {
-                        toast.success(`${count} item${count !== 1 ? 's' : ''} re-queued for sync`);
-                        void processQueue();
-                      }
-                      setFailedCount(0);
+                      toast.success('Syncing now...');
+                      await processQueue();
+                      const remaining = await getQueueSize();
+                      setPendingCount(remaining);
+                      if (remaining === 0) toast.success('All synced');
+                      else toast.error(`${remaining} item${remaining !== 1 ? 's' : ''} still pending`);
                     }}
                     className="flex h-8 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
                   >
-                    Retry All
+                    Sync Now
                   </button>
                   <button
                     onClick={async () => {
                       await clearFailed();
-                      setFailedCount(0);
-                      toast.success('Failed items cleared');
+                      // Also clear any remaining pending items the user wants to discard
+                      await db.syncQueue.clear();
+                      setPendingCount(0);
+                      toast.success('Queue cleared');
                     }}
                     className="flex h-8 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
                   >
-                    Discard
+                    Discard All
                   </button>
                 </div>
               </div>

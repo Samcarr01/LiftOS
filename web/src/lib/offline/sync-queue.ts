@@ -5,14 +5,12 @@
  *   1. User action → addToQueue() → IndexedDB (instant, no network)
  *   2. processQueue() → sync-offline-queue Edge Function (batched)
  *   3. On success: delete from queue
- *   4. On failure: exponential backoff (1s → 2s → 4s → 8s → 16s)
- *   5. After 5 retries: mark as 'failed'
+ *   4. On failure: exponential backoff (1s → 2s → ... → 5min cap), retries forever
  */
 import { db, type QueuedMutation } from './indexed-db';
 import { createClient } from '@/lib/supabase/client';
 import { invokeAuthedFunction } from '@/lib/supabase/invoke-authed-function';
 
-const MAX_RETRIES  = 5;
 const MAX_QUEUE    = 1000;
 const BATCH_SIZE   = 100;
 
@@ -72,12 +70,12 @@ export async function clearFailed(): Promise<number> {
 
 async function backoffMutation(m: QueuedMutation): Promise<void> {
   const retries   = m.retries + 1;
-  // 1s, 2s, 4s, 8s, 16s (capped)
-  const backoffMs = Math.min(Math.pow(2, retries - 1) * 1000, 16_000);
+  // 1s, 2s, 4s, 8s, 16s, 32s, 64s, ... capped at 5 minutes. Never gives up.
+  const backoffMs = Math.min(Math.pow(2, retries - 1) * 1000, 5 * 60 * 1000);
   await db.syncQueue.update(m.id, {
     retries,
     nextRetryAt: Date.now() + backoffMs,
-    status:      retries >= MAX_RETRIES ? 'failed' : 'pending',
+    status:      'pending',
   });
 }
 
@@ -89,6 +87,16 @@ async function backoffMutation(m: QueuedMutation): Promise<void> {
  */
 export async function processQueue(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
+
+  // Auto-recover any legacy 'failed' items — re-queue them for retry
+  const failed = await db.syncQueue.where('status').equals('failed').toArray();
+  if (failed.length > 0) {
+    await Promise.all(
+      failed.map((m) =>
+        db.syncQueue.update(m.id, { status: 'pending', nextRetryAt: 0 }),
+      ),
+    );
+  }
 
   const now     = Date.now();
   const pending = await db.syncQueue
