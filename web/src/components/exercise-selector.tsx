@@ -39,25 +39,25 @@ function SetCountPicker({
   description: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-4">
+    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-4">
       <div className="flex items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold">Starting sets</p>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => onChange(Math.max(1, value - 1))}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-border text-lg hover:bg-muted"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.10] bg-white/[0.06] text-lg text-muted-foreground transition-colors hover:bg-white/[0.10] hover:text-foreground active:scale-95"
           >
             −
           </button>
-          <div className="flex min-w-14 items-center justify-center text-lg font-bold">{value}</div>
+          <div className="flex min-w-12 items-center justify-center font-display text-xl font-bold">{value}</div>
           <button
             type="button"
             onClick={() => onChange(Math.min(20, value + 1))}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-border text-lg hover:bg-muted"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.10] bg-white/[0.06] text-lg text-muted-foreground transition-colors hover:bg-white/[0.10] hover:text-foreground active:scale-95"
           >
             +
           </button>
@@ -154,9 +154,6 @@ export function ExerciseSelector({
   function toggleMuscle(m: string) {
     setNewMuscles((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]);
   }
-
-  // Preview set fields for the chosen preset
-  const previewFields = TRACKING_PRESETS[newPreset].fields;
 
   return (
     <>
@@ -276,111 +273,99 @@ export function ExerciseSelector({
 
         {/* ── Create mode ───────────────────────────────────── */}
         {mode === 'create' && (
-          <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-6 pt-2 gap-5">
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Create exactly what you do in the gym. AI uses your logged performance next time to suggest what to lift.
-            </p>
+          <div className="flex flex-1 flex-col overflow-y-auto px-5 pb-8 pt-4 gap-6">
 
             {/* Name */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Exercise name</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Exercise name</label>
               <Input
                 placeholder="e.g. Barbell Back Squat"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                className="h-10"
+                className="h-12 rounded-xl border-white/10 bg-white/[0.06] px-4 text-base"
                 autoFocus
               />
             </div>
 
             {/* Muscle groups */}
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Muscle groups</label>
-              <div className="flex flex-wrap gap-1.5">
-                {ALL_MUSCLES.map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => toggleMuscle(m)}
-                    className={cn(
-                      'rounded-full px-3 py-1 text-xs font-medium transition-colors',
-                      newMuscles.includes(m)
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-                    )}
-                  >
-                    {m}
-                  </button>
-                ))}
+            <div className="space-y-2.5">
+              <label className="text-sm font-semibold">
+                Muscle groups
+                {newMuscles.length > 0 && (
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    {newMuscles.length} selected
+                  </span>
+                )}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {ALL_MUSCLES.map((m) => {
+                  const selected = newMuscles.includes(m);
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => toggleMuscle(m)}
+                      className={cn(
+                        'flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition-all duration-150',
+                        selected
+                          ? 'bg-primary text-primary-foreground shadow-[0_0_12px_-3px_oklch(0.75_0.18_55/0.4)]'
+                          : 'border border-white/[0.08] bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] hover:text-foreground',
+                      )}
+                    >
+                      {selected && <Check className="h-3.5 w-3.5" />}
+                      {m}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Tracking type */}
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Tracking type</label>
-              <div className="grid grid-cols-2 gap-2">
-                {PRESET_KEYS.map((key) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setNewPreset(key)}
-                    className={cn(
-                      'rounded-lg border px-3 py-2 text-left text-sm transition-colors',
-                      newPreset === key
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border bg-card text-foreground hover:bg-muted',
-                    )}
+            <div className="space-y-2.5">
+              <label className="text-sm font-semibold">What do you track?</label>
+              <div className="grid grid-cols-2 gap-2.5">
+                {PRESET_KEYS.map((key) => {
+                  const selected = newPreset === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setNewPreset(key)}
+                      className={cn(
+                        'relative flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left text-sm font-medium transition-all duration-150',
+                        selected
+                          ? 'border-primary/40 bg-primary/10 text-primary shadow-[0_0_16px_-4px_oklch(0.75_0.18_55/0.3)]'
+                          : 'border-white/[0.08] bg-white/[0.04] text-foreground hover:border-white/[0.14] hover:bg-white/[0.07]',
+                      )}
                     >
-                      <div className="flex items-center justify-between">
+                      {selected && (
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary">
+                          <Check className="h-3 w-3 text-primary-foreground" />
+                        </div>
+                      )}
                       <span>{TRACKING_PRESET_LABELS[key]}</span>
-                      {newPreset === key && <Check className="h-3.5 w-3.5" />}
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
+            {/* Starting sets */}
             <SetCountPicker
               value={defaultSetCount}
               onChange={setDefaultSetCount}
-              description={`This exercise will be added to the workout with ${defaultSetCount} starting set${defaultSetCount !== 1 ? 's' : ''}.`}
+              description={`Starts with ${defaultSetCount} set${defaultSetCount !== 1 ? 's' : ''} when added to a workout.`}
             />
 
-            {/* Set preview */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Set preview</label>
-              <div className="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-3">
-                {Array.from({ length: Math.min(defaultSetCount, 3) }, (_, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className="w-4 text-xs text-muted-foreground">{i + 1}</span>
-                    {previewFields.map((f) => (
-                      <div key={f.key} className="flex items-center gap-1">
-                        <span className="rounded border border-input bg-card px-2 py-0.5 text-xs text-muted-foreground">
-                          {f.unit ?? f.type}
-                        </span>
-                        <span className="text-xs text-muted-foreground">{f.label}</span>
-                      </div>
-                    ))}
-                    <Check className="ml-auto h-4 w-4 text-muted-foreground/30" />
-                  </div>
-                ))}
-                {defaultSetCount > 3 && (
-                  <p className="text-xs text-muted-foreground">
-                    + {defaultSetCount - 3} more set{defaultSetCount - 3 !== 1 ? 's' : ''}
-                  </p>
-                )}
-              </div>
-            </div>
-
             {/* Notes */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Notes (optional)</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Notes <span className="font-normal text-muted-foreground">(optional)</span></label>
               <textarea
                 value={newNotes}
                 onChange={(e) => setNewNotes(e.target.value)}
                 placeholder="Form cues, equipment notes…"
                 rows={2}
-                className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus-visible:outline-none"
               />
             </div>
 
@@ -389,7 +374,7 @@ export function ExerciseSelector({
               type="button"
               onClick={handleCreate}
               disabled={isSaving || !newName.trim()}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+              className="premium-button mt-auto justify-center disabled:opacity-50"
             >
               {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
               Create Exercise
