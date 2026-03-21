@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Archive, BarChart3, Loader2, Pencil, Save, Search, X } from 'lucide-react';
+import { BarChart3, Loader2, Pencil, Save, Search, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
@@ -18,11 +18,12 @@ export default function ExercisesPage() {
     exercises,
     isLoading,
     updateExercise,
-    archiveExercise,
+    deleteExercise,
   } = useExercises();
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const duplicateGroups = useMemo(
     () => groupExercisesByName(exercises).filter((group) => group.duplicateCount > 1),
@@ -65,14 +66,13 @@ export default function ExercisesPage() {
     }
   }
 
-  async function handleArchive(id: string, name: string) {
-    if (!confirm(`Archive "${name}"? It will disappear from your active exercise list.`)) return;
-
+  async function handleDelete(id: string) {
     try {
-      await archiveExercise(id);
-      toast.success('Exercise archived');
+      await deleteExercise(id);
+      toast.success('Exercise deleted');
+      setConfirmDeleteId(null);
     } catch (error) {
-      toast.error((error as { message?: string }).message ?? 'Failed to archive exercise');
+      toast.error((error as { message?: string }).message ?? 'Failed to delete exercise');
     }
   }
 
@@ -182,7 +182,23 @@ export default function ExercisesPage() {
                     )}
                   </div>
 
-                  {!isEditing && (
+                  {!isEditing && confirmDeleteId === exercise.id ? (
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="text-sm text-destructive font-medium">Delete?</span>
+                      <button
+                        onClick={() => void handleDelete(exercise.id)}
+                        className="flex h-9 items-center gap-1 rounded-xl bg-destructive px-3 text-xs font-semibold text-white"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="flex h-9 items-center gap-1 rounded-xl border border-white/10 px-3 text-xs font-semibold text-muted-foreground"
+                      >
+                        No
+                      </button>
+                    </div>
+                  ) : !isEditing && (
                     <div className="flex shrink-0 gap-1.5">
                       <Link
                         href={`/exercises/${exercise.id}`}
@@ -197,10 +213,10 @@ export default function ExercisesPage() {
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
-                        onClick={() => void handleArchive(exercise.id, exercise.name)}
+                        onClick={() => setConfirmDeleteId(exercise.id)}
                         className="flex h-9 items-center gap-1 rounded-xl border border-white/10 px-2.5 text-xs text-muted-foreground hover:text-destructive"
                       >
-                        <Archive className="h-3.5 w-3.5" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   )}

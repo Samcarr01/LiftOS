@@ -27,6 +27,7 @@ export interface UseExercisesReturn {
   createExercise: (data: ExerciseCreate) => Promise<ExerciseWithSchema>;
   updateExercise: (id: string, data: ExerciseUpdate) => Promise<void>;
   archiveExercise: (id: string) => Promise<void>;
+  deleteExercise: (id: string) => Promise<void>;
 }
 
 export function useExercises(): UseExercisesReturn {
@@ -132,7 +133,19 @@ export function useExercises(): UseExercisesReturn {
     setExercises((prev) => prev.filter((e) => e.id !== id));
   }, [user, supabase]);
 
+  const deleteExercise = useCallback(async (id: string): Promise<void> => {
+    if (!user) throw new Error('Not authenticated');
+    const { error: dbError } = await supabase
+      .from('exercises')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id) as { error: unknown };
+
+    if (dbError) throw dbError;
+    setExercises((prev) => prev.filter((e) => e.id !== id));
+  }, [user, supabase]);
+
   useEffect(() => { void fetchExercises(); }, [fetchExercises]);
 
-  return { exercises, isLoading, error, fetchExercises, createExercise, updateExercise, archiveExercise };
+  return { exercises, isLoading, error, fetchExercises, createExercise, updateExercise, archiveExercise, deleteExercise };
 }
