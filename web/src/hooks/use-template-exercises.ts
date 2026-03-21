@@ -81,7 +81,9 @@ export function useTemplateExercises(templateId?: string): UseTemplateExercisesR
     exercise: ExerciseWithSchema,
     opts?: { default_set_count?: number; rest_seconds?: number },
   ): Promise<void> => {
-    const nextIndex = exercises.length;
+    const nextIndex = exercises.length > 0
+      ? Math.max(...exercises.map((e) => e.order_index)) + 1
+      : 0;
     const { data: row, error: dbErr } = await supabase
       .from('template_exercises')
       .insert({
@@ -101,6 +103,7 @@ export function useTemplateExercises(templateId?: string): UseTemplateExercisesR
   }, [supabase, exercises]);
 
   const removeExercise = useCallback(async (id: string): Promise<void> => {
+    const item = exercises.find((e) => e.id === id);
     setExercises((prev) => {
       const without = prev.filter((e) => e.id !== id);
       return without.map((e, i) => ({ ...e, order_index: i }));
@@ -110,7 +113,30 @@ export function useTemplateExercises(templateId?: string): UseTemplateExercisesR
       .delete()
       .eq('id', id) as { error: unknown };
     if (dbErr) throw dbErr;
-  }, [supabase]);
+
+    // Re-index remaining exercises in DB to avoid gaps
+    if (item) {
+      const remaining = exercises
+        .filter((e) => e.id !== id)
+        .sort((a, b) => a.order_index - b.order_index);
+      for (let i = 0; i < remaining.length; i++) {
+        if (remaining[i].order_index !== i) {
+          await supabase
+            .from('template_exercises')
+            .update({ order_index: remaining.length + i })
+            .eq('id', remaining[i].id);
+        }
+      }
+      for (let i = 0; i < remaining.length; i++) {
+        if (remaining[i].order_index !== i) {
+          await supabase
+            .from('template_exercises')
+            .update({ order_index: i })
+            .eq('id', remaining[i].id);
+        }
+      }
+    }
+  }, [supabase, exercises]);
 
   const updateExercise = useCallback(async (id: string, patch: UpdateTemplateExercisePatch): Promise<void> => {
     setExercises((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
