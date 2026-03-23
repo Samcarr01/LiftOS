@@ -197,7 +197,7 @@
   }
 
   .action-card {
-    @apply rounded-2xl border border-white/[0.12] px-5 py-5 transition-all duration-200 cursor-pointer;
+    @apply rounded-2xl border border-white/[0.12] px-5 py-5 transition-all duration-150 cursor-pointer;
     background: rgba(255, 255, 255, 0.06);
     backdrop-filter: blur(20px) saturate(150%);
     -webkit-backdrop-filter: blur(20px) saturate(150%);
@@ -238,7 +238,7 @@
   }
 
   .elevated-surface {
-    @apply rounded-2xl border border-white/[0.12] transition-all duration-200;
+    @apply rounded-2xl border border-white/[0.12] transition-all duration-150;
     background: rgba(255, 255, 255, 0.06);
     backdrop-filter: blur(20px) saturate(150%);
     -webkit-backdrop-filter: blur(20px) saturate(150%);
@@ -393,7 +393,7 @@
   /* ── Animation stagger ──────────────────────────── */
 
   .page-reveal {
-    animation: fade-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: fade-up 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .delay-1 { animation-delay: 0.06s; }

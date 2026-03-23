@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useCallback } from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NumericInput } from './numeric-input';
@@ -55,7 +56,7 @@ interface SetRowProps {
   aiTarget?: SetValues | null;
 }
 
-export function SetRow({
+export const SetRow = memo(function SetRow({
   set,
   setNumber,
   lastValues,
@@ -67,20 +68,20 @@ export function SetRow({
 }: SetRowProps) {
   const isPrefilled = set.loggedAt === '' && !set.isCompleted;
 
-  function cycleType() {
+  const cycleType = useCallback(() => {
     const index = SET_TYPE_CYCLE.indexOf(set.setType);
     const next = SET_TYPE_CYCLE[(index + 1) % SET_TYPE_CYCLE.length];
     onUpdate({ setType: next });
-  }
+  }, [set.setType, onUpdate]);
 
-  function handleValueChange(key: string, value: number | '') {
+  const handleValueChange = useCallback((key: string, value: number | '') => {
     onUpdate({ values: { ...set.values, [key]: value === '' ? 0 : value } });
-  }
+  }, [set.values, onUpdate]);
 
   return (
     <div
       className={cn(
-        'px-3 py-3 transition-all duration-200',
+        'px-3 py-3 transition-colors duration-150',
         borderless
           ? 'rounded-xl'
           : 'rounded-2xl border border-white/8',
@@ -133,8 +134,9 @@ export function SetRow({
         <button
           type="button"
           onClick={onComplete}
+          aria-label={set.isCompleted ? 'Mark set incomplete' : 'Complete set'}
           className={cn(
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors',
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors duration-150',
             set.isCompleted
               ? 'border-[oklch(0.72_0.19_155/0.25)] bg-[oklch(0.72_0.19_155)] text-white'
               : 'border-white/10 text-muted-foreground hover:border-primary/35 hover:bg-primary/10 hover:text-foreground',
@@ -145,4 +147,4 @@ export function SetRow({
       </div>
     </div>
   );
-}
+});

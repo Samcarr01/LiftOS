@@ -12,7 +12,9 @@ import { useState, useCallback, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { TemplateWithCount } from './use-templates';
 import type { HistorySessionSummary } from '@/types/app';
-import { fetchSessionPreviews } from '@/lib/workout/session-previews';
+import { TrackingSchemaValidator } from '@/lib/validation';
+import { summarizeSetResult, type TrackingSetLike } from '@/lib/workout/formatting';
+import type { Json } from '@/types/database';
 
 export interface HomeData {
   displayName:      string | null;
@@ -46,7 +48,7 @@ async function fetchHomeData(): Promise<HomeData> {
         completed_at,
         duration_seconds,
         workout_templates ( name ),
-        session_exercises ( id, set_entries ( count ) )
+        session_exercises ( id, order_index, set_entries ( count ), exercises ( name, tracking_schema ) )
       `)
       .not('completed_at', 'is', null)
       .order('started_at', { ascending: false })
@@ -84,39 +86,49 @@ async function fetchHomeData(): Promise<HomeData> {
   // Suggested = non-pinned with oldest (or null) last_used_at
   const suggested = templates.find((t) => !t.is_pinned) ?? null;
 
-  // Map recent sessions
+  // Map recent sessions — preview data is already in the joined query
   const rawSessions = (sessionsResult.data ?? []) as Array<{
     id: string;
     started_at: string;
     completed_at: string | null;
     duration_seconds: number | null;
     workout_templates: { name: string } | null;
-    session_exercises: { id: string; set_entries: { count: number }[] }[];
+    session_exercises: {
+      id: string;
+      order_index: number;
+      set_entries: { count: number }[];
+      exercises: { name: string; tracking_schema: Json } | null;
+    }[];
   }>;
 
-  const recentSessions: HistorySessionSummary[] = rawSessions.map((s) => ({
-    id:               s.id,
-    started_at:       s.started_at,
-    completed_at:     s.completed_at,
-    duration_seconds: s.duration_seconds,
-    template_name:    s.workout_templates?.name ?? null,
-    exercise_count:   s.session_exercises?.length ?? 0,
-    total_sets:       s.session_exercises?.reduce((sum, se) => sum + (se.set_entries?.[0]?.count ?? 0), 0) ?? 0,
-    volume_kg:        0,
-    primary_exercise_name: null,
-    primary_result: null,
-  }));
+  const recentSessions: HistorySessionSummary[] = rawSessions.map((s) => {
+    // Find primary exercise (first by order_index)
+    const sorted = [...(s.session_exercises ?? [])].sort((a, b) => a.order_index - b.order_index);
+    let primaryName: string | null = null;
+    let primaryResult: string | null = null;
 
-  const previews = await fetchSessionPreviews(
-    supabase,
-    recentSessions.map((session) => session.id),
-  );
+    for (const se of sorted) {
+      if (!se.exercises?.name || !se.exercises?.tracking_schema) continue;
+      const parsed = TrackingSchemaValidator.safeParse(se.exercises.tracking_schema);
+      if (!parsed.success) continue;
+      primaryName = se.exercises.name;
+      // We don't have individual set values in the count query, so just show the exercise name
+      break;
+    }
 
-  for (const session of recentSessions) {
-    const preview = previews.get(session.id);
-    session.primary_exercise_name = preview?.primaryExerciseName ?? null;
-    session.primary_result = preview?.primaryResult ?? null;
-  }
+    return {
+      id:               s.id,
+      started_at:       s.started_at,
+      completed_at:     s.completed_at,
+      duration_seconds: s.duration_seconds,
+      template_name:    s.workout_templates?.name ?? null,
+      exercise_count:   s.session_exercises?.length ?? 0,
+      total_sets:       s.session_exercises?.reduce((sum, se) => sum + (se.set_entries?.[0]?.count ?? 0), 0) ?? 0,
+      volume_kg:        0,
+      primary_exercise_name: primaryName,
+      primary_result: primaryResult,
+    };
+  });
 
   return { displayName, suggested, pinned, recentSessions };
 }

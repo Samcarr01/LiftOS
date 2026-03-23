@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, ChevronRight, Dumbbell, Loader2 } from 'lucide-react';
 import { useHistory } from '@/hooks/use-history';
@@ -65,7 +65,7 @@ export default function HistoryPage() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const groups = groupByMonth(sessions);
+  const groups = useMemo(() => groupByMonth(sessions), [sessions]);
 
   return (
     <div className="page-shell">

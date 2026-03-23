@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { ArrowUpRight, ChevronDown, ChevronUp, Minus, Plus, Sparkles, X } from 'lucide-react';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { logSetEntry } from '@/lib/offline';
-import type { ActiveExerciseState, SetValues } from '@/types/app';
+import type { ActiveExerciseState, SetEntry, SetValues } from '@/types/app';
 import { SetRow } from './set-row';
 
 interface ExerciseCardProps {
@@ -14,21 +14,25 @@ interface ExerciseCardProps {
   isSuggestionDismissed: boolean;
 }
 
-export function ExerciseCard({
+export const ExerciseCard = memo(function ExerciseCard({
   state,
   exerciseIndex,
   isSuggestionDismissed,
 }: ExerciseCardProps) {
   const { exercise, sets, lastPerformanceSets, aiSuggestion } = state;
   const fields = exercise.tracking_schema.fields;
-  const fieldSummary = fields
-    .map((field) => {
-      if (field.unit === 'seconds') return `${field.label} (sec)`;
-      if (field.unit === 'metres') return `${field.label} (m)`;
-      if (field.unit) return `${field.label} (${field.unit})`;
-      return field.label;
-    })
-    .join(', ');
+
+  const fieldSummary = useMemo(() =>
+    fields
+      .map((field) => {
+        if (field.unit === 'seconds') return `${field.label} (sec)`;
+        if (field.unit === 'metres') return `${field.label} (m)`;
+        if (field.unit) return `${field.label} (${field.unit})`;
+        return field.label;
+      })
+      .join(', '),
+    [fields],
+  );
 
   const [notesOpen, setNotesOpen] = useState(false);
   const [cardNotes, setCardNotes] = useState('');
@@ -41,7 +45,7 @@ export function ExerciseCard({
   const completedCount = sets.filter((set) => set.isCompleted).length;
   const allComplete = sets.length > 0 && completedCount === sets.length;
 
-  function handleComplete(setId: string) {
+  const handleComplete = useCallback((setId: string) => {
     completeSet(exerciseIndex, setId);
     navigator.vibrate?.(50);
 
@@ -51,7 +55,21 @@ export function ExerciseCard({
       .find((set) => set.id === setId);
 
     if (completedSet) void logSetEntry(completedSet);
-  }
+  }, [completeSet, exerciseIndex]);
+
+  const handleUpdate = useCallback((setId: string, patch: { values?: SetValues; setType?: SetEntry['setType'] }) => {
+    updateSet(exerciseIndex, setId, {
+      ...(patch.values ? { values: patch.values } : {}),
+      ...(patch.setType ? { setType: patch.setType } : {}),
+    });
+  }, [updateSet, exerciseIndex]);
+
+  const handleAddSet = useCallback(() => addSet(exerciseIndex), [addSet, exerciseIndex]);
+  const handleDismiss = useCallback(() => dismissSuggestion(exerciseIndex), [dismissSuggestion, exerciseIndex]);
+
+  const target = aiSuggestion && !isSuggestionDismissed
+    ? aiSuggestion.next_target?.values ?? null
+    : null;
 
   return (
     <div className={`premium-card page-reveal px-5 py-5 ${allComplete ? 'border-[oklch(0.72_0.19_155/0.25)] bg-[oklch(0.72_0.19_155/0.08)]' : ''}`}>
@@ -95,7 +113,7 @@ export function ExerciseCard({
             <p className="mt-0.5 truncate text-sm text-muted-foreground">{aiSuggestion.reason}</p>
           </div>
           <button
-            onClick={() => dismissSuggestion(exerciseIndex)}
+            onClick={handleDismiss}
             className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
             aria-label="Dismiss suggestion"
           >
@@ -105,35 +123,25 @@ export function ExerciseCard({
       )}
 
       <div className="mt-3 space-y-2">
-        {sets.map((set, index) => {
-          const target = aiSuggestion && !isSuggestionDismissed
-            ? aiSuggestion.next_target?.values ?? null
-            : null;
-          return (
-            <SetRow
-              key={set.id}
-              set={set}
-              setNumber={index + 1}
-              lastValues={lastPerformanceSets?.[index] ?? null}
-              fields={fields}
-              aiTarget={target}
-              onUpdate={(patch) => {
-                updateSet(exerciseIndex, set.id, {
-                  ...(patch.values ? { values: patch.values as SetValues } : {}),
-                  ...(patch.setType ? { setType: patch.setType } : {}),
-                });
-              }}
-              onComplete={() => handleComplete(set.id)}
-              onDelete={() => deleteSet(exerciseIndex, set.id)}
-            />
-          );
-        })}
+        {sets.map((set, index) => (
+          <SetRow
+            key={set.id}
+            set={set}
+            setNumber={index + 1}
+            lastValues={lastPerformanceSets?.[index] ?? null}
+            fields={fields}
+            aiTarget={target}
+            onUpdate={(patch) => handleUpdate(set.id, patch)}
+            onComplete={() => handleComplete(set.id)}
+            onDelete={() => deleteSet(exerciseIndex, set.id)}
+          />
+        ))}
       </div>
 
       <div className="mt-3 flex gap-2">
         <button
           type="button"
-          onClick={() => addSet(exerciseIndex)}
+          onClick={handleAddSet}
           className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-2xl border border-white/10 text-sm font-semibold text-muted-foreground hover:text-foreground"
         >
           <Plus className="h-3.5 w-3.5" />
@@ -163,4 +171,4 @@ export function ExerciseCard({
       )}
     </div>
   );
-}
+});

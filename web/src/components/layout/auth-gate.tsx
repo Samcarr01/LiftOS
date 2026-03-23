@@ -14,7 +14,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = initialize();
     return unsubscribe;
-  }, [initialize]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <>{children}</>;
 }
