@@ -79,11 +79,11 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()((set, get) => 
         id:                crypto.randomUUID(),
         sessionExerciseId: ex.sessionExercise.id,
         setIndex:          ps.setIndex,
-        values:            ps.values,
+        values:            {},
         setType:           ps.setType,
         isCompleted:       false,
         notes:             null,
-        loggedAt:          '', // empty = prefilled, not yet user-confirmed
+        loggedAt:          '',
       }));
 
       return {
@@ -124,16 +124,16 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()((set, get) => 
       if (!ex) return {};
 
       const lastSet = ex.sets[ex.sets.length - 1];
-      const newSet: SetEntry = lastSet
-        ? {
-            ...lastSet,
-            id:          crypto.randomUUID(),
-            setIndex:    ex.sets.length,
-            isCompleted: false,
-            notes:       null,
-            loggedAt:    '',
-          }
-        : makeEmptySet(ex.sessionExercise.id, ex.sets.length);
+      const newSet: SetEntry = {
+        id:                crypto.randomUUID(),
+        sessionExerciseId: ex.sessionExercise.id,
+        setIndex:          ex.sets.length,
+        values:            {},
+        setType:           lastSet?.setType ?? 'working',
+        isCompleted:       false,
+        notes:             null,
+        loggedAt:          '',
+      };
 
       exercises[exerciseIndex] = { ...ex, sets: [...ex.sets, newSet] };
       return { workout: { ...s.workout, exercises } };
