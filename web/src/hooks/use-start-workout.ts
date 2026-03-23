@@ -96,18 +96,27 @@ export function useStartWorkout() {
       if (!user) throw new Error('Please sign in again.');
 
       let templateExercises: RawTemplateExercise[] = [];
+      let templateName: string | null = null;
       if (templateId) {
-        const { data, error } = await supabase
-          .from('template_exercises')
-          .select('*, exercise:exercises(*)')
-          .eq('template_id', templateId)
-          .order('order_index', { ascending: true }) as {
-          data: RawTemplateExercise[] | null;
-          error: unknown;
-        };
+        const [templateResult, exercisesResult] = await Promise.all([
+          supabase
+            .from('workout_templates')
+            .select('name')
+            .eq('id', templateId)
+            .single(),
+          supabase
+            .from('template_exercises')
+            .select('*, exercise:exercises(*)')
+            .eq('template_id', templateId)
+            .order('order_index', { ascending: true }) as unknown as Promise<{
+            data: RawTemplateExercise[] | null;
+            error: unknown;
+          }>,
+        ]);
 
-        if (error) throw error;
-        templateExercises = data ?? [];
+        if (exercisesResult.error) throw exercisesResult.error;
+        templateExercises = exercisesResult.data ?? [];
+        templateName = templateResult.data?.name ?? null;
       }
 
       const exerciseIds = templateExercises.map((exercise) => exercise.exercise_id);
@@ -140,6 +149,7 @@ export function useStartWorkout() {
         .insert({
           user_id: user.id,
           template_id: templateId,
+          template_name: templateName,
           started_at: new Date().toISOString(),
         })
         .select()

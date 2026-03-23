@@ -34,6 +34,7 @@ export function useHistory() {
         completed_at,
         duration_seconds,
         template_id,
+        template_name,
         workout_templates ( name ),
         session_exercises ( id, set_entries ( count ) )
       `)
@@ -52,6 +53,7 @@ export function useHistory() {
       started_at: string;
       completed_at: string | null;
       duration_seconds: number | null;
+      template_name: string | null;
       workout_templates: { name: string } | null;
       session_exercises: { id: string; set_entries: { count: number }[] }[];
     }) => ({
@@ -59,7 +61,7 @@ export function useHistory() {
       started_at:       row.started_at,
       completed_at:     row.completed_at,
       duration_seconds: row.duration_seconds,
-      template_name:    row.workout_templates?.name ?? null,
+      template_name:    row.template_name ?? row.workout_templates?.name ?? null,
       exercise_count:   row.session_exercises?.length ?? 0,
       total_sets:       row.session_exercises?.reduce((sum, se) => sum + (se.set_entries?.[0]?.count ?? 0), 0) ?? 0,
       volume_kg:        0,

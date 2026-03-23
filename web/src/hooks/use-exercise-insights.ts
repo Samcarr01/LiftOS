@@ -59,6 +59,13 @@ export function useExerciseInsights(exerciseId: string) {
     async function fetch() {
       const supabase = createClient();
 
+      // Wait for auth to be ready (RLS requires authenticated user)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        if (!cancelled) { setError('Not authenticated'); setLoading(false); }
+        return;
+      }
+
       // 1. Exercise metadata
       const { data: exerciseRow, error: exErr } = await supabase
         .from('exercises')

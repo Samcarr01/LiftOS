@@ -150,6 +150,7 @@ export interface Database {
           id: string;
           user_id: string;
           template_id: string | null;
+          template_name: string | null;
           started_at: string;
           completed_at: string | null;
           duration_seconds: number | null;
@@ -159,6 +160,7 @@ export interface Database {
         Insert: {
           user_id: string;
           template_id?: string | null;
+          template_name?: string | null;
           started_at?: string;
           completed_at?: string | null;
           duration_seconds?: number | null;
@@ -167,6 +169,7 @@ export interface Database {
         Update: {
           user_id?: string;
           template_id?: string | null;
+          template_name?: string | null;
           started_at?: string;
           completed_at?: string | null;
           duration_seconds?: number | null;

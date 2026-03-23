@@ -18,7 +18,7 @@ import type { Json } from '@/types/database';
 
 export interface HomeData {
   displayName:      string | null;
-  suggested:        TemplateWithCount | null;
+  suggested:        TemplateWithCount[];
   pinned:           TemplateWithCount[];
   recentSessions:   HistorySessionSummary[];
 }
@@ -47,12 +47,13 @@ async function fetchHomeData(): Promise<HomeData> {
         started_at,
         completed_at,
         duration_seconds,
+        template_name,
         workout_templates ( name ),
         session_exercises ( id, order_index, set_entries ( count ), exercises ( name, tracking_schema ) )
       `)
       .not('completed_at', 'is', null)
       .order('started_at', { ascending: false })
-      .limit(5),
+      .limit(10),
   ]);
 
   const displayName = (profileResult.data as { display_name: string | null } | null)?.display_name ?? null;
@@ -83,8 +84,8 @@ async function fetchHomeData(): Promise<HomeData> {
   }));
 
   const pinned    = templates.filter((t) => t.is_pinned);
-  // Suggested = non-pinned with oldest (or null) last_used_at
-  const suggested = templates.find((t) => !t.is_pinned) ?? null;
+  // Suggested = non-pinned templates (up to 3), oldest last_used_at first
+  const suggested = templates.filter((t) => !t.is_pinned).slice(0, 3);
 
   // Map recent sessions — preview data is already in the joined query
   const rawSessions = (sessionsResult.data ?? []) as Array<{
@@ -92,6 +93,7 @@ async function fetchHomeData(): Promise<HomeData> {
     started_at: string;
     completed_at: string | null;
     duration_seconds: number | null;
+    template_name: string | null;
     workout_templates: { name: string } | null;
     session_exercises: {
       id: string;
@@ -121,7 +123,7 @@ async function fetchHomeData(): Promise<HomeData> {
       started_at:       s.started_at,
       completed_at:     s.completed_at,
       duration_seconds: s.duration_seconds,
-      template_name:    s.workout_templates?.name ?? null,
+      template_name:    s.template_name ?? s.workout_templates?.name ?? null,
       exercise_count:   s.session_exercises?.length ?? 0,
       total_sets:       s.session_exercises?.reduce((sum, se) => sum + (se.set_entries?.[0]?.count ?? 0), 0) ?? 0,
       volume_kg:        0,

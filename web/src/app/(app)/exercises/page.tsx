@@ -169,15 +169,13 @@ export default function ExercisesPage() {
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground">{describeTrackingSchema(exercise.tracking_schema)}</p>
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          {exercise.muscle_groups.length > 0 ? (
-                            exercise.muscle_groups.map((muscle) => (
+                        {exercise.muscle_groups.length > 0 && (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {exercise.muscle_groups.map((muscle) => (
                               <MuscleGroupBadge key={muscle} muscle={muscle} />
-                            ))
-                          ) : (
-                            <span className="text-xs text-muted-foreground">No muscle groups</span>
-                          )}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </>
                     )}
                   </div>

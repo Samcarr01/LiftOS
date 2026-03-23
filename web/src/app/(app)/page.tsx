@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -148,9 +148,18 @@ function StartWorkoutSheet({
 export default function HomePage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [starting, setStarting] = useState<string | null>(null);
-  const { data, loading } = useHomeData();
+  const { data, loading, refresh } = useHomeData();
   const { startWorkout } = useStartWorkout();
   const router = useRouter();
+
+  // Refetch when returning from workout or regaining focus
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') void refresh();
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [refresh]);
 
   async function handleQuickStart(templateId: string) {
     setStarting(templateId);
@@ -162,7 +171,7 @@ export default function HomePage() {
   }
 
   const lastSession = data?.recentSessions?.[0] ?? null;
-  const allTemplates = [...(data?.pinned ?? []), ...(data?.suggested ? [data.suggested] : [])];
+  const allTemplates = [...(data?.pinned ?? []), ...(data?.suggested ?? [])];
   const thisWeekCount = data ? getThisWeekCount(data.recentSessions) : 0;
 
   return (
@@ -197,9 +206,9 @@ export default function HomePage() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-display text-lg font-bold tracking-tight">Start Workout</p>
-              {data?.suggested ? (
+              {data?.suggested?.[0] ? (
                 <p className="mt-0.5 truncate text-sm text-white/80">
-                  {data.suggested.name} · {data.suggested.exercise_count} exercise{data.suggested.exercise_count !== 1 ? 's' : ''}
+                  {data.suggested[0].name} · {data.suggested[0].exercise_count} exercise{data.suggested[0].exercise_count !== 1 ? 's' : ''}
                 </p>
               ) : !loading ? (
                 <p className="mt-0.5 text-sm text-white/80">Choose a template to begin</p>

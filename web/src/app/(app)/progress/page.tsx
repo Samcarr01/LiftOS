@@ -164,7 +164,7 @@ export default function ProgressPage() {
                       <p className="mt-1 text-sm text-foreground">{summary.trendNote}</p>
                     </div>
                   </>
-                ) : (
+                ) : records.length > 0 ? null : (
                   <div className="mt-4">
                     <ChartEmptyState message="No completed sessions yet for this exercise." />
                   </div>
@@ -209,7 +209,7 @@ export default function ProgressPage() {
                   </div>
 
                   <div className="mt-4">
-                    {!summary?.chartReady ? (
+                    {!(selectedExercise.trackingLabel.toLowerCase().includes('weight') && selectedExercise.trackingLabel.toLowerCase().includes('reps')) ? (
                       <ChartEmptyState message="Charts available for weighted lifts with reps." />
                     ) : progressLoading ? (
                       <Skeleton className="h-48 w-full rounded-xl" />

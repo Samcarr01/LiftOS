@@ -29,8 +29,27 @@ interface CompletionStore {
   clearResult: () => void;
 }
 
+const STORAGE_KEY = 'liftos_completion_result';
+
 export const useCompletionStore = create<CompletionStore>()((set) => ({
   result:      null,
-  setResult:   (r) => set({ result: r }),
-  clearResult: () => set({ result: null }),
+  setResult:   (r) => {
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(r)); } catch {}
+    set({ result: r });
+  },
+  clearResult: () => {
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+    set({ result: null });
+  },
 }));
+
+/** Recover result from sessionStorage if Zustand store was reset during navigation */
+export function recoverCompletionResult(): CompletionResult | null {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as CompletionResult;
+  } catch {
+    return null;
+  }
+}

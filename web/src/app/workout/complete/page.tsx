@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trophy, Award, CheckCircle2 } from 'lucide-react';
-import { useCompletionStore } from '@/store/completion-store';
+import { useCompletionStore, recoverCompletionResult } from '@/store/completion-store';
 import type { CompletionPR } from '@/store/completion-store';
 
 const PR_LABEL: Record<CompletionPR['record_type'], string> = {
@@ -21,15 +21,24 @@ const PR_VALUE_LABEL: Record<CompletionPR['record_type'], string> = {
 };
 
 export default function WorkoutCompletePage() {
-  const result      = useCompletionStore((s) => s.result);
+  const storeResult = useCompletionStore((s) => s.result);
+  const setResult   = useCompletionStore((s) => s.setResult);
   const clearResult = useCompletionStore((s) => s.clearResult);
   const router      = useRouter();
 
-  // If someone navigates here directly with no result, bounce home
+  // Recover from sessionStorage if Zustand store was reset during navigation
   useEffect(() => {
-    if (!result) router.replace('/');
-  }, [result, router]);
+    if (!storeResult) {
+      const recovered = recoverCompletionResult();
+      if (recovered) {
+        setResult(recovered);
+      } else {
+        router.replace('/');
+      }
+    }
+  }, [storeResult, setResult, router]);
 
+  const result = storeResult;
   if (!result) return null;
 
   const { summary, newPrs, exerciseNames } = result;

@@ -123,12 +123,20 @@ function CreateTemplateRow({
 
 function TemplateRow({
   template,
-  onDelete,
+  isConfirmingDelete,
+  isDeleting,
+  onRequestDelete,
+  onConfirmDelete,
+  onCancelDelete,
   onDuplicate,
   onTogglePin,
 }: {
   template: TemplateWithCount;
-  onDelete: () => void;
+  isConfirmingDelete: boolean;
+  isDeleting: boolean;
+  onRequestDelete: () => void;
+  onConfirmDelete: () => void;
+  onCancelDelete: () => void;
   onDuplicate: () => void;
   onTogglePin: () => void;
 }) {
@@ -143,6 +151,32 @@ function TemplateRow({
     } finally {
       setStarting(false);
     }
+  }
+
+  if (isConfirmingDelete) {
+    return (
+      <div className="list-row flex-col gap-2">
+        <p className="text-sm font-semibold">Delete &ldquo;{template.name}&rdquo;?</p>
+        <p className="text-caption">This cannot be undone.</p>
+        <div className="flex gap-2 mt-1">
+          <button
+            onClick={onConfirmDelete}
+            disabled={isDeleting}
+            className="flex h-9 items-center gap-1.5 rounded-2xl bg-destructive px-3 text-xs font-semibold text-destructive-foreground disabled:opacity-60"
+          >
+            {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+            Delete
+          </button>
+          <button
+            onClick={onCancelDelete}
+            disabled={isDeleting}
+            className="premium-button-secondary px-3 py-2 text-xs"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -186,7 +220,7 @@ function TemplateRow({
             Duplicate
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onDelete} className="gap-2 text-destructive focus:text-destructive">
+          <DropdownMenuItem onClick={onRequestDelete} className="gap-2 text-destructive focus:text-destructive">
             <Trash2 className="h-4 w-4" />
             Delete
           </DropdownMenuItem>
@@ -207,6 +241,8 @@ export default function TemplatesPage() {
     togglePin,
   } = useTemplates();
   const [autoOpenCreate, setAutoOpenCreate] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -225,13 +261,16 @@ export default function TemplatesPage() {
     return template;
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  async function handleDelete(id: string) {
+    setDeleting(true);
     try {
       await deleteTemplate(id);
       toast.success('Workout deleted');
+      setConfirmDeleteId(null);
     } catch {
       toast.error('Failed to delete workout');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -285,7 +324,11 @@ export default function TemplatesPage() {
                     <TemplateRow
                       key={template.id}
                       template={template}
-                      onDelete={() => void handleDelete(template.id, template.name)}
+                      isConfirmingDelete={confirmDeleteId === template.id}
+                      isDeleting={deleting}
+                      onRequestDelete={() => setConfirmDeleteId(template.id)}
+                      onConfirmDelete={() => void handleDelete(template.id)}
+                      onCancelDelete={() => setConfirmDeleteId(null)}
                       onDuplicate={() => void handleDuplicate(template.id)}
                       onTogglePin={() => void handleTogglePin(template.id)}
                     />
@@ -312,7 +355,11 @@ export default function TemplatesPage() {
                     <TemplateRow
                       key={template.id}
                       template={template}
-                      onDelete={() => void handleDelete(template.id, template.name)}
+                      isConfirmingDelete={confirmDeleteId === template.id}
+                      isDeleting={deleting}
+                      onRequestDelete={() => setConfirmDeleteId(template.id)}
+                      onConfirmDelete={() => void handleDelete(template.id)}
+                      onCancelDelete={() => setConfirmDeleteId(null)}
                       onDuplicate={() => void handleDuplicate(template.id)}
                       onTogglePin={() => void handleTogglePin(template.id)}
                     />

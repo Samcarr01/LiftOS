@@ -299,7 +299,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
               </div>
 
               <div className="mt-4">
-                {!summary?.chartReady ? (
+                {!(exercise.tracking_schema.fields.some((f) => f.key === 'weight') && exercise.tracking_schema.fields.some((f) => f.key === 'reps')) ? (
                   <ChartEmptyState message="Charts available for weighted lifts with reps." />
                 ) : progressLoading ? (
                   <Skeleton className="h-48 w-full rounded-xl" />

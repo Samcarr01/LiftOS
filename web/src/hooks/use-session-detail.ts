@@ -27,6 +27,7 @@ export function useSessionDetail(sessionId: string) {
           completed_at,
           duration_seconds,
           notes,
+          template_name,
           workout_templates ( name ),
           session_exercises (
             id,
@@ -72,6 +73,7 @@ export function useSessionDetail(sessionId: string) {
         completed_at: string | null;
         duration_seconds: number | null;
         notes: string | null;
+        template_name: string | null;
         workout_templates: { name: string } | null;
         session_exercises: Array<{
           id: string;
@@ -148,7 +150,7 @@ export function useSessionDetail(sessionId: string) {
         started_at:       row.started_at,
         completed_at:     row.completed_at,
         duration_seconds: row.duration_seconds,
-        template_name:    row.workout_templates?.name ?? null,
+        template_name:    row.template_name ?? row.workout_templates?.name ?? null,
         notes:            row.notes,
         exercises,
         total_volume_kg:  totalVolume,
