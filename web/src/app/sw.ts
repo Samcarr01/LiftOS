@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/next/worker";
-import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from "serwist";
-import { Serwist, NetworkFirst, NetworkOnly } from "serwist";
+import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
+import { Serwist } from "serwist";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -11,38 +11,33 @@ declare global {
 declare const self: ServiceWorkerGlobalScope;
 
 /**
- * Custom runtime caching strategy for Supabase.
+ * Service worker strategy:
  *
- * - Auth + Edge Functions → NetworkOnly (mutations/auth, never cache)
- * - REST API GET → NetworkFirst (5s timeout, fallback to cache for offline reads)
- *   Enables offline browsing of exercises, templates, and last performance data
- *   that was previously fetched when the user was online.
+ * - Supabase API calls are NOT intercepted. The browser handles them
+ *   normally and the app's own error handling (try/catch in hooks,
+ *   IndexedDB offline queue) deals with failures. This prevents the
+ *   service worker from crashing on slow/bad wifi.
  *
- * NOTE: Both rules must appear BEFORE defaultCache so they take priority.
+ * - Static assets (JS, CSS, images, fonts) are cached via defaultCache
+ *   so the app shell loads instantly even on terrible wifi.
+ *
+ * - Navigation fallback: if a page can't be loaded from cache or network,
+ *   serve /offline instead of crashing.
  */
-const supabaseCaching: RuntimeCaching[] = [
-  {
-    // Auth and Edge Functions are always network-only
-    matcher: /supabase\.co\/(auth|functions)\/v1\//,
-    handler: new NetworkOnly(),
-  },
-  {
-    // REST GET → network first, cache as fallback
-    matcher: /supabase\.co\/rest\/v1\//,
-    handler: new NetworkFirst({
-      cacheName:            'supabase-rest-v1',
-      networkTimeoutSeconds: 5,
-    }),
-    method: 'GET',
-  },
-];
-
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting:     true,
   clientsClaim:    true,
   navigationPreload: true,
-  runtimeCaching: [...supabaseCaching, ...defaultCache],
+  runtimeCaching: defaultCache,
+  fallbacks: {
+    entries: [
+      {
+        url: '/offline',
+        matcher: ({ request }) => request.destination === 'document',
+      },
+    ],
+  },
 });
 
 serwist.addEventListeners();
