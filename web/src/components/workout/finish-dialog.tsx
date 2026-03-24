@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import { addToQueue } from '@/lib/offline';
+import { createClient } from '@/lib/supabase/client';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { useCompletionStore } from '@/store/completion-store';
 import type { ActiveWorkoutState, CompleteWorkoutResponse } from '@/types/app';
@@ -64,6 +65,11 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
     setIsCompleting(true);
 
     try {
+      // Refresh the session before saving — the token may have expired
+      // if the user was in the gym for a long time
+      const supabase = createClient();
+      await supabase.auth.refreshSession();
+
       const response = await fetch('/api/workouts/complete', {
         method: 'POST',
         headers: {

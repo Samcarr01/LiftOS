@@ -9,7 +9,7 @@ import { ExerciseCard } from '@/components/workout/exercise-card';
 import { SupersetCard } from '@/components/workout/superset-card';
 import { FinishDialog } from '@/components/workout/finish-dialog';
 import { ExerciseSelector, type ExerciseSelectionOptions } from '@/components/exercise-selector';
-import { useActiveWorkoutStore } from '@/store/active-workout-store';
+import { useActiveWorkoutStore, useWorkoutHydrated } from '@/store/active-workout-store';
 import type { ActiveExerciseState, ExerciseWithSchema } from '@/types/app';
 import type { SessionExerciseRow } from '@/types/database';
 
@@ -54,6 +54,7 @@ export default function WorkoutPage() {
   const dismissedSuggestions = useActiveWorkoutStore((state) => state.dismissedSuggestions);
   const clearWorkout = useActiveWorkoutStore((state) => state.clearWorkout);
   const addExerciseToStore = useActiveWorkoutStore((state) => state.addExercise);
+  const hydrated = useWorkoutHydrated();
   const [finishOpen, setFinishOpen] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
 
@@ -85,10 +86,11 @@ export default function WorkoutPage() {
   }, [workout]);
 
   useEffect(() => {
-    if (workout === null) {
+    // Only redirect after persist has rehydrated from localStorage
+    if (hydrated && workout === null) {
       router.replace('/');
     }
-  }, [workout, router]);
+  }, [workout, router, hydrated]);
 
   if (!workout) {
     return (

@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { TrackingSchemaValidator } from '@/lib/validation';
 import type {
   ActiveWorkoutState,
@@ -69,7 +70,7 @@ const DEFAULT_REST: GlobalRestTimer = { isRunning: false, startedAt: null, durat
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 
-export const useActiveWorkoutStore = create<ActiveWorkoutStore>()((set, get) => ({
+export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, get) => ({
   workout:              null,
   restTimer:            DEFAULT_REST,
   dismissedSuggestions: [],
@@ -236,6 +237,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()((set, get) => 
       if (target.laps !== undefined) targetValues['laps'] = target.laps;
       if (target.duration !== undefined) targetValues['duration'] = target.duration;
       if (target.distance !== undefined) targetValues['distance'] = target.distance;
+      if (target.height !== undefined) targetValues['height'] = target.height;
 
       // Fill only the first uncompleted set
       let filled = false;
@@ -269,7 +271,18 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()((set, get) => 
   stopRestTimer() {
     set({ restTimer: DEFAULT_REST });
   },
+}), {
+  name: 'liftos-active-workout',
+  partialize: (state) => ({
+    workout: state.workout,
+    dismissedSuggestions: state.dismissedSuggestions,
+    // Don't persist restTimer — it uses Date.now() which would be stale
+  }),
 }));
+
+// Hydration helper — wait for persist to restore before acting on null state
+export const useWorkoutHydrated = () =>
+  useActiveWorkoutStore.persist.hasHydrated();
 
 // Stable selector helpers
 export const selectWorkout    = (s: ReturnType<typeof useActiveWorkoutStore.getState>) => s.workout;

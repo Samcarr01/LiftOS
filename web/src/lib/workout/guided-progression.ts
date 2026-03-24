@@ -373,8 +373,9 @@ export function buildGuidedSuggestion(params: {
   trainingGoals?: string[];
   experienceLevel?: string;
   preferredRepRange?: { min: number; max: number } | null;
+  exerciseNotes?: string | null;
 }): GuidedSuggestionResult | null {
-  const { schema, unitPreference, generatedAt, muscleGroups = [], targetRanges, trainingGoals = [], experienceLevel = 'intermediate', preferredRepRange } = params;
+  const { schema, unitPreference, generatedAt, muscleGroups = [], targetRanges, trainingGoals = [], experienceLevel = 'intermediate', preferredRepRange, exerciseNotes } = params;
 
   const sessions = [...params.sessions].sort((a, b) => (
     new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
@@ -450,6 +451,7 @@ export function buildGuidedSuggestion(params: {
       generatedAt,
       previousHistory,
       eligible: false,
+      exerciseNotes,
     });
   }
 
@@ -473,6 +475,7 @@ export function buildGuidedSuggestion(params: {
       generatedAt,
       previousHistory,
       eligible: false,
+      exerciseNotes,
     });
   }
 
@@ -491,6 +494,7 @@ export function buildGuidedSuggestion(params: {
       repRange,
       trend,
       sessionsAtWeight,
+      exerciseNotes,
     });
   }
 
@@ -514,6 +518,7 @@ export function buildGuidedSuggestion(params: {
       trend,
       sessionsAtWeight,
       plateauThreshold,
+      exerciseNotes,
     });
   }
 
@@ -540,6 +545,7 @@ export function buildGuidedSuggestion(params: {
       plateauThreshold,
       loadKey: 'height',
       loadUnit: 'cm',
+      exerciseNotes,
     });
   }
 
@@ -558,6 +564,7 @@ export function buildGuidedSuggestion(params: {
     trend,
     sessionsAtWeight,
     latestAnalysis,
+    exerciseNotes,
   });
 }
 
@@ -582,6 +589,7 @@ function buildDoubleProgressionSuggestion(params: {
   plateauThreshold: number;
   loadKey?: string;   // override: 'height' for height+reps exercises
   loadUnit?: string;  // override: 'cm' for height+reps exercises
+  exerciseNotes?: string | null;
 }): GuidedSuggestionResult {
   const {
     keys, baselineValues, lastDisplay, latestAnalysis, latestSession,
@@ -629,6 +637,7 @@ function buildDoubleProgressionSuggestion(params: {
       generatedAt,
       previousHistory,
       eligible: true,
+      exerciseNotes: params.exerciseNotes,
     });
   }
 
@@ -677,6 +686,7 @@ function buildDoubleProgressionSuggestion(params: {
     generatedAt,
     previousHistory,
     eligible: false,
+    exerciseNotes: params.exerciseNotes,
   });
 }
 
@@ -694,6 +704,7 @@ function buildCardioSuggestion(params: {
   repRange: RepRange;
   trend: TrendDirection;
   sessionsAtWeight: number;
+  exerciseNotes?: string | null;
 }): GuidedSuggestionResult {
   const { keys, baselineValues, lastDisplay, latestSession, latestWorkoutDate, generatedAt, previousHistory, category, repRange, trend, sessionsAtWeight } = params;
 
@@ -733,6 +744,7 @@ function buildCardioSuggestion(params: {
       generatedAt,
       previousHistory,
       eligible: false,
+      exerciseNotes: params.exerciseNotes,
     });
   }
 
@@ -754,6 +766,7 @@ function buildCardioSuggestion(params: {
     generatedAt,
     previousHistory,
     eligible: true,
+    exerciseNotes: params.exerciseNotes,
   });
 }
 
@@ -772,6 +785,7 @@ function buildFallbackSuggestion(params: {
   trend: TrendDirection;
   sessionsAtWeight: number;
   latestAnalysis: SessionAnalysis;
+  exerciseNotes?: string | null;
 }): GuidedSuggestionResult {
   const { keys, baselineValues, lastDisplay, latestSession, latestWorkoutDate, generatedAt, previousHistory, category, repRange, trend, sessionsAtWeight, latestAnalysis } = params;
 
@@ -811,6 +825,7 @@ function buildFallbackSuggestion(params: {
     generatedAt,
     previousHistory,
     eligible: true,
+    exerciseNotes: params.exerciseNotes,
   });
 }
 
@@ -834,7 +849,14 @@ function buildResult(params: {
   generatedAt: string;
   previousHistory: PreviousProgressionHistory;
   eligible: boolean;
+  exerciseNotes?: string | null;
 }): GuidedSuggestionResult {
+  // Append exercise notes to reason so the user sees context (e.g. "reps = each arm")
+  let reason = params.reason;
+  if (params.exerciseNotes) {
+    reason += ` · ${params.exerciseNotes}`;
+  }
+
   const suggestion: AISuggestionData = {
     decision: params.decision,
     metric: params.metric,
@@ -846,7 +868,7 @@ function buildResult(params: {
       display: params.targetDisplay,
       values: params.targetValues,
     },
-    reason: params.reason,
+    reason,
     progression: {
       eligible: params.eligible,
       separate_win_count: params.eligible ? 1 : 0,

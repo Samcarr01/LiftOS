@@ -79,6 +79,9 @@ export const ExerciseCard = memo(function ExerciseCard({
               {completedCount}/{sets.length}
             </span>
           </div>
+          {exercise.notes && (
+            <p className="mt-0.5 text-sm italic text-muted-foreground">{exercise.notes}</p>
+          )}
           <div className="mt-1 flex items-center gap-2">
             <div className="flex gap-1">
               {exercise.muscle_groups.slice(0, 2).map((muscle) => (

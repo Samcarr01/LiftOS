@@ -606,6 +606,7 @@ export async function POST(request: Request) {
         trainingGoals,
         experienceLevel,
         preferredRepRange,
+        exerciseNotes: exercise.exercise.notes,
       });
 
       responseSuggestions.push({
