@@ -53,7 +53,6 @@ interface SetRowProps {
   onComplete: () => void;
   onDelete: () => void;
   borderless?: boolean;
-  aiTarget?: SetValues | null;
 }
 
 export const SetRow = memo(function SetRow({
@@ -64,7 +63,6 @@ export const SetRow = memo(function SetRow({
   onUpdate,
   onComplete,
   borderless,
-  aiTarget,
 }: SetRowProps) {
   const isPrefilled = set.loggedAt === '' && !set.isCompleted;
 
@@ -111,24 +109,17 @@ export const SetRow = memo(function SetRow({
         </div>
 
         <div className="flex min-w-0 flex-1 gap-1.5">
-          {fields.map((field) => {
-            const ghost = !set.isCompleted && aiTarget
-              ? (typeof aiTarget[field.key] === 'number' ? aiTarget[field.key] as number : undefined)
-              : undefined;
-            return (
-              <div key={field.key} className="min-w-0 flex-1">
-                <span className="block text-sm font-medium text-muted-foreground truncate">{field.label}</span>
-                <NumericInput
-                  value={typeof set.values[field.key] === 'number' ? set.values[field.key] as number : ''}
-                  onChange={(value) => handleValueChange(field.key, value)}
-                  field={field}
-                  disabled={false}
-                  prefilled={isPrefilled}
-                  ghostValue={ghost}
-                />
-              </div>
-            );
-          })}
+          {fields.map((field) => (
+            <div key={field.key} className="min-w-0 flex-1">
+              <span className="block text-sm font-medium text-muted-foreground truncate">{field.label}</span>
+              <NumericInput
+                value={typeof set.values[field.key] === 'number' ? set.values[field.key] as number : ''}
+                onChange={(value) => handleValueChange(field.key, value)}
+                field={field}
+                disabled={false}
+              />
+            </div>
+          ))}
         </div>
 
         <button

@@ -67,9 +67,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   const handleAddSet = useCallback(() => addSet(exerciseIndex), [addSet, exerciseIndex]);
   const handleDismiss = useCallback(() => dismissSuggestion(exerciseIndex), [dismissSuggestion, exerciseIndex]);
 
-  const target = aiSuggestion && !isSuggestionDismissed
-    ? aiSuggestion.next_target?.values ?? null
-    : null;
+  // AI target is shown in the suggestion card — don't duplicate in inputs
 
   return (
     <div className={`premium-card page-reveal px-5 py-5 ${allComplete ? 'border-[oklch(0.72_0.19_155/0.25)] bg-[oklch(0.72_0.19_155/0.08)]' : ''}`}>
@@ -130,7 +128,6 @@ export const ExerciseCard = memo(function ExerciseCard({
             setNumber={index + 1}
             lastValues={lastPerformanceSets?.[index] ?? null}
             fields={fields}
-            aiTarget={target}
             onUpdate={(patch) => handleUpdate(set.id, patch)}
             onComplete={() => handleComplete(set.id)}
             onDelete={() => deleteSet(exerciseIndex, set.id)}
