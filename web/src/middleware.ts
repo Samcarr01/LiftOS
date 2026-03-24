@@ -4,13 +4,15 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/auth');
+  const isOnboardingRoute = pathname === '/onboarding';
 
   let supabaseResponse = NextResponse.next({ request });
 
   // If Supabase is misconfigured or unreachable, redirect to login (fail closed)
+  let supabase = null;
   let user = null;
   try {
-    const supabase = createServerClient(
+    supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
@@ -56,6 +58,25 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/';
     return NextResponse.redirect(url);
+  }
+
+  // Check onboarding status for authenticated users on non-onboarding routes
+  if (user && supabase && !isAuthRoute && !isOnboardingRoute) {
+    try {
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('onboarding_completed')
+        .eq('id', user.id)
+        .single();
+
+      if (userRow && !userRow.onboarding_completed) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/onboarding';
+        return NextResponse.redirect(url);
+      }
+    } catch {
+      // If we can't check onboarding status, let them through
+    }
   }
 
   return supabaseResponse;

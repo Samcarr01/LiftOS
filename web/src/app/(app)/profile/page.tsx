@@ -3,11 +3,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   AlertTriangle,
+  Check,
   ChevronRight,
   Download,
   Loader2,
   LogOut,
   Pencil,
+  Scale,
   Smartphone,
   Trash2,
 } from 'lucide-react';
@@ -176,17 +178,29 @@ export default function ProfilePage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
 
+  // Training preferences
+  const [trainingGoals, setTrainingGoals] = useState<string[]>([]);
+  const [experienceLevel, setExperienceLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
+  const [bodyWeight, setBodyWeight] = useState('');
+  const [savingTraining, setSavingTraining] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
     supabase
       .from('users')
-      .select('display_name')
+      .select('display_name, training_goals, experience_level, body_weight_kg')
       .single()
       .then(({ data }) => {
-        setDisplayName((data as { display_name: string | null } | null)?.display_name ?? '');
+        const row = data as { display_name: string | null; training_goals: string[]; experience_level: string; body_weight_kg: number | null } | null;
+        setDisplayName(row?.display_name ?? '');
+        setTrainingGoals(row?.training_goals ?? []);
+        setExperienceLevel((row?.experience_level as 'beginner' | 'intermediate' | 'advanced') ?? 'intermediate');
+        if (row?.body_weight_kg) {
+          setBodyWeight(unit === 'lb' ? String(Math.round(row.body_weight_kg * 2.205)) : String(row.body_weight_kg));
+        }
       });
-  }, [user]);
+  }, [user, unit]);
 
   useEffect(() => {
     getQueueSize().then(setPendingCount);
@@ -311,6 +325,116 @@ export default function ProfilePage() {
                 </button>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Training */}
+        <section>
+          <h2 className="section-title mb-2">Training</h2>
+          <div className="space-y-3">
+            {/* Goals */}
+            <div className="list-row flex-col items-stretch gap-2">
+              <span className="text-sm font-semibold">Goals</span>
+              <div className="flex flex-wrap gap-1.5">
+                {([
+                  { id: 'strength', label: 'Strength' },
+                  { id: 'muscle', label: 'Muscle' },
+                  { id: 'fitness', label: 'Fitness' },
+                ] as const).map((goal) => {
+                  const selected = trainingGoals.includes(goal.id);
+                  return (
+                    <button
+                      key={goal.id}
+                      onClick={() => setTrainingGoals((prev) =>
+                        prev.includes(goal.id) ? prev.filter((g) => g !== goal.id) : [...prev, goal.id],
+                      )}
+                      className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors ${
+                        selected
+                          ? 'border-primary/40 bg-primary/15 text-primary'
+                          : 'border-white/10 text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {selected && <Check className="h-3 w-3" />}
+                      {goal.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Experience */}
+            <div className="list-row justify-between">
+              <span className="text-sm font-semibold">Experience</span>
+              <div className="flex rounded-lg border border-white/10 bg-black/15 p-0.5">
+                {(['beginner', 'intermediate', 'advanced'] as const).map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => setExperienceLevel(level)}
+                    className={`h-7 rounded-md px-2.5 text-xs font-semibold capitalize transition-colors ${
+                      experienceLevel === level
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Body Weight */}
+            <div className="list-row justify-between">
+              <div className="flex items-center gap-2">
+                <Scale className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-semibold">Body Weight</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={bodyWeight}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === '' || /^\d*\.?\d*$/.test(v)) setBodyWeight(v);
+                  }}
+                  placeholder="—"
+                  className="h-8 w-20 rounded-lg border border-white/10 bg-black/15 px-2 text-center text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50"
+                />
+                <span className="text-xs text-muted-foreground">{unit}</span>
+              </div>
+            </div>
+
+            {/* Save button */}
+            <button
+              onClick={async () => {
+                setSavingTraining(true);
+                try {
+                  const supabase = createClient();
+                  let bodyWeightKg: number | null = null;
+                  if (bodyWeight.trim()) {
+                    const parsed = parseFloat(bodyWeight);
+                    if (!isNaN(parsed) && parsed > 0) {
+                      bodyWeightKg = unit === 'lb' ? Math.round(parsed / 2.205 * 10) / 10 : parsed;
+                    }
+                  }
+                  const { error } = await supabase.from('users').update({
+                    training_goals: trainingGoals,
+                    experience_level: experienceLevel,
+                    body_weight_kg: bodyWeightKg,
+                  }).eq('id', user!.id);
+                  if (error) throw error;
+                  toast.success('Training preferences saved');
+                } catch {
+                  toast.error('Failed to save preferences');
+                } finally {
+                  setSavingTraining(false);
+                }
+              }}
+              disabled={savingTraining}
+              className="flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-primary/10 text-sm font-semibold text-primary disabled:opacity-60"
+            >
+              {savingTraining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Save Training Preferences'}
+            </button>
           </div>
         </section>
 

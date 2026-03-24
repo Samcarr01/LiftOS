@@ -412,7 +412,7 @@ export async function POST(request: Request) {
 
     const [{ data: authData, error: authError }, { data: userRow, error: userError }] = await Promise.all([
       supabase.auth.getUser(),
-      supabase.from('users').select('unit_preference').single(),
+      supabase.from('users').select('unit_preference, training_goals, experience_level').single(),
     ]);
 
     if (authError || !authData.user) {
@@ -421,9 +421,11 @@ export async function POST(request: Request) {
 
     const user = authData.user;
     const unitPreference: UnitPreference = (userRow?.unit_preference as UnitPreference | undefined) ?? 'kg';
+    const trainingGoals: string[] = (userRow as { training_goals?: string[] } | null)?.training_goals ?? [];
+    const experienceLevel: string = (userRow as { experience_level?: string } | null)?.experience_level ?? 'intermediate';
 
     if (userError) {
-      console.warn('[api/workouts/complete] failed to load unit preference', userError);
+      console.warn('[api/workouts/complete] failed to load user preferences', userError);
     }
 
     const { data: session, error: sessionError } = await supabase
@@ -568,6 +570,19 @@ export async function POST(request: Request) {
     }> = [];
 
     const responseSuggestions: CompleteWorkoutResponse['suggestions'] = [];
+
+    // Load target_ranges from template if workout came from one
+    const targetRangesByExercise = new Map<string, Record<string, { min?: number; max?: number }> | null>();
+    if (session.template_id) {
+      const { data: templateExercises } = await supabase
+        .from('template_exercises')
+        .select('exercise_id, target_ranges')
+        .eq('template_id', session.template_id);
+      for (const te of (templateExercises ?? []) as Array<{ exercise_id: string; target_ranges: Json | null }>) {
+        targetRangesByExercise.set(te.exercise_id, te.target_ranges as Record<string, { min?: number; max?: number }> | null);
+      }
+    }
+
     const historySessionsByExercise = new Map(
       await Promise.all(
         exercisesAfterSave.map(async (exercise) => ([
@@ -585,6 +600,10 @@ export async function POST(request: Request) {
         previousHistory: parsePreviousProgressionHistory(previousHistoryByExercise.get(exercise.exercise_id)),
         unitPreference,
         generatedAt: completedAt,
+        muscleGroups: exercise.exercise.muscle_groups,
+        targetRanges: targetRangesByExercise.get(exercise.exercise_id),
+        trainingGoals,
+        experienceLevel,
       });
 
       responseSuggestions.push({
@@ -603,7 +622,7 @@ export async function POST(request: Request) {
         exercise_id: exercise.exercise_id,
         suggestion_data: guided.suggestion as Json,
         history_snapshot: guided.historySnapshot as Json,
-        model_version: 'guided-progression-v1',
+        model_version: 'guided-progression-v2',
         expires_at: expiresAt.toISOString(),
       });
     }

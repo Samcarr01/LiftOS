@@ -24,6 +24,10 @@ export interface Database {
           display_name: string | null;
           unit_preference: 'kg' | 'lb';
           subscription_tier: 'free' | 'pro';
+          training_goals: string[];
+          experience_level: 'beginner' | 'intermediate' | 'advanced';
+          body_weight_kg: number | null;
+          onboarding_completed: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -33,6 +37,10 @@ export interface Database {
           display_name?: string | null;
           unit_preference?: 'kg' | 'lb';
           subscription_tier?: 'free' | 'pro';
+          training_goals?: string[];
+          experience_level?: 'beginner' | 'intermediate' | 'advanced';
+          body_weight_kg?: number | null;
+          onboarding_completed?: boolean;
         };
         Update: {
           id?: string;
@@ -40,6 +48,10 @@ export interface Database {
           display_name?: string | null;
           unit_preference?: 'kg' | 'lb';
           subscription_tier?: 'free' | 'pro';
+          training_goals?: string[];
+          experience_level?: 'beginner' | 'intermediate' | 'advanced';
+          body_weight_kg?: number | null;
+          onboarding_completed?: boolean;
         };
         Relationships: [];
       };

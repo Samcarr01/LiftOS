@@ -58,18 +58,23 @@ const SuggestionResultSchema = z.object({
 });
 
 export const AISuggestionDataSchema = z.object({
-  decision: z.enum(['hold', 'progress']),
+  decision: z.enum(['hold', 'progress', 'deload']),
   metric: z.enum(['weight', 'added_weight', 'reps', 'laps', 'duration', 'distance'])
     .nullable()
     .optional(),
   last_result: SuggestionResultSchema.nullable(),
   next_target: SuggestionResultSchema.nullable(),
-  reason: z.string().max(300),
+  reason: z.string().max(500),
   progression: z.object({
     eligible: z.boolean(),
     separate_win_count: z.number().int().min(0),
     wins_required: z.number().int().min(1),
     last_progression_date: z.string().nullable(),
+    rep_range: z.object({ min: z.number(), max: z.number() }).optional(),
+    set_breakdown: z.string().optional(),
+    exercise_category: z.string().optional(),
+    trend: z.string().optional(),
+    sessions_at_weight: z.number().int().optional(),
   }),
 });
 

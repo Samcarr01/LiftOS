@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useCallback, useMemo, useState } from 'react';
-import { ArrowUpRight, ChevronDown, ChevronUp, Minus, Plus, Sparkles, X } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, ChevronUp, Minus, Plus, Sparkles, TrendingDown, X } from 'lucide-react';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { logSetEntry } from '@/lib/offline';
@@ -95,20 +95,36 @@ export const ExerciseCard = memo(function ExerciseCard({
 
       {/* Inline AI coach indicator */}
       {aiSuggestion && !isSuggestionDismissed && aiSuggestion.next_target && (
-        <div className="mt-2.5 flex items-center gap-2 rounded-xl bg-[oklch(0.75_0.18_55/0.08)] px-3 py-2">
-          <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />
+        <div className={`mt-2.5 flex items-center gap-2 rounded-xl px-3 py-2 ${
+          aiSuggestion.decision === 'deload'
+            ? 'bg-[oklch(0.60_0.15_250/0.10)]'
+            : 'bg-[oklch(0.75_0.18_55/0.08)]'
+        }`}>
+          {aiSuggestion.decision === 'deload'
+            ? <TrendingDown className="h-3.5 w-3.5 shrink-0 text-[oklch(0.70_0.15_250)]" />
+            : <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-semibold text-[oklch(0.80_0.16_55)]">
-                {aiSuggestion.decision === 'progress' ? 'Beat this' : 'Hold steady'}
+              <span className={`text-sm font-semibold ${
+                aiSuggestion.decision === 'deload'
+                  ? 'text-[oklch(0.70_0.15_250)]'
+                  : 'text-[oklch(0.80_0.16_55)]'
+              }`}>
+                {aiSuggestion.decision === 'progress'
+                  ? 'Beat this'
+                  : aiSuggestion.decision === 'deload'
+                    ? 'Deload'
+                    : 'Hold steady'}
               </span>
               {aiSuggestion.decision === 'progress'
                 ? <ArrowUpRight className="h-3 w-3 text-primary" />
-                : <Minus className="h-3 w-3 text-muted-foreground" />}
+                : aiSuggestion.decision === 'deload'
+                  ? <TrendingDown className="h-3 w-3 text-[oklch(0.70_0.15_250)]" />
+                  : <Minus className="h-3 w-3 text-muted-foreground" />}
               <span className="text-sm text-muted-foreground">·</span>
               <span className="truncate text-sm font-medium text-foreground">{aiSuggestion.next_target.display}</span>
             </div>
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">{aiSuggestion.reason}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">{aiSuggestion.reason}</p>
           </div>
           <button
             onClick={handleDismiss}
