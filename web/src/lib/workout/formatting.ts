@@ -54,6 +54,7 @@ export function describeTrackingSchema(schema: TrackingSchema): string {
 
   if (keys.includes('weight') && keys.includes('reps')) return 'Weight and reps';
   if (keys.includes('weight') && keys.includes('laps')) return 'Weight and laps';
+  if (keys.includes('height') && keys.includes('reps')) return 'Height and reps';
   if (keys.includes('added_weight') && keys.includes('reps')) return 'Bodyweight reps';
   if (keys.includes('distance') && keys.includes('duration')) return 'Distance and time';
   if (keys.includes('distance')) return 'Distance';
@@ -73,6 +74,7 @@ export function formatFieldValue(field: TrackingField, rawValue: number | string
     if (field.unit === 'kg' || field.unit === 'lb') return `${rawValue}${field.unit}`;
     if (field.unit === 'seconds') return `${rawValue}s`;
     if (field.unit === 'metres') return `${rawValue}m`;
+    if (field.unit === 'cm') return `${rawValue}cm`;
   }
 
   if (field.key === 'reps') return `${rawValue} reps`;
@@ -126,6 +128,12 @@ export function pickRepresentativeSet(
     if (keys.has('weight') && keys.has('reps')) {
       const weightComparison = compareNumbers(getNumericValue(a, 'weight'), getNumericValue(b, 'weight'));
       if (weightComparison !== 0) return weightComparison > 0 ? current : best;
+      return compareNumbers(getNumericValue(a, 'reps'), getNumericValue(b, 'reps')) > 0 ? current : best;
+    }
+
+    if (keys.has('height') && keys.has('reps')) {
+      const heightComparison = compareNumbers(getNumericValue(a, 'height'), getNumericValue(b, 'height'));
+      if (heightComparison !== 0) return heightComparison > 0 ? current : best;
       return compareNumbers(getNumericValue(a, 'reps'), getNumericValue(b, 'reps')) > 0 ? current : best;
     }
 

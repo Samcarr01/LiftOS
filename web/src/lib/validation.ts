@@ -50,6 +50,7 @@ const SuggestionValuesSchema = z.object({
   laps:         z.number().int().positive().optional(),
   duration:     z.number().positive().optional(),
   distance:     z.number().positive().optional(),
+  height:       z.number().positive().optional(),
 });
 
 const SuggestionResultSchema = z.object({
@@ -59,7 +60,7 @@ const SuggestionResultSchema = z.object({
 
 export const AISuggestionDataSchema = z.object({
   decision: z.enum(['hold', 'progress', 'deload']),
-  metric: z.enum(['weight', 'added_weight', 'reps', 'laps', 'duration', 'distance'])
+  metric: z.enum(['weight', 'added_weight', 'reps', 'laps', 'duration', 'distance', 'height'])
     .nullable()
     .optional(),
   last_result: SuggestionResultSchema.nullable(),

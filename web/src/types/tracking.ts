@@ -59,6 +59,14 @@ export const LAPS: TrackingSchema = {
   ],
 };
 
+/** Height-based plyometric exercises: box jumps, depth jumps, etc. */
+export const HEIGHT_REPS: TrackingSchema = {
+  fields: [
+    { key: 'height', label: 'Height', type: 'number', unit: 'cm', optional: false },
+    { key: 'reps',   label: 'Reps',   type: 'number',             optional: false },
+  ],
+};
+
 export const TRACKING_PRESETS = {
   WEIGHT_REPS,
   BODYWEIGHT_REPS,
@@ -66,6 +74,7 @@ export const TRACKING_PRESETS = {
   DISTANCE,
   WEIGHT_LAPS,
   LAPS,
+  HEIGHT_REPS,
 } as const;
 
 export type TrackingPresetKey = keyof typeof TRACKING_PRESETS;
@@ -78,4 +87,5 @@ export const TRACKING_PRESET_LABELS: Record<TrackingPresetKey, string> = {
   DISTANCE:        'Distance',
   WEIGHT_LAPS:     'Weight + Laps',
   LAPS:            'Laps',
+  HEIGHT_REPS:     'Height + Reps',
 };

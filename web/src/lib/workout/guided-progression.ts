@@ -28,6 +28,7 @@ interface SuggestionValues {
   laps?: number;
   duration?: number;
   distance?: number;
+  height?: number;
 }
 
 interface PreviousProgressionHistory {
@@ -218,10 +219,11 @@ function analyzeSession(
   const hasWeight = keys.has('weight');
   const hasReps = keys.has('reps');
   const hasAddedWeight = keys.has('added_weight');
+  const hasHeight = keys.has('height');
 
-  const weightKey = hasAddedWeight ? 'added_weight' : 'weight';
+  const weightKey = hasAddedWeight ? 'added_weight' : hasHeight ? 'height' : 'weight';
 
-  const weight = hasWeight || hasAddedWeight
+  const weight = hasWeight || hasAddedWeight || hasHeight
     ? Math.max(...workingSets.map((s) => getNumeric(s.values, weightKey)))
     : 0;
 
@@ -394,6 +396,7 @@ export function buildGuidedSuggestion(params: {
 
   const keys = new Set(schema.fields.map((f) => f.key));
   const isWeightReps = (keys.has('weight') || keys.has('added_weight')) && keys.has('reps');
+  const isHeightReps = keys.has('height') && keys.has('reps');
   const isCardio = category === 'cardio';
 
   // Build baseline values from the latest session's working sets
@@ -412,6 +415,10 @@ export function buildGuidedSuggestion(params: {
   if (keys.has('distance')) {
     const maxDistance = Math.max(...latestAnalysis.workingSets.map((s) => getNumeric(s.values, 'distance')));
     baselineValues.distance = maxDistance;
+  }
+  if (keys.has('height')) {
+    const maxHeight = Math.max(...latestAnalysis.workingSets.map((s) => getNumeric(s.values, 'height')));
+    baselineValues.height = maxHeight;
   }
 
   const lastDisplay = formatSetValues(baselineValues as SetValues, schema);
@@ -510,6 +517,32 @@ export function buildGuidedSuggestion(params: {
     });
   }
 
+  // ── Phase 3b: Double progression for height+reps (box jumps, etc) ─────────
+
+  if (isHeightReps) {
+    const heightStep = 5; // 5cm increments (standard box height steps)
+    return buildDoubleProgressionSuggestion({
+      keys,
+      schema,
+      baselineValues,
+      lastDisplay,
+      latestAnalysis,
+      latestSession,
+      latestWorkoutDate,
+      generatedAt,
+      previousHistory,
+      category,
+      repRange,
+      step: heightStep,
+      unitPreference,
+      trend,
+      sessionsAtWeight,
+      plateauThreshold,
+      loadKey: 'height',
+      loadUnit: 'cm',
+    });
+  }
+
   // ── Phase 4: Fallback for other tracking schemas (laps, duration, etc) ────
 
   return buildFallbackSuggestion({
@@ -547,6 +580,8 @@ function buildDoubleProgressionSuggestion(params: {
   trend: TrendDirection;
   sessionsAtWeight: number;
   plateauThreshold: number;
+  loadKey?: string;   // override: 'height' for height+reps exercises
+  loadUnit?: string;  // override: 'cm' for height+reps exercises
 }): GuidedSuggestionResult {
   const {
     keys, baselineValues, lastDisplay, latestAnalysis, latestSession,
@@ -554,24 +589,27 @@ function buildDoubleProgressionSuggestion(params: {
     step, unitPreference, trend, sessionsAtWeight, schema, plateauThreshold,
   } = params;
 
-  const weightKey = keys.has('added_weight') ? 'added_weight' : 'weight';
+  const weightKey = params.loadKey ?? (keys.has('added_weight') ? 'added_weight' : 'weight');
   const metricKey = weightKey as NonNullable<AISuggestionData['metric']>;
+  const displayUnit = params.loadUnit ?? (unitPreference === 'lb' ? 'lb' : 'kg');
   const numSets = latestAnalysis.workingSets.length;
   const reps = latestAnalysis.reps;
 
   // Check if all sets hit the rep range ceiling
   if (latestAnalysis.allSetsAtCeiling && repRange.max > 0) {
-    // PROGRESS: increase weight, reset reps to range floor
-    const newWeight = roundLoad((baselineValues[weightKey] ?? 0) + step, unitPreference);
+    // PROGRESS: increase load, reset reps to range floor
+    const currentLoad = (baselineValues as Record<string, number | undefined>)[weightKey] ?? 0;
+    const newLoad = params.loadKey
+      ? currentLoad + step  // height: simple addition, no rounding to plate increments
+      : roundLoad(currentLoad + step, unitPreference);
     const targetValues: SuggestionValues = {
       ...baselineValues,
-      [weightKey]: newWeight,
+      [weightKey]: newLoad,
       reps: repRange.min,
     };
     const targetDisplay = formatSetValues(targetValues as SetValues, schema);
 
-    const weightUnit = unitPreference === 'lb' ? 'lb' : 'kg';
-    const reason = `You hit ${baselineValues[weightKey]}${weightUnit} x ${repRange.max} on all ${numSets} sets — go to ${newWeight}${weightUnit} x ${repRange.min}`;
+    const reason = `You hit ${currentLoad}${displayUnit} x ${repRange.max} on all ${numSets} sets — go to ${newLoad}${displayUnit} x ${repRange.min}`;
 
     return buildResult({
       decision: 'progress',
@@ -594,12 +632,11 @@ function buildDoubleProgressionSuggestion(params: {
     });
   }
 
-  // Not at ceiling — hold weight, aim for consistency
+  // Not at ceiling — hold load, aim for consistency
   const maxRep = Math.max(...reps);
   const minRep = Math.min(...reps);
   const targetRep = repRange.max > 0 ? repRange.max : maxRep + 1;
-  const weightUnit = unitPreference === 'lb' ? 'lb' : 'kg';
-  const currentWeight = baselineValues[weightKey] ?? 0;
+  const currentLoad = (baselineValues as Record<string, number | undefined>)[weightKey] ?? 0;
 
   const targetValues: SuggestionValues = {
     ...baselineValues,
@@ -610,15 +647,16 @@ function buildDoubleProgressionSuggestion(params: {
   let reason: string;
   if (reps.length > 1 && minRep < maxRep) {
     // Inconsistent sets — guide toward consistency
-    reason = `${currentWeight}${weightUnit} — aim for ${targetRep} reps on all ${numSets} sets (you got ${latestAnalysis.setBreakdown})`;
+    reason = `${currentLoad}${displayUnit} — aim for ${targetRep} reps on all ${numSets} sets (you got ${latestAnalysis.setBreakdown})`;
   } else {
     // Consistent but below ceiling
-    reason = `Build to ${targetRep} reps at ${currentWeight}${weightUnit} on all ${numSets} sets`;
+    reason = `Build to ${targetRep} reps at ${currentLoad}${displayUnit} on all ${numSets} sets`;
   }
 
   // Plateau warning
   if (sessionsAtWeight >= plateauThreshold) {
-    reason += ` \u00b7 ${sessionsAtWeight} sessions at this weight \u2014 consider a deload week or exercise variation`;
+    const label = params.loadKey === 'height' ? 'height' : 'weight';
+    reason += ` \u00b7 ${sessionsAtWeight} sessions at this ${label} \u2014 consider a deload week or exercise variation`;
   }
 
   return buildResult({
