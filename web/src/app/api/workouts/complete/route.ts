@@ -412,7 +412,7 @@ export async function POST(request: Request) {
 
     const [{ data: authData, error: authError }, { data: userRow, error: userError }] = await Promise.all([
       supabase.auth.getUser(),
-      supabase.from('users').select('unit_preference, training_goals, experience_level').single(),
+      supabase.from('users').select('unit_preference, training_goals, experience_level, preferred_rep_range').single(),
     ]);
 
     if (authError || !authData.user) {
@@ -423,6 +423,7 @@ export async function POST(request: Request) {
     const unitPreference: UnitPreference = (userRow?.unit_preference as UnitPreference | undefined) ?? 'kg';
     const trainingGoals: string[] = (userRow as { training_goals?: string[] } | null)?.training_goals ?? [];
     const experienceLevel: string = (userRow as { experience_level?: string } | null)?.experience_level ?? 'intermediate';
+    const preferredRepRange = (userRow as { preferred_rep_range?: { min: number; max: number } | null } | null)?.preferred_rep_range ?? null;
 
     if (userError) {
       console.warn('[api/workouts/complete] failed to load user preferences', userError);
@@ -604,6 +605,7 @@ export async function POST(request: Request) {
         targetRanges: targetRangesByExercise.get(exercise.exercise_id),
         trainingGoals,
         experienceLevel,
+        preferredRepRange,
       });
 
       responseSuggestions.push({

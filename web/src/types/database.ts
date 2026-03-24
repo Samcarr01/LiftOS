@@ -27,6 +27,7 @@ export interface Database {
           training_goals: string[];
           experience_level: 'beginner' | 'intermediate' | 'advanced';
           body_weight_kg: number | null;
+          preferred_rep_range: { min: number; max: number } | null;
           onboarding_completed: boolean;
           created_at: string;
           updated_at: string;
@@ -40,6 +41,7 @@ export interface Database {
           training_goals?: string[];
           experience_level?: 'beginner' | 'intermediate' | 'advanced';
           body_weight_kg?: number | null;
+          preferred_rep_range?: { min: number; max: number } | null;
           onboarding_completed?: boolean;
         };
         Update: {
@@ -51,6 +53,7 @@ export interface Database {
           training_goals?: string[];
           experience_level?: 'beginner' | 'intermediate' | 'advanced';
           body_weight_kg?: number | null;
+          preferred_rep_range?: { min: number; max: number } | null;
           onboarding_completed?: boolean;
         };
         Relationships: [];

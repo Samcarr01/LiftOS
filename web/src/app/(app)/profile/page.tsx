@@ -182,6 +182,8 @@ export default function ProfilePage() {
   const [trainingGoals, setTrainingGoals] = useState<string[]>([]);
   const [experienceLevel, setExperienceLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
   const [bodyWeight, setBodyWeight] = useState('');
+  const [repMin, setRepMin] = useState('');
+  const [repMax, setRepMax] = useState('');
   const [savingTraining, setSavingTraining] = useState(false);
 
   useEffect(() => {
@@ -189,15 +191,19 @@ export default function ProfilePage() {
     const supabase = createClient();
     supabase
       .from('users')
-      .select('display_name, training_goals, experience_level, body_weight_kg')
+      .select('display_name, training_goals, experience_level, body_weight_kg, preferred_rep_range')
       .single()
       .then(({ data }) => {
-        const row = data as { display_name: string | null; training_goals: string[]; experience_level: string; body_weight_kg: number | null } | null;
+        const row = data as { display_name: string | null; training_goals: string[]; experience_level: string; body_weight_kg: number | null; preferred_rep_range: { min: number; max: number } | null } | null;
         setDisplayName(row?.display_name ?? '');
         setTrainingGoals(row?.training_goals ?? []);
         setExperienceLevel((row?.experience_level as 'beginner' | 'intermediate' | 'advanced') ?? 'intermediate');
         if (row?.body_weight_kg) {
           setBodyWeight(unit === 'lb' ? String(Math.round(row.body_weight_kg * 2.205)) : String(row.body_weight_kg));
+        }
+        if (row?.preferred_rep_range) {
+          setRepMin(String(row.preferred_rep_range.min));
+          setRepMax(String(row.preferred_rep_range.max));
         }
       });
   }, [user, unit]);
@@ -339,7 +345,10 @@ export default function ProfilePage() {
                 {([
                   { id: 'strength', label: 'Strength' },
                   { id: 'muscle', label: 'Muscle' },
-                  { id: 'fitness', label: 'Fitness' },
+                  { id: 'fat_loss', label: 'Fat Loss' },
+                  { id: 'endurance', label: 'Endurance' },
+                  { id: 'athletic', label: 'Athletic' },
+                  { id: 'health', label: 'Health' },
                 ] as const).map((goal) => {
                   const selected = trainingGoals.includes(goal.id);
                   return (
@@ -382,6 +391,31 @@ export default function ProfilePage() {
               </div>
             </div>
 
+            {/* Rep Range */}
+            <div className="list-row justify-between">
+              <span className="text-sm font-semibold">Rep Range</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={repMin}
+                  onChange={(e) => { if (e.target.value === '' || /^\d+$/.test(e.target.value)) setRepMin(e.target.value); }}
+                  placeholder="Min"
+                  className="h-8 w-14 rounded-lg border border-white/10 bg-black/15 px-2 text-center text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50"
+                />
+                <span className="text-xs text-muted-foreground">to</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={repMax}
+                  onChange={(e) => { if (e.target.value === '' || /^\d+$/.test(e.target.value)) setRepMax(e.target.value); }}
+                  placeholder="Max"
+                  className="h-8 w-14 rounded-lg border border-white/10 bg-black/15 px-2 text-center text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50"
+                />
+                <span className="text-xs text-muted-foreground">reps</span>
+              </div>
+            </div>
+
             {/* Body Weight */}
             <div className="list-row justify-between">
               <div className="flex items-center gap-2">
@@ -417,10 +451,17 @@ export default function ProfilePage() {
                       bodyWeightKg = unit === 'lb' ? Math.round(parsed / 2.205 * 10) / 10 : parsed;
                     }
                   }
+                  const parsedMin = parseInt(repMin);
+                  const parsedMax = parseInt(repMax);
+                  const preferredRepRange = !isNaN(parsedMin) && !isNaN(parsedMax) && parsedMin > 0 && parsedMax >= parsedMin
+                    ? { min: parsedMin, max: parsedMax }
+                    : null;
+
                   const { error } = await supabase.from('users').update({
                     training_goals: trainingGoals,
                     experience_level: experienceLevel,
                     body_weight_kg: bodyWeightKg,
+                    preferred_rep_range: preferredRepRange,
                   }).eq('id', user!.id);
                   if (error) throw error;
                   toast.success('Training preferences saved');

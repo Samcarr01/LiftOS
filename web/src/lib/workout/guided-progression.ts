@@ -143,6 +143,11 @@ function classifyExercise(muscleGroups: string[], schema: TrackingSchema): Exerc
 const GOAL_REP_RANGES: Record<string, Record<ExerciseCategory, RepRange>> = {
   strength:  { compound: { min: 3, max: 6 }, accessory: { min: 6, max: 10 }, bodyweight: { min: 5, max: 10 }, cardio: { min: 0, max: 0 } },
   muscle:    { compound: { min: 8, max: 12 }, accessory: { min: 10, max: 15 }, bodyweight: { min: 8, max: 15 }, cardio: { min: 0, max: 0 } },
+  fat_loss:  { compound: { min: 10, max: 15 }, accessory: { min: 12, max: 20 }, bodyweight: { min: 10, max: 20 }, cardio: { min: 0, max: 0 } },
+  endurance: { compound: { min: 12, max: 20 }, accessory: { min: 15, max: 25 }, bodyweight: { min: 12, max: 25 }, cardio: { min: 0, max: 0 } },
+  athletic:  { compound: { min: 5, max: 8 }, accessory: { min: 8, max: 12 }, bodyweight: { min: 6, max: 12 }, cardio: { min: 0, max: 0 } },
+  health:    { compound: { min: 8, max: 15 }, accessory: { min: 10, max: 15 }, bodyweight: { min: 8, max: 15 }, cardio: { min: 0, max: 0 } },
+  // Legacy key from old onboarding
   fitness:   { compound: { min: 10, max: 15 }, accessory: { min: 12, max: 20 }, bodyweight: { min: 10, max: 20 }, cardio: { min: 0, max: 0 } },
 };
 
@@ -150,6 +155,7 @@ function getRepRange(
   category: ExerciseCategory,
   targetRanges?: Record<string, { min?: number; max?: number }> | null,
   trainingGoals?: string[],
+  preferredRepRange?: { min: number; max: number } | null,
 ): RepRange {
   // Use template-level override if available (highest priority)
   if (targetRanges?.reps) {
@@ -157,6 +163,11 @@ function getRepRange(
     if (typeof min === 'number' && typeof max === 'number' && min > 0 && max >= min) {
       return { min, max };
     }
+  }
+
+  // Use user's preferred rep range (second priority, for compound/accessory)
+  if (preferredRepRange && category !== 'cardio') {
+    return { min: preferredRepRange.min, max: preferredRepRange.max };
   }
 
   // Use training goals to determine rep range
@@ -359,8 +370,9 @@ export function buildGuidedSuggestion(params: {
   targetRanges?: Record<string, { min?: number; max?: number }> | null;
   trainingGoals?: string[];
   experienceLevel?: string;
+  preferredRepRange?: { min: number; max: number } | null;
 }): GuidedSuggestionResult | null {
-  const { schema, unitPreference, generatedAt, muscleGroups = [], targetRanges, trainingGoals = [], experienceLevel = 'intermediate' } = params;
+  const { schema, unitPreference, generatedAt, muscleGroups = [], targetRanges, trainingGoals = [], experienceLevel = 'intermediate', preferredRepRange } = params;
 
   const sessions = [...params.sessions].sort((a, b) => (
     new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
@@ -369,7 +381,7 @@ export function buildGuidedSuggestion(params: {
   if (sessions.length === 0) return null;
 
   const category = classifyExercise(muscleGroups, schema);
-  const repRange = getRepRange(category, targetRanges, trainingGoals);
+  const repRange = getRepRange(category, targetRanges, trainingGoals, preferredRepRange);
   const step = getWeightStep(category, unitPreference);
   // Beginners plateau faster (3 sessions), advanced lifters tolerate more stagnation (5)
   const plateauThreshold = experienceLevel === 'beginner' ? 3 : experienceLevel === 'advanced' ? 5 : PLATEAU_THRESHOLD;
