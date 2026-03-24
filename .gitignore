@@ -36,3 +36,4 @@ yarn-error.log*
 
 # Testing
 coverage/
+__pycache__/

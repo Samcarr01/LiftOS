@@ -31,8 +31,9 @@ export function BottomNav() {
             <Link
               key={href}
               href={href}
+              aria-label={label}
               className={cn(
-                'relative flex flex-col items-center justify-center gap-0.5 rounded-xl px-5 py-1.5 transition-colors duration-150',
+                'relative flex flex-col items-center justify-center gap-0.5 rounded-xl px-5 py-1.5 transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                 isActive
                   ? 'text-primary'
                   : 'text-muted-foreground active:text-foreground',

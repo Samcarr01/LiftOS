@@ -199,15 +199,15 @@ function TemplateRow({
       <button
         onClick={handleStart}
         disabled={starting}
-        className="flex h-9 shrink-0 items-center gap-1.5 rounded-2xl bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
-        title="Start workout"
+        aria-label="Start workout"
+        className="flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-2xl bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
         {starting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
         Start
       </button>
 
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-white/[0.08] hover:text-foreground">
+        <DropdownMenuTrigger aria-label="More options" className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-white/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
           <MoreHorizontal className="h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
@@ -299,7 +299,7 @@ export default function TemplatesPage() {
           <h1 className="page-header-title">Workouts</h1>
           <button
             onClick={() => setAutoOpenCreate(true)}
-            className="flex h-9 items-center gap-1.5 rounded-2xl bg-primary px-4 text-xs font-semibold text-primary-foreground"
+            className="flex h-9 cursor-pointer items-center gap-1.5 rounded-2xl bg-primary px-4 text-xs font-semibold text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             <Plus className="h-3.5 w-3.5" />
             New

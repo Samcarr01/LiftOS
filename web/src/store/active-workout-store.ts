@@ -5,10 +5,12 @@ import { TrackingSchemaValidator } from '@/lib/validation';
 import type {
   ActiveWorkoutState,
   ActiveExerciseState,
+  ExerciseWithSchema,
   SetEntry,
   SetValues,
   StartWorkoutResponse,
 } from '@/types/app';
+import type { SessionExerciseRow } from '@/types/database';
 
 // ── Global rest timer (one at a time, persists across scroll) ─────────────────
 
@@ -29,6 +31,9 @@ interface ActiveWorkoutStore {
   hydrateWorkout:  (response: StartWorkoutResponse) => void;
   clearWorkout:    () => void;
   setIsCompleting: (v: boolean) => void;
+
+  // Exercise mutations
+  addExercise: (sessionExercise: SessionExerciseRow, exercise: ExerciseWithSchema, setCount: number) => void;
 
   // Set mutations
   addSet:      (exerciseIndex: number) => void;
@@ -110,6 +115,37 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()((set, get) => 
 
   clearWorkout() {
     set({ workout: null, restTimer: DEFAULT_REST, dismissedSuggestions: [] });
+  },
+
+  addExercise(sessionExercise, exercise, setCount) {
+    set((s) => {
+      if (!s.workout) return {};
+      const parsedSchema = TrackingSchemaValidator.parse(exercise.tracking_schema);
+      const sets: SetEntry[] = Array.from({ length: setCount }, (_, i) => ({
+        id: crypto.randomUUID(),
+        sessionExerciseId: sessionExercise.id,
+        setIndex: i,
+        values: {},
+        setType: 'working' as const,
+        isCompleted: false,
+        notes: null,
+        loggedAt: '',
+      }));
+      const newExercise: ActiveExerciseState = {
+        sessionExercise,
+        exercise: { ...exercise, tracking_schema: parsedSchema },
+        sets,
+        lastPerformanceSets: null,
+        aiSuggestion: null,
+        restTimer: { isRunning: false, remaining: 0 },
+      };
+      return {
+        workout: {
+          ...s.workout,
+          exercises: [...s.workout.exercises, newExercise],
+        },
+      };
+    });
   },
 
   setIsCompleting(v) {

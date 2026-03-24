@@ -225,7 +225,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
         {detail && (
           <>
             {/* Stats row */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div className="stat-card">
                 <p className="text-stat">{detail.exercises.length}</p>
                 <p className="text-caption">Exercises</p>
@@ -233,6 +233,16 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
               <div className="stat-card">
                 <p className="text-stat">{detail.total_sets}</p>
                 <p className="text-caption">Sets</p>
+              </div>
+              <div className="stat-card">
+                <p className="text-stat">
+                  {detail.duration_seconds != null
+                    ? detail.duration_seconds >= 3600
+                      ? `${Math.floor(detail.duration_seconds / 3600)}h ${Math.floor((detail.duration_seconds % 3600) / 60)}m`
+                      : `${Math.floor(detail.duration_seconds / 60)}m`
+                    : '—'}
+                </p>
+                <p className="text-caption">Duration</p>
               </div>
               <div className="stat-card">
                 <p className="text-stat">{formatLongDate(detail.started_at).split(',')[0]}</p>

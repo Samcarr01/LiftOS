@@ -75,7 +75,7 @@ export default function HistoryPage() {
         </div>
 
         {error && (
-          <div className="content-card flex flex-col items-center gap-3 py-6 text-center">
+          <div className="content-card flex flex-col items-center gap-3 py-6 text-center" role="alert" aria-live="assertive">
             <p className="text-sm text-destructive">{error}</p>
             <button onClick={() => void refresh()} className="premium-button-secondary">
               Retry

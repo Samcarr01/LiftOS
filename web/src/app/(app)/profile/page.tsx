@@ -282,7 +282,8 @@ export default function ProfilePage() {
               </div>
               <button
                 onClick={() => setEditingName(true)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-muted-foreground hover:text-foreground"
+                aria-label="Edit display name"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>

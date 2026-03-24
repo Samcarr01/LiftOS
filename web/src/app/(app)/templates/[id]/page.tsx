@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, memo, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   DndContext, closestCenter, PointerSensor, TouchSensor,
@@ -31,7 +31,7 @@ import { cn } from '@/lib/utils';
 
 // ── Sortable exercise row ─────────────────────────────────────────────────────
 
-function SortableExerciseRow({
+const SortableExerciseRow = memo(function SortableExerciseRow({
   item,
   onConfig,
   onRemove,
@@ -43,7 +43,12 @@ function SortableExerciseRow({
   supersetPosition: 'none' | 'first' | 'middle' | 'last';
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
-  const style = { transform: CSS.Transform.toString(transform), transition };
+  const style: React.CSSProperties = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    // Promote to own layer during drag; disable expensive backdrop-blur
+    ...(isDragging ? { willChange: 'transform', backdropFilter: 'none', WebkitBackdropFilter: 'none', zIndex: 50 } : {}),
+  };
   const inSuperset = supersetPosition !== 'none';
 
   return (
@@ -51,8 +56,8 @@ function SortableExerciseRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'elevated-surface flex items-center gap-4 px-4 py-4 transition-all duration-300',
-        isDragging && 'scale-[0.99] opacity-70 shadow-2xl',
+        'elevated-surface flex items-center gap-4 px-4 py-4',
+        isDragging && 'opacity-80 shadow-2xl ring-1 ring-primary/30',
         inSuperset && 'border-l-2 border-l-primary/60',
         supersetPosition === 'first' && 'rounded-b-none border-b-0',
         supersetPosition === 'middle' && 'rounded-none border-b-0',
@@ -69,7 +74,7 @@ function SortableExerciseRow({
       </button>
 
       {/* Exercise info — tap to configure */}
-      <button className="flex flex-1 min-w-0 flex-col items-start gap-0.5" onClick={onConfig}>
+      <button className="flex flex-1 min-w-0 cursor-pointer flex-col items-start gap-0.5 focus-visible:outline-none" onClick={onConfig}>
         <span className="truncate text-card-title">{item.exercise.name}</span>
         <div className="mt-1 flex items-center gap-2">
           <div className="flex gap-1">
@@ -81,15 +86,15 @@ function SortableExerciseRow({
         </div>
       </button>
 
-      <button onClick={onConfig} className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-white/[0.08] hover:text-foreground">
+      <button onClick={onConfig} aria-label="Configure exercise" className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-2xl border border-white/10 text-muted-foreground active:bg-white/[0.08] hover:bg-white/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
         <Settings2 className="h-4 w-4" />
       </button>
-      <button onClick={onRemove} className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
+      <button onClick={onRemove} aria-label="Remove exercise" className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-2xl border border-white/10 text-muted-foreground active:bg-destructive/10 hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
         <Trash2 className="h-4 w-4" />
       </button>
     </div>
   );
-}
+});
 
 // ── Superset link button between exercise rows ────────────────────────────────
 
@@ -103,8 +108,9 @@ function SupersetLinkButton({
   return (
     <button
       onClick={onToggle}
+      aria-label={linked ? 'Unlink superset' : 'Link as superset'}
       className={cn(
-        'mx-auto flex h-7 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-all duration-150',
+        'mx-auto flex h-9 cursor-pointer items-center gap-1.5 rounded-full border px-4 text-xs font-semibold transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
         linked
           ? 'border-primary/40 bg-primary/15 text-primary hover:bg-primary/25'
           : 'border-white/10 bg-white/[0.04] text-muted-foreground hover:border-white/20 hover:bg-white/[0.08] hover:text-foreground',
@@ -258,6 +264,8 @@ export default function TemplateEditorPage() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  const sortableIds = useMemo(() => exercises.map((e) => e.id), [exercises]);
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -368,7 +376,8 @@ export default function TemplateEditorPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-white/[0.08] hover:text-foreground"
+            aria-label="Go back"
+            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-white/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -383,7 +392,7 @@ export default function TemplateEditorPage() {
           <button
             onClick={() => void handleStartWorkout()}
             disabled={isStartingWorkout || exercises.length === 0}
-            className="flex h-9 shrink-0 items-center gap-1.5 rounded-2xl bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+            className="flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-2xl bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isStartingWorkout ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
             Start
@@ -402,7 +411,7 @@ export default function TemplateEditorPage() {
               </div>
             ) : (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={exercises.map((exercise) => exercise.id)} strategy={verticalListSortingStrategy}>
+                <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
                   <div className="space-y-1">
                     {exercises.map((item, index) => {
                       const pos = getSupersetPosition(index);
@@ -428,7 +437,7 @@ export default function TemplateEditorPage() {
                             }}
                             onRemove={() => void handleRemove(item.id)}
                           />
-                          {showLinkButton && pos !== 'first' && pos !== 'middle' && (
+                          {showLinkButton && (
                             <div className="flex justify-center py-1">
                               <SupersetLinkButton
                                 linked={isLinkedWithNext}

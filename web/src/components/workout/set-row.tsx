@@ -97,7 +97,7 @@ export const SetRow = memo(function SetRow({
           onClick={cycleType}
           title={`${SET_TYPE_NAME[set.setType]} — tap to change`}
           className={cn(
-            'flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg border text-xs font-bold leading-tight',
+            'flex h-11 w-11 shrink-0 cursor-pointer flex-col items-center justify-center rounded-xl border text-xs font-bold leading-tight active:opacity-70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
             SET_TYPE_COLOR[set.setType],
           )}
         >
@@ -136,13 +136,13 @@ export const SetRow = memo(function SetRow({
           onClick={onComplete}
           aria-label={set.isCompleted ? 'Mark set incomplete' : 'Complete set'}
           className={cn(
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors duration-150',
+            'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors duration-150',
             set.isCompleted
               ? 'border-[oklch(0.72_0.19_155/0.25)] bg-[oklch(0.72_0.19_155)] text-white'
-              : 'border-white/10 text-muted-foreground hover:border-primary/35 hover:bg-primary/10 hover:text-foreground',
+              : 'border-white/10 text-muted-foreground active:bg-primary/10 hover:border-primary/35 hover:bg-primary/10 hover:text-foreground',
           )}
         >
-          <Check className="h-4 w-4" />
+          <Check className="h-5 w-5" />
         </button>
       </div>
     </div>

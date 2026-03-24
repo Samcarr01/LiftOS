@@ -40,27 +40,31 @@ function DesktopInput({ value, onChange, field, disabled, prefilled, ghostValue 
       <button
         type="button"
         disabled={disabled}
+        aria-label={`Decrease ${field.label}`}
         onClick={() => onChange(Math.max(0, Math.round((numVal - step) * 100) / 100))}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted disabled:opacity-40"
+        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
         −
       </button>
       <input
-        type="number"
+        type="text"
+        inputMode="decimal"
         min={0}
         step={step}
         aria-label={getInputLabel(field)}
         value={value === '' ? '' : value}
         onChange={(e) => {
           const v = e.target.value;
-          onChange(v === '' ? '' : Number(v));
+          if (v === '' || v === '.') { onChange(''); return; }
+          const n = Number(v);
+          if (!isNaN(n)) onChange(n);
         }}
         disabled={disabled}
         placeholder={placeholder}
         className={cn(
-          'h-9 w-20 rounded-lg border border-input bg-card px-2 text-center text-sm font-medium',
+          'h-9 w-20 rounded-lg border border-input bg-card px-2 text-center text-base font-medium',
           'focus:outline-none focus:ring-2 focus:ring-ring',
-          'placeholder:text-[oklch(0.80_0.16_55/0.45)]',
+          'placeholder:text-[oklch(0.80_0.16_55/0.60)]',
           prefilled && value !== '' && 'border-[oklch(0.75_0.18_55/0.25)] bg-[oklch(0.75_0.18_55/0.12)]',
           disabled && 'opacity-50',
         )}
@@ -68,8 +72,9 @@ function DesktopInput({ value, onChange, field, disabled, prefilled, ghostValue 
       <button
         type="button"
         disabled={disabled}
+        aria-label={`Increase ${field.label}`}
         onClick={() => onChange(Math.round((numVal + step) * 100) / 100)}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted disabled:opacity-40"
+        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
         +
       </button>
@@ -122,7 +127,7 @@ function MobileNumpad({
       <div className="flex-1" onClick={onClose} />
 
       {/* Numpad panel */}
-      <div className="rounded-t-2xl border-t border-border bg-white/[0.10] backdrop-blur-2xl px-4 pb-safe-area-inset-bottom pt-4">
+      <div className="rounded-t-2xl border-t border-border bg-white/[0.10] backdrop-blur-2xl px-4 pt-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
         {/* Label + display */}
         <p className="mb-2 text-center text-sm font-medium text-muted-foreground">{displayLabel}</p>
         <div
@@ -198,8 +203,6 @@ function MobileNumpad({
           </button>
         )}
 
-        {/* Safe area spacer */}
-        <div className="h-4" />
       </div>
     </div>,
     document.body,
@@ -222,12 +225,13 @@ export function NumericInput({ value, onChange, field, disabled, prefilled, ghos
   if (!mounted) {
     return (
       <input
-        type="number"
+        type="text"
+        inputMode="decimal"
         aria-label={getInputLabel(field)}
         value={value === '' ? '' : value}
         readOnly
         placeholder="—"
-        className="h-9 w-20 rounded-lg border border-input bg-card px-2 text-center text-sm font-medium"
+        className="h-9 w-20 rounded-lg border border-input bg-card px-2 text-center text-base font-medium"
       />
     );
   }
@@ -265,7 +269,7 @@ export function NumericInput({ value, onChange, field, disabled, prefilled, ghos
       >
         {displayValue === null ? (
           ghostValue !== undefined ? (
-            <span className="text-[oklch(0.80_0.16_55/0.45)]">
+            <span className="text-[oklch(0.80_0.16_55/0.60)]">
               {ghostValue}
               {field.unit && <span className="ml-0.5 text-xs font-normal">{field.unit}</span>}
             </span>

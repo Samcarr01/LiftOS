@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { BarChart3, Loader2, Pencil, Save, Search, Trash2, X } from 'lucide-react';
+import { BarChart3, Loader2, Pencil, Plus, Save, Search, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
+import { ExerciseSelector } from '@/components/exercise-selector';
 import { useExercises } from '@/hooks/use-exercises';
 import {
   describeTrackingSchema,
@@ -17,6 +18,7 @@ export default function ExercisesPage() {
   const {
     exercises,
     isLoading,
+    fetchExercises,
     updateExercise,
     deleteExercise,
   } = useExercises();
@@ -81,10 +83,22 @@ export default function ExercisesPage() {
       <div className="page-content py-5 md:py-7 space-y-5">
         {/* Header */}
         <div className="page-header">
-          <h1 className="page-header-title">Exercise Library</h1>
-          {!isLoading && exercises.length > 0 && (
-            <span className="text-sm text-muted-foreground">{exercises.length} exercises</span>
-          )}
+          <div className="flex items-center gap-2">
+            <h1 className="page-header-title">Exercise Library</h1>
+            {!isLoading && exercises.length > 0 && (
+              <span className="text-sm text-muted-foreground">{exercises.length} exercises</span>
+            )}
+          </div>
+          <ExerciseSelector
+            onSelect={() => void fetchExercises()}
+            defaultMode="create"
+            trigger={
+              <button className="flex h-9 cursor-pointer items-center gap-1.5 rounded-2xl bg-primary px-3 text-xs font-semibold text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+                <Plus className="h-3.5 w-3.5" />
+                New
+              </button>
+            }
+          />
         </div>
 
         {/* Search */}
@@ -145,7 +159,7 @@ export default function ExercisesPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => void saveName(exercise.id)}
-                            className="flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground"
+                            className="flex h-8 cursor-pointer items-center gap-1 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                           >
                             <Save className="h-3.5 w-3.5" />
                             Save
@@ -200,21 +214,24 @@ export default function ExercisesPage() {
                     <div className="flex shrink-0 gap-1.5">
                       <Link
                         href={`/exercises/${exercise.id}`}
-                        className="flex h-9 items-center gap-1 rounded-xl border border-white/10 px-2.5 text-xs text-muted-foreground hover:text-primary"
+                        aria-label="View exercise statistics"
+                        className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 text-muted-foreground active:bg-white/[0.08] hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                       >
-                        <BarChart3 className="h-3.5 w-3.5" />
+                        <BarChart3 className="h-4 w-4" />
                       </Link>
                       <button
                         onClick={() => startEditing(exercise.id, exercise.name)}
-                        className="flex h-9 items-center gap-1 rounded-xl border border-white/10 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                        aria-label="Edit exercise name"
+                        className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 text-muted-foreground active:bg-white/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Pencil className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(exercise.id)}
-                        className="flex h-9 items-center gap-1 rounded-xl border border-white/10 px-2.5 text-xs text-muted-foreground hover:text-destructive"
+                        aria-label="Delete exercise"
+                        className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 text-muted-foreground active:bg-white/[0.08] hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   )}

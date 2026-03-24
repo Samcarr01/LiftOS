@@ -9,15 +9,11 @@
  */
 import { useEffect, useState } from 'react';
 import { WifiOff } from 'lucide-react';
-import { startSyncManager } from '@/lib/offline/sync-manager';
 
 export function OfflineProvider() {
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
-    // Boot the sync manager (idempotent — ignores second call)
-    startSyncManager();
-
     // Track connectivity
     const update = () => setOffline(!navigator.onLine);
     window.addEventListener('online', update);
