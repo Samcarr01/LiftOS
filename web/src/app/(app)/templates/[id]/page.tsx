@@ -13,9 +13,10 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   GripVertical, Trash2, ChevronLeft, Plus, Loader2, Settings2,
-  Play, Link2, Unlink2,
+  Play, Link2, Unlink2, Check,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import {
   ExerciseSelector,
@@ -25,9 +26,26 @@ import { useTemplateExercises, type TemplateExerciseWithDetails } from '@/hooks/
 import { useTemplates } from '@/hooks/use-templates';
 import { useStartWorkout } from '@/hooks/use-start-workout';
 import type { ExerciseWithSchema } from '@/types/app';
+import {
+  TRACKING_PRESETS,
+  TRACKING_PRESET_LABELS,
+  type TrackingPresetKey,
+} from '@/types/tracking';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+
+const ALL_MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Quads', 'Hamstrings', 'Glutes', 'Core', 'Calves', 'Cardio', 'Forearms'];
+const PRESET_KEYS = Object.keys(TRACKING_PRESETS) as TrackingPresetKey[];
+
+function detectPresetKey(exercise: ExerciseWithSchema): TrackingPresetKey | null {
+  const fieldKeys = exercise.tracking_schema.fields.map((f) => f.key).sort().join(',');
+  for (const key of PRESET_KEYS) {
+    const presetKeys = TRACKING_PRESETS[key].fields.map((f) => f.key).sort().join(',');
+    if (fieldKeys === presetKeys) return key;
+  }
+  return null;
+}
 
 // ── Sortable exercise row ─────────────────────────────────────────────────────
 
@@ -133,70 +151,194 @@ function ExerciseConfigSheet({
   item: TemplateExerciseWithDetails | null;
   open: boolean;
   onClose: () => void;
-  onSave: (patch: { default_set_count?: number; notes?: string | null }) => void;
+  onSave: (templatePatch: { default_set_count?: number; notes?: string | null }, exercisePatch: { name?: string; muscle_groups?: string[]; tracking_schema?: { fields: { key: string; label: string; type: 'number' | 'text'; optional: boolean; unit?: string }[] }; notes?: string | null } | null) => void;
 }) {
   const [sets, setSets] = useState(item?.default_set_count ?? 3);
-  const [notes, setNotes] = useState(item?.notes ?? '');
+  const [templateNotes, setTemplateNotes] = useState(item?.notes ?? '');
+  const [name, setName] = useState(item?.exercise.name ?? '');
+  const [muscles, setMuscles] = useState<string[]>(item?.exercise.muscle_groups ?? []);
+  const [preset, setPreset] = useState<TrackingPresetKey>(
+    (item ? detectPresetKey(item.exercise) : null) ?? 'WEIGHT_REPS',
+  );
+  const [exerciseNotes, setExerciseNotes] = useState(item?.exercise.notes ?? '');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (item) { setSets(item.default_set_count); setNotes(item.notes ?? ''); }
+    if (item) {
+      setSets(item.default_set_count);
+      setTemplateNotes(item.notes ?? '');
+      setName(item.exercise.name);
+      setMuscles(item.exercise.muscle_groups);
+      setPreset(detectPresetKey(item.exercise) ?? 'WEIGHT_REPS');
+      setExerciseNotes(item.exercise.notes ?? '');
+    }
   }, [item]);
 
-  function save() {
-    onSave({ default_set_count: sets, notes: notes.trim() || null });
-    onClose();
+  function toggleMuscle(m: string) {
+    setMuscles((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]);
+  }
+
+  async function handleSave() {
+    if (!name.trim()) { toast.error('Name is required'); return; }
+    setSaving(true);
+    try {
+      // Check if exercise-level fields changed
+      const exerciseChanged = item && (
+        name.trim() !== item.exercise.name
+        || JSON.stringify(muscles) !== JSON.stringify(item.exercise.muscle_groups)
+        || preset !== (detectPresetKey(item.exercise) ?? 'WEIGHT_REPS')
+        || (exerciseNotes.trim() || null) !== (item.exercise.notes ?? null)
+      );
+
+      onSave(
+        { default_set_count: sets, notes: templateNotes.trim() || null },
+        exerciseChanged ? {
+          name: name.trim(),
+          muscle_groups: muscles,
+          tracking_schema: TRACKING_PRESETS[preset],
+          notes: exerciseNotes.trim() || null,
+        } : null,
+      );
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
-    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-2xl border-t border-white/[0.06] bg-white/[0.10] backdrop-blur-xl p-0">
-        <SheetHeader className="border-b border-white/[0.06] px-5 pb-4 pt-6">
-          <SheetTitle className="font-display text-left text-lg font-bold">{item?.exercise.name}</SheetTitle>
-          {item && item.exercise.muscle_groups.length > 0 && (
-            <div className="mt-2 flex gap-1">
-              {item.exercise.muscle_groups.map((m) => <MuscleGroupBadge key={m} muscle={m} />)}
-            </div>
-          )}
+    <Sheet open={open} onOpenChange={(v) => !v && !saving && onClose()}>
+      <SheetContent side="bottom" className="flex !h-[100dvh] flex-col p-0">
+        <SheetHeader className="border-b border-border px-4 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))]">
+          <SheetTitle>Edit Exercise</SheetTitle>
         </SheetHeader>
 
-        <div className="flex flex-col gap-5 px-5 py-5">
-          {/* Set count */}
-          <div className="premium-card px-4 py-4">
-            <label className="text-label">Starting Sets</label>
-            <div className="mt-3 flex items-center gap-4">
+        <div className="flex flex-1 flex-col overflow-y-auto px-5 pb-8 pt-4 gap-6">
+          {/* Exercise name */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold">Exercise name</label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="h-12 rounded-xl border-white/10 bg-white/[0.06] px-4 text-base"
+            />
+          </div>
+
+          {/* Muscle groups */}
+          <div className="space-y-2.5">
+            <label className="text-sm font-semibold">
+              Muscle groups
+              {muscles.length > 0 && (
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  {muscles.length} selected
+                </span>
+              )}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {ALL_MUSCLES.map((m) => {
+                const selected = muscles.includes(m);
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => toggleMuscle(m)}
+                    className={cn(
+                      'flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition-all duration-150',
+                      selected
+                        ? 'bg-primary text-primary-foreground shadow-[0_0_12px_-3px_oklch(0.75_0.18_55/0.4)]'
+                        : 'border border-white/[0.08] bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] hover:text-foreground',
+                    )}
+                  >
+                    {selected && <Check className="h-3.5 w-3.5" />}
+                    {m}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Tracking type */}
+          <div className="space-y-2.5">
+            <label className="text-sm font-semibold">What do you track?</label>
+            <div className="grid grid-cols-2 gap-2.5">
+              {PRESET_KEYS.map((key) => {
+                const selected = preset === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setPreset(key)}
+                    className={cn(
+                      'relative flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left text-sm font-medium transition-all duration-150',
+                      selected
+                        ? 'border-primary/40 bg-primary/10 text-primary shadow-[0_0_16px_-4px_oklch(0.75_0.18_55/0.3)]'
+                        : 'border-white/[0.08] bg-white/[0.04] text-foreground hover:border-white/[0.14] hover:bg-white/[0.07]',
+                    )}
+                  >
+                    {selected && (
+                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary">
+                        <Check className="h-3 w-3 text-primary-foreground" />
+                      </div>
+                    )}
+                    <span>{TRACKING_PRESET_LABELS[key]}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Starting sets */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold">Starting sets</label>
+            <div className="flex items-center gap-4">
               <button
                 onClick={() => setSets((v) => Math.max(1, v - 1))}
-                className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 text-xl hover:bg-white/[0.08]"
+                className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 text-xl hover:bg-white/[0.08]"
               >
                 −
               </button>
-              <span className="flex-1 text-center font-display text-3xl font-semibold">{sets}</span>
+              <span className="flex-1 text-center font-display text-2xl font-semibold">{sets}</span>
               <button
                 onClick={() => setSets((v) => Math.min(20, v + 1))}
-                className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 text-xl hover:bg-white/[0.08]"
+                className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 text-xl hover:bg-white/[0.08]"
               >
                 +
               </button>
             </div>
           </div>
 
-          {/* Notes */}
-          <div className="premium-card px-4 py-4">
-            <label className="text-label">Notes</label>
+          {/* Exercise notes */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold">Exercise notes <span className="font-normal text-muted-foreground">(shown during workout)</span></label>
             <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Form cues, target weight…"
-              rows={3}
-              className="mt-3 w-full resize-none rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-primary/50 focus-visible:outline-none"
+              value={exerciseNotes}
+              onChange={(e) => setExerciseNotes(e.target.value)}
+              placeholder="reps = each arm, use slow eccentric…"
+              rows={2}
+              className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus-visible:outline-none"
             />
           </div>
 
+          {/* Template notes */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold">Template notes <span className="font-normal text-muted-foreground">(optional)</span></label>
+            <textarea
+              value={templateNotes}
+              onChange={(e) => setTemplateNotes(e.target.value)}
+              placeholder="Form cues, target weight…"
+              rows={2}
+              className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus-visible:outline-none"
+            />
+          </div>
+
+          {/* Save button */}
           <button
-            onClick={save}
-            className="premium-button w-full justify-center"
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={saving || !name.trim()}
+            className="premium-button mt-auto justify-center disabled:opacity-50"
           >
-            Save
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            Save Changes
           </button>
         </div>
       </SheetContent>
@@ -212,7 +354,7 @@ export default function TemplateEditorPage() {
   const supabase = createClient();
   const { startWorkout } = useStartWorkout();
   const { updateTemplateName } = useTemplates();
-  const { exercises, isLoading, addExercise, removeExercise, updateExercise, reorderExercises } =
+  const { exercises, isLoading, fetchTemplateExercises, addExercise, removeExercise, updateExercise, reorderExercises } =
     useTemplateExercises(id);
 
   // Template name with debounced auto-save
@@ -346,9 +488,27 @@ export default function TemplateEditorPage() {
     return 'none'; // solo member — shouldn't happen but safe
   }
 
-  async function handleConfigSave(patch: Parameters<typeof updateExercise>[1]) {
+  async function handleConfigSave(
+    templatePatch: { default_set_count?: number; notes?: string | null },
+    exercisePatch: { name?: string; muscle_groups?: string[]; tracking_schema?: { fields: { key: string; label: string; type: 'number' | 'text'; optional: boolean; unit?: string }[] }; notes?: string | null } | null,
+  ) {
     if (!configItem) return;
-    try { await updateExercise(configItem.id, patch); } catch { toast.error('Failed to save'); }
+    try {
+      // Update template_exercises row (set count, template notes)
+      await updateExercise(configItem.id, templatePatch);
+
+      // Update exercises row if exercise-level fields changed
+      if (exercisePatch) {
+        const { error: dbErr } = await supabase
+          .from('exercises')
+          .update(exercisePatch)
+          .eq('id', configItem.exercise_id);
+        if (dbErr) throw dbErr;
+
+        // Re-fetch to sync the joined exercise data
+        await fetchTemplateExercises(id);
+      }
+    } catch { toast.error('Failed to save'); }
   }
 
   async function handleStartWorkout() {
