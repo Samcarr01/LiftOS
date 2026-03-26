@@ -87,7 +87,7 @@
     <!-- "LiftOS" curved along top -->
     <g filter="url(#textShadow)">
       <text font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="38"
-            fill="#1a1a2e" letter-spacing="6">
+            fill="#1F1F1F" letter-spacing="6">
         <textPath href="#topArc" startOffset="50%" text-anchor="middle">LiftOS</textPath>
       </text>
     </g>
@@ -95,7 +95,7 @@
     <!-- "LiftOS" curved along bottom (upside down like real plates) -->
     <g filter="url(#textShadow)">
       <text font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="38"
-            fill="#1a1a2e" letter-spacing="6">
+            fill="#1F1F1F" letter-spacing="6">
         <textPath href="#bottomArc" startOffset="50%" text-anchor="middle">LiftOS</textPath>
       </text>
     </g>
@@ -103,17 +103,17 @@
     <!-- "45" left of hub -->
     <g filter="url(#textShadow)">
       <text x="118" y="246" font-family="Arial, Helvetica, sans-serif"
-            font-weight="900" font-size="40" fill="#1a1a2e" text-anchor="middle">45</text>
+            font-weight="900" font-size="40" fill="#1F1F1F" text-anchor="middle">45</text>
       <text x="118" y="274" font-family="Arial, Helvetica, sans-serif"
-            font-weight="800" font-size="26" fill="#1a1a2e" text-anchor="middle">KG</text>
+            font-weight="800" font-size="26" fill="#1F1F1F" text-anchor="middle">KG</text>
     </g>
 
     <!-- "45" right of hub -->
     <g filter="url(#textShadow)">
       <text x="394" y="246" font-family="Arial, Helvetica, sans-serif"
-            font-weight="900" font-size="40" fill="#1a1a2e" text-anchor="middle">45</text>
+            font-weight="900" font-size="40" fill="#1F1F1F" text-anchor="middle">45</text>
       <text x="394" y="274" font-family="Arial, Helvetica, sans-serif"
-            font-weight="800" font-size="26" fill="#1a1a2e" text-anchor="middle">KG</text>
+            font-weight="800" font-size="26" fill="#1F1F1F" text-anchor="middle">KG</text>
     </g>
 
     <!-- ===== STEEL CENTER HUB ===== -->
@@ -130,9 +130,9 @@
     <ellipse cx="248" cy="236" rx="32" ry="18" fill="white" opacity="0.10"/>
 
     <!-- Center hole -->
-    <circle cx="256" cy="252" r="22" fill="#1a1a2c" stroke="#4a4a5e" stroke-width="2.5"/>
-    <circle cx="256" cy="252" r="19" fill="#101020"/>
-    <circle cx="256" cy="254" r="16" fill="#0a0a14"/>
+    <circle cx="256" cy="252" r="22" fill="#1a1a1a" stroke="#4a4a5e" stroke-width="2.5"/>
+    <circle cx="256" cy="252" r="19" fill="#141414"/>
+    <circle cx="256" cy="254" r="16" fill="#111111"/>
 
   </g>
 </svg>
