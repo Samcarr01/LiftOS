@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#181828"/>
+      <stop offset="100%" stop-color="#0a0a14"/>
+    </linearGradient>
+
+    <linearGradient id="plateOrange" x1="0.2" y1="0.1" x2="0.8" y2="0.9">
+      <stop offset="0%" stop-color="#f5a028"/>
+      <stop offset="40%" stop-color="#e08015"/>
+      <stop offset="100%" stop-color="#b05810"/>
+    </linearGradient>
+
+    <!-- Slightly darker inner face -->
+    <linearGradient id="plateInner" x1="0.2" y1="0.1" x2="0.8" y2="0.9">
+      <stop offset="0%" stop-color="#e89520"/>
+      <stop offset="40%" stop-color="#d47812"/>
+      <stop offset="100%" stop-color="#a8500e"/>
+    </linearGradient>
+
+    <linearGradient id="steel" x1="0.25" y1="0.15" x2="0.75" y2="0.85">
+      <stop offset="0%" stop-color="#d0d0e0"/>
+      <stop offset="30%" stop-color="#a8a8bc"/>
+      <stop offset="70%" stop-color="#8a8a9c"/>
+      <stop offset="100%" stop-color="#6e6e80"/>
+    </linearGradient>
+
+    <linearGradient id="steelRim" x1="0.3" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="#e0e0ee"/>
+      <stop offset="100%" stop-color="#7a7a8e"/>
+    </linearGradient>
+
+    <filter id="plateShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+
+    <!-- Subtle highlight above dark text for embossed look -->
+    <filter id="textShadow" x="-5%" y="-10%" width="110%" height="120%">
+      <feOffset in="SourceAlpha" dx="0" dy="-1" result="hlOffset"/>
+      <feGaussianBlur in="hlOffset" stdDeviation="0.8" result="hlBlur"/>
+      <feFlood flood-color="#ffffff" flood-opacity="0.2" result="hlColor"/>
+      <feComposite in="hlColor" in2="hlBlur" operator="in" result="highlight"/>
+      <feOffset in="SourceAlpha" dx="0.5" dy="1" result="shOffset"/>
+      <feGaussianBlur in="shOffset" stdDeviation="0.5" result="shBlur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.15" result="shColor"/>
+      <feComposite in="shColor" in2="shBlur" operator="in" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="highlight"/>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Curved text path for "LiftOS" along top -->
+    <path id="topArc" d="M 116,252 A 140,140 0 0,1 396,252" fill="none"/>
+    <!-- Curved text path for "LiftOS" along bottom (reversed) -->
+    <path id="bottomArc" d="M 396,252 A 140,140 0 0,1 116,252" fill="none"/>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#bg)"/>
+
+  <g filter="url(#plateShadow)">
+
+    <!-- ===== OUTER PLATE EDGE (lip) ===== -->
+    <circle cx="256" cy="252" r="204" fill="#8a4e0e"/>
+    <circle cx="256" cy="252" r="202" fill="url(#plateOrange)"/>
+    <circle cx="256" cy="252" r="200" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+    <!-- Outer ridge/lip -->
+    <circle cx="256" cy="252" r="192" fill="none" stroke="rgba(0,0,0,0.15)" stroke-width="3"/>
+    <circle cx="256" cy="252" r="194" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+    <!-- Inner plate face (slightly recessed, darker) -->
+    <circle cx="256" cy="252" r="188" fill="url(#plateInner)"/>
+    <circle cx="256" cy="252" r="188" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="1"/>
+
+    <!-- Inner ridge ring -->
+    <circle cx="256" cy="252" r="120" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="3"/>
+    <circle cx="256" cy="252" r="122" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+    <!-- Highlight sweep for 3D look -->
+    <ellipse cx="220" cy="178" rx="110" ry="70" fill="white" opacity="0.06"/>
+
+    <!-- ===== WHITE TEXT — SOLID, BOLD, LIKE A REAL PLATE ===== -->
+
+    <!-- "LiftOS" curved along top -->
+    <g filter="url(#textShadow)">
+      <text font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="38"
+            fill="#1a1a2e" letter-spacing="6">
+        <textPath href="#topArc" startOffset="50%" text-anchor="middle">LiftOS</textPath>
+      </text>
+    </g>
+
+    <!-- "LiftOS" curved along bottom (upside down like real plates) -->
+    <g filter="url(#textShadow)">
+      <text font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="38"
+            fill="#1a1a2e" letter-spacing="6">
+        <textPath href="#bottomArc" startOffset="50%" text-anchor="middle">LiftOS</textPath>
+      </text>
+    </g>
+
+    <!-- "45" left of hub -->
+    <g filter="url(#textShadow)">
+      <text x="118" y="246" font-family="Arial, Helvetica, sans-serif"
+            font-weight="900" font-size="40" fill="#1a1a2e" text-anchor="middle">45</text>
+      <text x="118" y="274" font-family="Arial, Helvetica, sans-serif"
+            font-weight="800" font-size="26" fill="#1a1a2e" text-anchor="middle">KG</text>
+    </g>
+
+    <!-- "45" right of hub -->
+    <g filter="url(#textShadow)">
+      <text x="394" y="246" font-family="Arial, Helvetica, sans-serif"
+            font-weight="900" font-size="40" fill="#1a1a2e" text-anchor="middle">45</text>
+      <text x="394" y="274" font-family="Arial, Helvetica, sans-serif"
+            font-weight="800" font-size="26" fill="#1a1a2e" text-anchor="middle">KG</text>
+    </g>
+
+    <!-- ===== STEEL CENTER HUB ===== -->
+    <!-- Raised hub lip -->
+    <circle cx="256" cy="252" r="80" fill="url(#plateInner)" stroke="rgba(0,0,0,0.15)" stroke-width="2"/>
+    <circle cx="256" cy="252" r="72" fill="url(#steelRim)" stroke="#5a5a6e" stroke-width="2"/>
+    <circle cx="256" cy="252" r="68" fill="url(#steel)"/>
+
+    <!-- Machined grooves -->
+    <circle cx="256" cy="252" r="58" fill="none" stroke="rgba(0,0,0,0.10)" stroke-width="1.5"/>
+    <circle cx="256" cy="252" r="48" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="1"/>
+
+    <!-- Steel highlight -->
+    <ellipse cx="248" cy="236" rx="32" ry="18" fill="white" opacity="0.10"/>
+
+    <!-- Center hole -->
+    <circle cx="256" cy="252" r="22" fill="#1a1a2c" stroke="#4a4a5e" stroke-width="2.5"/>
+    <circle cx="256" cy="252" r="19" fill="#101020"/>
+    <circle cx="256" cy="254" r="16" fill="#0a0a14"/>
+
+  </g>
+</svg>
