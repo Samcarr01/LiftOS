@@ -1,55 +1,66 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Award,
   ChevronLeft,
   ChevronRight,
+  Dumbbell,
+  Flame,
   Loader2,
   RefreshCw,
   Sparkles,
-  TrendingUp,
+  Target,
   Trophy,
+  TrendingUp,
+  Zap,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SessionFrequency } from '@/components/progress/session-frequency';
 import { useWeeklySummaries } from '@/hooks/use-weekly-summaries';
+import type { WeeklySummaryData } from '@/types/app';
 
-function StatCard({ label, value }: { label: string; value: string }) {
+const WeeklyVolumeTrend = dynamic(
+  () => import('@/components/progress/weekly-volume-trend').then((m) => m.WeeklyVolumeTrend),
+  { ssr: false, loading: () => <Skeleton className="h-[160px] w-full rounded-2xl" /> },
+);
+const MuscleSplitChart = dynamic(
+  () => import('@/components/progress/muscle-split-chart').then((m) => m.MuscleSplitChart),
+  { ssr: false, loading: () => <Skeleton className="h-[200px] w-full rounded-2xl" /> },
+);
+
+function StatCard({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
     <div className="stat-card">
+      {icon && <div className="mb-1">{icon}</div>}
       <p className="text-stat">{value}</p>
       <p className="text-caption">{label}</p>
     </div>
   );
 }
 
-function MuscleVolumeBar({
-  muscle,
-  volume,
-  maxVolume,
+function InsightSection({
+  icon,
+  title,
+  color,
+  children,
 }: {
-  muscle: string;
-  volume: number;
-  maxVolume: number;
+  icon: React.ReactNode;
+  title: string;
+  color: string;
+  children: React.ReactNode;
 }) {
-  const pct = maxVolume > 0 ? (volume / maxVolume) * 100 : 0;
   return (
-    <div className="flex items-center gap-3">
-      <span className="w-24 shrink-0 truncate text-sm font-medium text-muted-foreground capitalize">
-        {muscle}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="h-3 w-full overflow-hidden rounded-full bg-white/[0.06]">
-          <div
-            className="h-full rounded-full bg-primary transition-all duration-300"
-            style={{ width: `${Math.max(pct, 2)}%` }}
-          />
+    <div className={`rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4`}>
+      <div className="flex items-center gap-2 mb-2.5">
+        <div className={`flex h-7 w-7 items-center justify-center rounded-lg`} style={{ background: `${color}20` }}>
+          {icon}
         </div>
+        <h4 className="text-sm font-semibold">{title}</h4>
       </div>
-      <span className="w-16 shrink-0 text-right text-sm font-semibold">
-        {Math.round(volume)}kg
-      </span>
+      {children}
     </div>
   );
 }
@@ -68,14 +79,14 @@ export default function WeeklySummaryPage() {
     goToNextWeek,
   } = useWeeklySummaries();
 
-  const muscleEntries = summary?.muscle_volume
-    ? Object.entries(summary.muscle_volume).sort((a, b) => b[1] - a[1])
-    : [];
-  const maxMuscleVolume = muscleEntries[0]?.[1] ?? 0;
+  const ai = summary?.ai_analysis;
+  const hasChartData = (summary?.volume_by_week?.length ?? 0) > 0;
+  const hasMuscleSplit = (summary?.muscle_split?.length ?? 0) > 0;
+  const prsCount = summary?.prs_this_week?.length ?? 0;
 
   return (
     <div className="page-shell">
-      <div className="page-content space-y-5 py-5 md:py-7">
+      <div className="page-content space-y-4 py-5 md:py-7">
         {/* Header */}
         <div className="flex items-center gap-3">
           <button
@@ -112,20 +123,43 @@ export default function WeeklySummaryPage() {
 
         {loading ? (
           <div className="space-y-3">
-            <div className="grid grid-cols-3 gap-2">
+            <Skeleton className="h-20 rounded-2xl" />
+            <div className="grid grid-cols-2 gap-2">
+              <Skeleton className="h-20 rounded-2xl" />
               <Skeleton className="h-20 rounded-2xl" />
               <Skeleton className="h-20 rounded-2xl" />
               <Skeleton className="h-20 rounded-2xl" />
             </div>
-            <Skeleton className="h-24 rounded-2xl" />
+            <Skeleton className="h-40 rounded-2xl" />
           </div>
         ) : summary ? (
           <>
-            {/* Stat cards */}
-            <div className="grid grid-cols-3 gap-2">
+            {/* AI Headline */}
+            {ai?.headline && (
+              <div className="content-card border-primary/20 bg-primary/[0.06]">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/20">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                  </div>
+                  <p className="text-sm font-medium leading-relaxed pt-1.5">
+                    {ai.headline}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Stat cards — 2×2 grid */}
+            <div className="grid grid-cols-2 gap-2">
               <StatCard label="Workouts" value={String(summary.workouts_completed)} />
-              <StatCard label="Sets" value={String(summary.total_sets)} />
-              <StatCard label="Volume" value={`${Math.round(summary.total_volume_kg)}kg`} />
+              <StatCard label="Working Sets" value={String(summary.total_sets)} />
+              <StatCard
+                label="Volume"
+                value={summary.total_volume_kg >= 1000
+                  ? `${(summary.total_volume_kg / 1000).toFixed(1)}t`
+                  : `${Math.round(summary.total_volume_kg)}kg`
+                }
+              />
+              <StatCard label="PRs" value={String(prsCount)} />
             </div>
 
             {/* Strongest lift */}
@@ -146,52 +180,193 @@ export default function WeeklySummaryPage() {
               </div>
             )}
 
-            {/* Most improved */}
-            {summary.most_improved_group && (
-              <div className="flex items-center gap-3 rounded-2xl border border-[oklch(0.72_0.19_155/0.20)] bg-[oklch(0.72_0.19_155/0.08)] px-4 py-3">
-                <TrendingUp className="h-4 w-4 shrink-0 text-[oklch(0.78_0.17_155)]" />
-                <div>
-                  <p className="text-caption">Most improved</p>
-                  <p className="text-sm font-semibold capitalize">{summary.most_improved_group}</p>
-                </div>
+            {/* Volume Trend chart */}
+            {hasChartData && (
+              <div className="content-card">
+                <h3 className="font-display text-sm font-bold mb-3">Volume Trend</h3>
+                <WeeklyVolumeTrend data={summary.volume_by_week!} />
               </div>
             )}
 
-            {/* Muscle volume breakdown */}
-            {muscleEntries.length > 0 && (
+            {/* Training Days */}
+            {summary.session_days && summary.session_days.length > 0 && (
               <div className="content-card">
-                <h3 className="font-display text-base font-bold">Muscle Volume</h3>
-                <div className="mt-3 space-y-2.5">
-                  {muscleEntries.map(([muscle, volume]) => (
-                    <MuscleVolumeBar
-                      key={muscle}
-                      muscle={muscle}
-                      volume={volume}
-                      maxVolume={maxMuscleVolume}
-                    />
+                <h3 className="font-display text-sm font-bold mb-3">Training Days</h3>
+                <SessionFrequency activeDays={summary.session_days} />
+              </div>
+            )}
+
+            {/* Muscle Split chart */}
+            {hasMuscleSplit && (
+              <div className="content-card">
+                <h3 className="font-display text-sm font-bold mb-3">Muscle Volume Split</h3>
+                <MuscleSplitChart data={summary.muscle_split!} />
+              </div>
+            )}
+
+            {/* Exercise Highlights */}
+            {summary.exercise_highlights && summary.exercise_highlights.length > 0 && (
+              <div className="content-card">
+                <h3 className="font-display text-sm font-bold mb-3">Exercise Breakdown</h3>
+                <div className="space-y-2">
+                  {summary.exercise_highlights.map((ex) => (
+                    <div
+                      key={ex.name}
+                      className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5"
+                    >
+                      <Dumbbell className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{ex.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {ex.sets} sets · {Math.round(ex.volume)}kg · Best: {ex.best_set}
+                        </p>
+                      </div>
+                      {ex.delta_pct !== null && (
+                        <span className={`shrink-0 text-xs font-semibold ${
+                          ex.delta_pct > 0 ? 'text-[oklch(0.72_0.19_155)]' :
+                          ex.delta_pct < 0 ? 'text-destructive' :
+                          'text-muted-foreground'
+                        }`}>
+                          {ex.delta_pct > 0 ? '+' : ''}{ex.delta_pct}%
+                        </span>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* AI insight */}
-            <div className="content-card">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 shrink-0 text-primary" />
-                <h3 className="font-display text-base font-bold">AI Insight</h3>
+            {/* PRs this week */}
+            {prsCount > 0 && (
+              <div className="content-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <Award className="h-4 w-4 text-[oklch(0.85_0.15_85)]" />
+                  <h3 className="font-display text-sm font-bold">Personal Records</h3>
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  {summary.prs_this_week!.map((pr, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 rounded-xl border border-[oklch(0.80_0.16_85/0.25)] bg-[oklch(0.80_0.16_85/0.08)] px-3 py-2.5"
+                    >
+                      <Trophy className="h-3.5 w-3.5 shrink-0 text-[oklch(0.85_0.15_85)]" />
+                      <span className="text-sm font-medium">{pr.exercise}</span>
+                      <span className="ml-auto text-xs font-semibold text-[oklch(0.85_0.15_85)]">
+                        {pr.record_type.replace('best_', '').replace(/_/g, ' ')} — {pr.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {summary.insight ?? 'Keep logging for a clearer weekly picture.'}
-              </p>
-              <button
-                onClick={() => void generate()}
-                disabled={generating}
-                className="mt-3 flex h-8 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-semibold text-muted-foreground disabled:opacity-60 hover:text-foreground"
-              >
-                {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                Refresh insight
-              </button>
-            </div>
+            )}
+
+            {/* AI Insights — structured sections */}
+            {ai && (
+              <div className="space-y-3">
+                {/* Wins */}
+                {ai.wins.length > 0 && (
+                  <InsightSection
+                    icon={<Flame className="h-3.5 w-3.5" style={{ color: 'oklch(0.75 0.18 55)' }} />}
+                    title="Wins"
+                    color="oklch(0.75 0.18 55)"
+                  >
+                    <ul className="space-y-1.5">
+                      {ai.wins.map((win, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                          {win}
+                        </li>
+                      ))}
+                    </ul>
+                  </InsightSection>
+                )}
+
+                {/* Focus Areas */}
+                {ai.focus_areas.length > 0 && (
+                  <InsightSection
+                    icon={<Target className="h-3.5 w-3.5" style={{ color: 'oklch(0.72 0.19 155)' }} />}
+                    title="Focus Areas"
+                    color="oklch(0.72 0.19 155)"
+                  >
+                    <ul className="space-y-1.5">
+                      {ai.focus_areas.map((area, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[oklch(0.72_0.19_155)]" />
+                          {area}
+                        </li>
+                      ))}
+                    </ul>
+                  </InsightSection>
+                )}
+
+                {/* Exercise Callouts */}
+                {ai.exercise_callouts.length > 0 && (
+                  <InsightSection
+                    icon={<Dumbbell className="h-3.5 w-3.5" style={{ color: 'oklch(0.72 0.15 250)' }} />}
+                    title="Exercise Notes"
+                    color="oklch(0.72 0.15 250)"
+                  >
+                    <div className="space-y-2">
+                      {ai.exercise_callouts.map((callout, i) => (
+                        <div key={i} className="text-sm">
+                          <span className="font-medium text-foreground">{callout.name}</span>
+                          <span className="text-muted-foreground"> — {callout.note}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </InsightSection>
+                )}
+
+                {/* Next Week Tip */}
+                {ai.next_week_tip && (
+                  <InsightSection
+                    icon={<Zap className="h-3.5 w-3.5" style={{ color: 'oklch(0.80 0.16 85)' }} />}
+                    title="Next Week"
+                    color="oklch(0.80 0.16 85)"
+                  >
+                    <p className="text-sm text-muted-foreground">{ai.next_week_tip}</p>
+                  </InsightSection>
+                )}
+
+                {/* Training Consistency */}
+                {ai.training_consistency && (
+                  <InsightSection
+                    icon={<TrendingUp className="h-3.5 w-3.5" style={{ color: 'oklch(0.72 0.19 155)' }} />}
+                    title="Consistency"
+                    color="oklch(0.72 0.19 155)"
+                  >
+                    <p className="text-sm text-muted-foreground">{ai.training_consistency}</p>
+                  </InsightSection>
+                )}
+              </div>
+            )}
+
+            {/* Fallback: show old insight if no ai_analysis */}
+            {!ai && summary.insight && (
+              <div className="content-card">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+                  <h3 className="font-display text-sm font-bold">AI Insight</h3>
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {summary.insight}
+                </p>
+              </div>
+            )}
+
+            {/* Generate / Refresh button */}
+            <button
+              onClick={() => void generate()}
+              disabled={generating}
+              className="premium-button w-full justify-center disabled:opacity-60"
+            >
+              {generating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              {generating ? 'Generating...' : 'Regenerate Summary'}
+            </button>
           </>
         ) : (
           /* Empty state */
@@ -202,7 +377,7 @@ export default function WeeklySummaryPage() {
             <div>
               <p className="font-display text-base font-semibold">No summary yet</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Generate a recap for this week&apos;s training.
+                Generate an AI-powered recap of this week&apos;s training.
               </p>
             </div>
             <button
@@ -215,6 +390,8 @@ export default function WeeklySummaryPage() {
             </button>
           </div>
         )}
+
+        <div className="pb-4" />
       </div>
     </div>
   );

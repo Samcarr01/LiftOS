@@ -138,6 +138,43 @@ export const LastPerformanceSetsDataSchema = z.array(LastPerformanceSetSchema);
 
 // ── Weekly summary data ───────────────────────────────────────────────────────
 
+const AIAnalysisSchema = z.object({
+  headline:              z.string().max(200),
+  wins:                  z.array(z.string().max(200)).max(5),
+  focus_areas:           z.array(z.string().max(200)).max(3),
+  exercise_callouts:     z.array(z.object({
+    name:  z.string(),
+    note:  z.string().max(200),
+  })).max(5),
+  next_week_tip:         z.string().max(300),
+  training_consistency:  z.string().max(200),
+});
+
+const VolumeWeekSchema = z.object({
+  week:   z.string(),
+  volume: z.number(),
+});
+
+const MuscleSplitEntrySchema = z.object({
+  muscle:     z.string(),
+  volume:     z.number(),
+  percentage: z.number(),
+});
+
+const PREntrySchema = z.object({
+  exercise:    z.string(),
+  record_type: z.string(),
+  value:       z.number(),
+});
+
+const ExerciseHighlightSchema = z.object({
+  name:       z.string(),
+  volume:     z.number(),
+  sets:       z.number(),
+  best_set:   z.string(),
+  delta_pct:  z.number().nullable(),
+});
+
 export const WeeklySummaryDataSchema = z.object({
   workouts_completed:    z.number().int().min(0),
   total_volume_kg:       z.number().min(0),
@@ -145,7 +182,15 @@ export const WeeklySummaryDataSchema = z.object({
   strongest_lift:        z.object({ exercise: z.string(), value: z.string() }).nullable(),
   most_improved_group:   z.string().nullable(),
   muscle_volume:         z.record(z.string(), z.number()).optional(),
-  insight:               z.string().max(500).nullable(),
+  // Legacy field — kept for backward compat with old summaries
+  insight:               z.string().max(500).nullable().optional(),
+  // New enriched fields
+  volume_by_week:        z.array(VolumeWeekSchema).optional(),
+  muscle_split:          z.array(MuscleSplitEntrySchema).optional(),
+  session_days:          z.array(z.string()).optional(),
+  prs_this_week:         z.array(PREntrySchema).optional(),
+  ai_analysis:           AIAnalysisSchema.nullable().optional(),
+  exercise_highlights:   z.array(ExerciseHighlightSchema).optional(),
 });
 
 // ── Offline sync queue ────────────────────────────────────────────────────────
