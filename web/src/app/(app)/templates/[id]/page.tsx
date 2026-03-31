@@ -151,10 +151,9 @@ function ExerciseConfigSheet({
   item: TemplateExerciseWithDetails | null;
   open: boolean;
   onClose: () => void;
-  onSave: (templatePatch: { default_set_count?: number; notes?: string | null }, exercisePatch: { name?: string; muscle_groups?: string[]; tracking_schema?: { fields: { key: string; label: string; type: 'number' | 'text'; optional: boolean; unit?: string }[] }; notes?: string | null } | null) => void;
+  onSave: (templatePatch: { default_set_count?: number }, exercisePatch: { name?: string; muscle_groups?: string[]; tracking_schema?: { fields: { key: string; label: string; type: 'number' | 'text'; optional: boolean; unit?: string }[] }; notes?: string | null } | null) => void;
 }) {
   const [sets, setSets] = useState(item?.default_set_count ?? 3);
-  const [templateNotes, setTemplateNotes] = useState(item?.notes ?? '');
   const [name, setName] = useState(item?.exercise.name ?? '');
   const [muscles, setMuscles] = useState<string[]>(item?.exercise.muscle_groups ?? []);
   const [preset, setPreset] = useState<TrackingPresetKey>(
@@ -166,7 +165,6 @@ function ExerciseConfigSheet({
   useEffect(() => {
     if (item) {
       setSets(item.default_set_count);
-      setTemplateNotes(item.notes ?? '');
       setName(item.exercise.name);
       setMuscles(item.exercise.muscle_groups);
       setPreset(detectPresetKey(item.exercise) ?? 'WEIGHT_REPS');
@@ -191,7 +189,7 @@ function ExerciseConfigSheet({
       );
 
       onSave(
-        { default_set_count: sets, notes: templateNotes.trim() || null },
+        { default_set_count: sets },
         exerciseChanged ? {
           name: name.trim(),
           muscle_groups: muscles,
@@ -313,18 +311,6 @@ function ExerciseConfigSheet({
               value={exerciseNotes}
               onChange={(e) => setExerciseNotes(e.target.value)}
               placeholder="reps = each arm, use slow eccentric…"
-              rows={2}
-              className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus-visible:outline-none"
-            />
-          </div>
-
-          {/* Template notes */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold">Template notes <span className="font-normal text-muted-foreground">(optional)</span></label>
-            <textarea
-              value={templateNotes}
-              onChange={(e) => setTemplateNotes(e.target.value)}
-              placeholder="Form cues, target weight…"
               rows={2}
               className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus-visible:outline-none"
             />

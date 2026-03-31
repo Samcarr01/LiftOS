@@ -243,8 +243,8 @@ export default function HelpPage() {
         >
           <div className="space-y-2">
             <FAQ
-              q="Can I edit a workout mid-session?"
-              a="Yes — tap + to add exercises during a workout. You can also skip exercises by leaving them uncompleted."
+              q="Can I skip exercises during a workout?"
+              a="Yes — just leave any exercises you want to skip uncompleted. Only confirmed sets are saved to your history."
             />
             <FAQ
               q="What if I train offline?"

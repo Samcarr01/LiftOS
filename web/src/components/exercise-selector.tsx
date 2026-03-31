@@ -357,13 +357,13 @@ export function ExerciseSelector({
               description={`Starts with ${defaultSetCount} set${defaultSetCount !== 1 ? 's' : ''} when added to a workout.`}
             />
 
-            {/* Notes */}
+            {/* Exercise notes */}
             <div className="space-y-2">
-              <label className="text-sm font-semibold">Notes <span className="font-normal text-muted-foreground">(optional)</span></label>
+              <label className="text-sm font-semibold">Exercise notes <span className="font-normal text-muted-foreground">(shown during workout)</span></label>
               <textarea
                 value={newNotes}
                 onChange={(e) => setNewNotes(e.target.value)}
-                placeholder="Form cues, equipment notes…"
+                placeholder="reps = each arm, use slow eccentric…"
                 rows={2}
                 className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus-visible:outline-none"
               />
