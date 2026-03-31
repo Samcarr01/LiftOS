@@ -20,6 +20,8 @@ import { useTemplates, type TemplateWithCount } from '@/hooks/use-templates';
 import { useStartWorkout } from '@/hooks/use-start-workout';
 import { useHomeData } from '@/hooks/use-home-data';
 import { formatShortDate, formatDistanceToNow } from '@/lib/format-date';
+import { useTutorialStore } from '@/store/tutorial-store';
+import GettingStartedTutorial from '@/components/tutorial/getting-started-tutorial';
 
 /* ── Helpers ────────────────────────────────────────────────── */
 
@@ -151,6 +153,17 @@ export default function HomePage() {
   const { data, loading, refresh } = useHomeData();
   const { startWorkout } = useStartWorkout();
   const router = useRouter();
+  const { hasSeenTutorial, markTutorialSeen } = useTutorialStore();
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  // Show tutorial when arriving from onboarding
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tutorial') === '1' && !hasSeenTutorial) {
+      setShowTutorial(true);
+      window.history.replaceState({}, '', '/');
+    }
+  }, [hasSeenTutorial]);
 
   // Refetch when returning from workout or regaining focus
   useEffect(() => {
@@ -175,6 +188,15 @@ export default function HomePage() {
   const thisWeekCount = data ? getThisWeekCount(data.recentSessions) : 0;
 
   return (
+    <>
+    {showTutorial && (
+      <GettingStartedTutorial
+        onComplete={() => {
+          markTutorialSeen();
+          setShowTutorial(false);
+        }}
+      />
+    )}
     <div className="page-shell">
       <div className="page-content space-y-6 py-6 md:py-8">
 
@@ -399,5 +421,6 @@ export default function HomePage() {
         onCreateWorkout={() => router.push('/templates?create=1')}
       />
     </div>
+    </>
   );
 }

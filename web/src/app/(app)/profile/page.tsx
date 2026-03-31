@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
   Check,
   ChevronRight,
   Download,
   Loader2,
+  HelpCircle,
   LogOut,
   Pencil,
   Scale,
@@ -166,6 +168,7 @@ function SettingRow({
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);
   const { unit, setUnit } = useUnitStore();
@@ -562,6 +565,17 @@ export default function ProfilePage() {
             />
           </section>
         )}
+
+        {/* Support */}
+        <section>
+          <h2 className="section-title mb-2">Support</h2>
+          <SettingRow
+            icon={<HelpCircle className="h-4 w-4" />}
+            label="Help & Getting Started"
+            description="Tutorials, guides, and FAQ"
+            onClick={() => router.push('/help')}
+          />
+        </section>
 
         {/* Account */}
         <section>

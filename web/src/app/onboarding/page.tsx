@@ -153,7 +153,7 @@ export default function OnboardingPage() {
       if (error) throw error;
 
       setUnit(unitPreference);
-      router.replace('/');
+      router.replace('/?tutorial=1');
     } catch {
       toast.error('Failed to save preferences');
       setSaving(false);
