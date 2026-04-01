@@ -239,12 +239,11 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
       if (target.distance !== undefined) targetValues['distance'] = target.distance;
       if (target.height !== undefined) targetValues['height'] = target.height;
 
-      // Fill only the first uncompleted set
-      let filled = false;
+      // Fill all uncompleted working/top sets with the target values
+      const PROGRESSION_TYPES = new Set(['working', 'top']);
       const exercises = [...s.workout.exercises];
       const sets = ex.sets.map((st) => {
-        if (!st.isCompleted && !filled) {
-          filled = true;
+        if (!st.isCompleted && PROGRESSION_TYPES.has(st.setType)) {
           return { ...st, values: { ...st.values, ...targetValues } };
         }
         return st;

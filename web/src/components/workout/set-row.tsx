@@ -49,10 +49,27 @@ interface SetRowProps {
   setNumber: number;
   lastValues: SetValues | null;
   fields: TrackingField[];
+  aiTarget?: Record<string, number | string | undefined> | null;
   onUpdate: (patch: { values?: SetValues; setType?: SetEntry['setType'] }) => void;
   onComplete: () => void;
   onDelete: () => void;
   borderless?: boolean;
+}
+
+const PROGRESSION_SET_TYPES = new Set(['working', 'top']);
+
+function formatTarget(target: Record<string, number | string | undefined>, fields: TrackingField[]): string {
+  const parts = fields.map((field) => {
+    const value = target[field.key];
+    if (value === undefined || value === '' || value === null) return null;
+    if (field.unit === 'kg' || field.unit === 'lb') return `${value}${field.unit}`;
+    if (field.unit === 'seconds') return `${value}s`;
+    if (field.unit === 'metres') return `${value}m`;
+    if (field.unit) return `${value} ${field.unit}`;
+    return String(value);
+  }).filter(Boolean);
+
+  return parts.join(' × ') || '';
 }
 
 export const SetRow = memo(function SetRow({
@@ -60,6 +77,7 @@ export const SetRow = memo(function SetRow({
   setNumber,
   lastValues,
   fields,
+  aiTarget,
   onUpdate,
   onComplete,
   borderless,
@@ -106,6 +124,11 @@ export const SetRow = memo(function SetRow({
         <div className="min-w-[60px] shrink-0">
           <p className="text-sm text-muted-foreground">Last</p>
           <p className="text-sm font-medium text-foreground">{lastValues ? formatLast(lastValues, fields) : '—'}</p>
+          {aiTarget && !set.isCompleted && PROGRESSION_SET_TYPES.has(set.setType) && (
+            <p className="text-[11px] font-medium text-primary/70 truncate">
+              {formatTarget(aiTarget, fields)}
+            </p>
+          )}
         </div>
 
         <div className="flex min-w-0 flex-1 gap-1.5">

@@ -117,6 +117,11 @@ function roundQuarter(value: number): number {
   return Math.round(value * 4) / 4;
 }
 
+/** Round UP to nearest 0.25 — used for progression so weight never rounds back down. */
+function roundQuarterUp(value: number): number {
+  return Math.ceil(value * 4) / 4;
+}
+
 function applyBounds(
   suggestion: AISuggestion,
   baseline: ProgressBaseline,
@@ -182,7 +187,7 @@ function getWorkingSets(session: SessionData): SetData[] {
 }
 
 function incrementByPercent(value: number, percent: number, minimum: number): number {
-  return roundQuarter(value + Math.max(value * percent, minimum));
+  return roundQuarterUp(value + Math.max(value * percent, minimum));
 }
 
 function roundToStep(value: number, step: number): number {

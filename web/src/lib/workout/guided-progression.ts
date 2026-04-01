@@ -90,6 +90,12 @@ function roundLoad(value: number, unitPreference: UnitPreference): number {
   return roundToStep(value, step);
 }
 
+/** Round UP to the next plate increment — used for progression so weight never rounds back down. */
+function roundLoadUp(value: number, unitPreference: UnitPreference): number {
+  const step = unitPreference === 'lb' ? 5 : 2.5;
+  return Math.ceil(value / step) * step;
+}
+
 function roundDistance(value: number): number {
   return roundToStep(value, 50);
 }
@@ -604,48 +610,55 @@ function buildDoubleProgressionSuggestion(params: {
   const reps = latestAnalysis.reps;
 
   // Check if all sets hit the rep range ceiling
+  const currentLoad = (baselineValues as Record<string, number | undefined>)[weightKey] ?? 0;
+
   if (latestAnalysis.allSetsAtCeiling && repRange.max > 0) {
-    // PROGRESS: increase load, reset reps to range floor
-    const currentLoad = (baselineValues as Record<string, number | undefined>)[weightKey] ?? 0;
+    // PROGRESS: increase load, reset reps to midpoint of range (not floor — less jarring)
     const newLoad = params.loadKey
       ? currentLoad + step  // height: simple addition, no rounding to plate increments
-      : roundLoad(currentLoad + step, unitPreference);
-    const targetValues: SuggestionValues = {
-      ...baselineValues,
-      [weightKey]: newLoad,
-      reps: repRange.min,
-    };
-    const targetDisplay = formatSetValues(targetValues as SetValues, schema);
+      : roundLoadUp(currentLoad + step, unitPreference);
 
-    const reason = `You hit ${currentLoad}${displayUnit} x ${repRange.max} on all ${numSets} sets — go to ${newLoad}${displayUnit} x ${repRange.min}`;
+    // Regression guard: if rounding still lands on same weight, fall through to hold
+    if (newLoad > currentLoad) {
+      const resetReps = Math.ceil((repRange.min + repRange.max) / 2);
+      const targetValues: SuggestionValues = {
+        ...baselineValues,
+        [weightKey]: newLoad,
+        reps: resetReps,
+      };
+      const targetDisplay = formatSetValues(targetValues as SetValues, schema);
 
-    return buildResult({
-      decision: 'progress',
-      metric: metricKey,
-      baselineValues,
-      lastDisplay,
-      targetValues,
-      targetDisplay,
-      reason,
-      repRange,
-      category,
-      trend,
-      setBreakdown: latestAnalysis.setBreakdown,
-      sessionsAtWeight,
-      latestSession,
-      latestWorkoutDate,
-      generatedAt,
-      previousHistory,
-      eligible: true,
-      exerciseNotes: params.exerciseNotes,
-    });
+      const setsLabel = numSets === 1 ? 'your set' : `all ${numSets} sets`;
+      const reason = `${repRange.max} reps on ${setsLabel} — increase to ${newLoad}${displayUnit}, start at ${resetReps} reps`;
+
+      return buildResult({
+        decision: 'progress',
+        metric: metricKey,
+        baselineValues,
+        lastDisplay,
+        targetValues,
+        targetDisplay,
+        reason,
+        repRange,
+        category,
+        trend,
+        setBreakdown: latestAnalysis.setBreakdown,
+        sessionsAtWeight,
+        latestSession,
+        latestWorkoutDate,
+        generatedAt,
+        previousHistory,
+        eligible: true,
+        exerciseNotes: params.exerciseNotes,
+      });
+    }
+    // newLoad == currentLoad after rounding — fall through to hold path
   }
 
-  // Not at ceiling — hold load, aim for consistency
+  // Not at ceiling (or weight couldn't increase) — hold load, aim for consistency
   const maxRep = Math.max(...reps);
   const minRep = Math.min(...reps);
   const targetRep = repRange.max > 0 ? repRange.max : maxRep + 1;
-  const currentLoad = (baselineValues as Record<string, number | undefined>)[weightKey] ?? 0;
 
   const targetValues: SuggestionValues = {
     ...baselineValues,
@@ -653,13 +666,12 @@ function buildDoubleProgressionSuggestion(params: {
   };
   const targetDisplay = formatSetValues(targetValues as SetValues, schema);
 
+  const setsLabel = numSets === 1 ? 'your set' : `all ${numSets} sets`;
   let reason: string;
   if (reps.length > 1 && minRep < maxRep) {
-    // Inconsistent sets — guide toward consistency
-    reason = `${currentLoad}${displayUnit} — aim for ${targetRep} reps on all ${numSets} sets (you got ${latestAnalysis.setBreakdown})`;
+    reason = `Aim for ${targetRep} reps on ${setsLabel} at ${currentLoad}${displayUnit} (got ${latestAnalysis.setBreakdown})`;
   } else {
-    // Consistent but below ceiling
-    reason = `Build to ${targetRep} reps at ${currentLoad}${displayUnit} on all ${numSets} sets`;
+    reason = `Build to ${targetRep} reps on ${setsLabel} at ${currentLoad}${displayUnit}`;
   }
 
   // Plateau warning

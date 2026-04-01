@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useCallback, useMemo, useState } from 'react';
-import { ArrowUpRight, ChevronDown, ChevronUp, Minus, Plus, Sparkles, TrendingDown, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Plus, TrendingDown, TrendingUp, X } from 'lucide-react';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { logSetEntry } from '@/lib/offline';
@@ -41,6 +41,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   const updateSet = useActiveWorkoutStore((store) => store.updateSet);
   const deleteSet = useActiveWorkoutStore((store) => store.deleteSet);
   const completeSet = useActiveWorkoutStore((store) => store.completeSet);
+  const acceptSuggestion = useActiveWorkoutStore((store) => store.acceptSuggestion);
   const dismissSuggestion = useActiveWorkoutStore((store) => store.dismissSuggestion);
   const completedCount = sets.filter((set) => set.isCompleted).length;
   const allComplete = sets.length > 0 && completedCount === sets.length;
@@ -65,6 +66,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   }, [updateSet, exerciseIndex]);
 
   const handleAddSet = useCallback(() => addSet(exerciseIndex), [addSet, exerciseIndex]);
+  const handleAccept = useCallback(() => acceptSuggestion(exerciseIndex), [acceptSuggestion, exerciseIndex]);
   const handleDismiss = useCallback(() => dismissSuggestion(exerciseIndex), [dismissSuggestion, exerciseIndex]);
 
   // AI target is shown in the suggestion card — don't duplicate in inputs
@@ -96,48 +98,57 @@ export const ExerciseCard = memo(function ExerciseCard({
         )}
       </div>
 
-      {/* Inline AI coach indicator */}
-      {aiSuggestion && !isSuggestionDismissed && aiSuggestion.next_target && (
-        <div className={`mt-2.5 flex items-center gap-2 rounded-xl px-3 py-2 ${
-          aiSuggestion.decision === 'deload'
-            ? 'bg-[oklch(0.60_0.15_250/0.10)]'
-            : 'bg-[oklch(0.75_0.18_55/0.08)]'
-        }`}>
-          {aiSuggestion.decision === 'deload'
-            ? <TrendingDown className="h-3.5 w-3.5 shrink-0 text-[oklch(0.70_0.15_250)]" />
-            : <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <span className={`text-sm font-semibold ${
-                aiSuggestion.decision === 'deload'
-                  ? 'text-[oklch(0.70_0.15_250)]'
-                  : 'text-[oklch(0.80_0.16_55)]'
-              }`}>
-                {aiSuggestion.decision === 'progress'
-                  ? 'Beat this'
-                  : aiSuggestion.decision === 'deload'
-                    ? 'Deload'
-                    : 'Hold steady'}
-              </span>
-              {aiSuggestion.decision === 'progress'
-                ? <ArrowUpRight className="h-3 w-3 text-primary" />
-                : aiSuggestion.decision === 'deload'
-                  ? <TrendingDown className="h-3 w-3 text-[oklch(0.70_0.15_250)]" />
-                  : <Minus className="h-3 w-3 text-muted-foreground" />}
-              <span className="text-sm text-muted-foreground">·</span>
-              <span className="truncate text-sm font-medium text-foreground">{aiSuggestion.next_target.display}</span>
+      {/* AI Suggestion Banner */}
+      {aiSuggestion && !isSuggestionDismissed && aiSuggestion.next_target && (() => {
+        const isProgress = aiSuggestion.decision === 'progress';
+        const isDeload = aiSuggestion.decision === 'deload';
+        const label = isProgress ? 'Level Up' : isDeload ? 'Recovery' : 'Keep Building';
+        const accentBg = isDeload
+          ? 'bg-[oklch(0.60_0.15_250/0.10)] border-[oklch(0.60_0.15_250/0.20)]'
+          : isProgress
+            ? 'bg-[oklch(0.72_0.19_155/0.08)] border-[oklch(0.72_0.19_155/0.20)]'
+            : 'bg-[oklch(0.75_0.18_55/0.08)] border-[oklch(0.75_0.18_55/0.18)]';
+        const accentText = isDeload
+          ? 'text-[oklch(0.70_0.15_250)]'
+          : isProgress
+            ? 'text-[oklch(0.78_0.17_155)]'
+            : 'text-[oklch(0.80_0.16_55)]';
+        const Icon = isDeload ? TrendingDown : isProgress ? TrendingUp : ArrowRight;
+
+        return (
+          <div className={`mt-2.5 rounded-2xl border px-3.5 py-3 ${accentBg}`}>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Icon className={`h-4 w-4 shrink-0 ${accentText}`} />
+                <span className={`text-sm font-semibold ${accentText}`}>{label}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleAccept}
+                  className={`flex h-8 items-center gap-1 rounded-lg px-2.5 text-xs font-semibold transition-colors ${
+                    isDeload
+                      ? 'bg-[oklch(0.60_0.15_250/0.20)] text-[oklch(0.70_0.15_250)] hover:bg-[oklch(0.60_0.15_250/0.30)]'
+                      : isProgress
+                        ? 'bg-[oklch(0.72_0.19_155/0.18)] text-[oklch(0.78_0.17_155)] hover:bg-[oklch(0.72_0.19_155/0.28)]'
+                        : 'bg-primary/15 text-primary hover:bg-primary/25'
+                  }`}
+                >
+                  Apply
+                </button>
+                <button
+                  onClick={handleDismiss}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.06]"
+                  aria-label="Dismiss suggestion"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
-            <p className="mt-0.5 text-sm text-muted-foreground">{aiSuggestion.reason}</p>
+            <p className="mt-1.5 text-base font-bold">{aiSuggestion.next_target.display}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">{aiSuggestion.reason}</p>
           </div>
-          <button
-            onClick={handleDismiss}
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
-            aria-label="Dismiss suggestion"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      )}
+        );
+      })()}
 
       <div className="mt-3 space-y-2">
         {sets.map((set, index) => (
@@ -147,6 +158,11 @@ export const ExerciseCard = memo(function ExerciseCard({
             setNumber={index + 1}
             lastValues={lastPerformanceSets?.[index] ?? null}
             fields={fields}
+            aiTarget={
+              aiSuggestion?.next_target && !isSuggestionDismissed
+                ? (aiSuggestion.next_target.values as Record<string, number | string | undefined>)
+                : null
+            }
             onUpdate={(patch) => handleUpdate(set.id, patch)}
             onComplete={() => handleComplete(set.id)}
             onDelete={() => deleteSet(exerciseIndex, set.id)}
