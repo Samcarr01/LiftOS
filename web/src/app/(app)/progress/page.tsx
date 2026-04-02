@@ -5,12 +5,9 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Award,
-  BarChart3,
-  ChevronDown,
+  Brain,
   ChevronRight,
-  ChevronUp,
   Search,
-  Sparkles,
   Trophy,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -67,7 +64,6 @@ export default function ProgressPage() {
   const [exerciseId, setExerciseId] = useState<string>('');
   const [search, setSearch] = useState('');
   const [range, setRange] = useState<TimeRange>('3m');
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const selectedExercise = exercises.find((exercise) => exercise.id === exerciseId) ?? null;
   const filteredExercises = useMemo(() => {
@@ -86,6 +82,9 @@ export default function ProgressPage() {
     range,
   );
   const records = usePersonalRecords(selectedExercise?.exerciseIds ?? null);
+
+  const hasWeightReps = selectedExercise?.trackingLabel.toLowerCase().includes('weight')
+    && selectedExercise?.trackingLabel.toLowerCase().includes('reps');
 
   return (
     <div className="page-shell">
@@ -127,71 +126,16 @@ export default function ProgressPage() {
           </section>
 
           {selectedExercise && (
-            <section>
+            <section className="space-y-3">
+              {/* Exercise header */}
               <div className="content-card">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h2 className="font-display text-base font-bold">{selectedExercise.name}</h2>
-                    <p className="text-sm text-muted-foreground">{selectedExercise.trackingLabel}</p>
-                  </div>
-
-                  <button
-                    onClick={() => setShowAdvanced((value) => !value)}
-                    className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-white/10 px-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
-                  >
-                    <BarChart3 className="h-3.5 w-3.5" />
-                    Charts
-                    {showAdvanced ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
-
-                {progressLoading ? (
-                  <div className="mt-4 grid gap-2 grid-cols-3">
-                    <Skeleton className="h-16 rounded-xl" />
-                    <Skeleton className="h-16 rounded-xl" />
-                    <Skeleton className="h-16 rounded-xl" />
-                  </div>
-                ) : summary ? (
-                  <>
-                    <div className="mt-4 grid gap-2 grid-cols-3">
-                      <StatCard label="Latest" value={summary.latestResult ?? 'No data'} />
-                      <StatCard label="Best" value={summary.currentBest ?? 'No data'} />
-                      <StatCard label="Sessions" value={String(summary.trainingDays)} />
-                    </div>
-
-                    <div className="mt-3 rounded-2xl border border-white/8 px-3 py-2.5">
-                      <p className="text-sm text-muted-foreground">Trend</p>
-                      <p className="mt-1 text-sm text-foreground">{summary.trendNote}</p>
-                    </div>
-                  </>
-                ) : records.length > 0 ? null : (
-                  <div className="mt-4">
-                    <ChartEmptyState message="No completed sessions yet for this exercise." />
-                  </div>
-                )}
+                <h2 className="font-display text-base font-bold">{selectedExercise.name}</h2>
+                <p className="text-sm text-muted-foreground">{selectedExercise.trackingLabel}</p>
               </div>
 
-              {records.length > 0 && (
-                <div className="grid gap-2 grid-cols-2">
-                  {records.map((record) => (
-                    <div
-                      key={record.record_type}
-                      className="flex items-center gap-2 rounded-2xl border border-[oklch(0.80_0.16_85/0.25)] bg-[oklch(0.80_0.16_85/0.12)] px-3 py-2.5"
-                    >
-                      <Award className="h-4 w-4 shrink-0 text-[oklch(0.85_0.15_85)]" />
-                      <div className="min-w-0">
-                        <p className="text-caption">
-                          {PR_LABEL[record.record_type] ?? record.record_type}
-                        </p>
-                        <p className="font-display text-sm font-semibold">{record.record_value}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {showAdvanced && (
-                <div className="content-card mt-3">
+              {/* Time range + Charts — always visible */}
+              {hasWeightReps && (
+                <div className="content-card">
                   <div className="flex flex-wrap gap-1.5">
                     {TIME_RANGES.map((timeRange) => (
                       <button
@@ -209,9 +153,7 @@ export default function ProgressPage() {
                   </div>
 
                   <div className="mt-4">
-                    {!(selectedExercise.trackingLabel.toLowerCase().includes('weight') && selectedExercise.trackingLabel.toLowerCase().includes('reps')) ? (
-                      <ChartEmptyState message="Charts available for weighted lifts with reps." />
-                    ) : progressLoading ? (
+                    {progressLoading ? (
                       <Skeleton className="h-48 w-full rounded-xl" />
                     ) : points.length === 0 ? (
                       <ChartEmptyState message="No chart data yet." />
@@ -234,20 +176,67 @@ export default function ProgressPage() {
                   </div>
                 </div>
               )}
+
+              {/* Stat cards */}
+              {progressLoading ? (
+                <div className="grid gap-2 grid-cols-3">
+                  <Skeleton className="h-16 rounded-xl" />
+                  <Skeleton className="h-16 rounded-xl" />
+                  <Skeleton className="h-16 rounded-xl" />
+                </div>
+              ) : summary ? (
+                <>
+                  <div className="grid gap-2 grid-cols-3">
+                    <StatCard label="Latest" value={summary.latestResult ?? 'No data'} />
+                    <StatCard label="Best" value={summary.currentBest ?? 'No data'} />
+                    <StatCard label="Sessions" value={String(summary.trainingDays)} />
+                  </div>
+
+                  <div className="rounded-2xl border border-white/8 px-3 py-2.5">
+                    <p className="text-sm text-muted-foreground">Trend</p>
+                    <p className="mt-1 text-sm text-foreground">{summary.trendNote}</p>
+                  </div>
+                </>
+              ) : records.length > 0 ? null : (
+                <div className="content-card">
+                  <ChartEmptyState message="No completed sessions yet for this exercise." />
+                </div>
+              )}
+
+              {/* PR cards — glassmorphic style */}
+              {records.length > 0 && (
+                <div className="grid gap-2 grid-cols-2">
+                  {records.map((record) => (
+                    <div
+                      key={record.record_type}
+                      className="flex items-center gap-2 rounded-2xl border border-white/[0.10] bg-white/[0.04] px-3 py-2.5"
+                    >
+                      <Award className="h-4 w-4 shrink-0 text-primary" />
+                      <div className="min-w-0">
+                        <p className="text-caption">
+                          {PR_LABEL[record.record_type] ?? record.record_type}
+                        </p>
+                        <p className="font-display text-sm font-semibold">{record.record_value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
           )}
 
+          {/* Training Summary link */}
           <section>
             <Link
               href="/progress/weekly"
               className="action-card group flex items-center gap-3.5 rounded-2xl px-4 py-4"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-primary">
-                <Sparkles className="h-[18px] w-[18px]" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                <Brain className="h-[18px] w-[18px]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-card-title">Weekly Summary</p>
-                <p className="mt-0.5 text-caption">View your training recap, muscle volume, and AI insight</p>
+                <p className="text-card-title">Training Summary</p>
+                <p className="mt-0.5 text-caption">30-day AI coaching report</p>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40 transition-transform duration-150 group-hover:translate-x-0.5" />
             </Link>

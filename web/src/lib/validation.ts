@@ -139,15 +139,20 @@ export const LastPerformanceSetsDataSchema = z.array(LastPerformanceSetSchema);
 // ── Weekly summary data ───────────────────────────────────────────────────────
 
 const AIAnalysisSchema = z.object({
-  headline:              z.string().max(200),
-  wins:                  z.array(z.string().max(200)).max(5),
-  focus_areas:           z.array(z.string().max(200)).max(3),
-  exercise_callouts:     z.array(z.object({
-    name:  z.string(),
-    note:  z.string().max(200),
-  })).max(5),
-  next_week_tip:         z.string().max(300),
-  training_consistency:  z.string().max(200),
+  headline:                  z.string().max(200),
+  wins:                      z.array(z.string().max(200)).max(5),
+  focus_areas:               z.array(z.string().max(200)).max(5),
+  exercise_callouts:         z.array(z.object({
+    name:       z.string(),
+    note:       z.string().max(200),
+    trajectory: z.enum(['improving', 'stalled', 'declining']).optional(),
+  })).max(8),
+  next_week_tip:             z.string().max(300).optional(),
+  training_consistency:      z.string().max(300),
+  volume_trend_analysis:     z.string().max(400).optional(),
+  muscle_balance_assessment: z.string().max(400).optional(),
+  pr_momentum:               z.string().max(200).optional(),
+  action_items:              z.array(z.string().max(200)).max(5).optional(),
 });
 
 const VolumeWeekSchema = z.object({
@@ -191,6 +196,11 @@ export const WeeklySummaryDataSchema = z.object({
   prs_this_week:         z.array(PREntrySchema).optional(),
   ai_analysis:           AIAnalysisSchema.nullable().optional(),
   exercise_highlights:   z.array(ExerciseHighlightSchema).optional(),
+  period_days:           z.number().int().optional(),
+  training_frequency:    z.object({
+    total_days:  z.number(),
+    avg_per_week: z.number(),
+  }).optional(),
 });
 
 // ── Offline sync queue ────────────────────────────────────────────────────────

@@ -48,12 +48,16 @@ interface PRRow {
 }
 
 interface AIAnalysis {
-  headline:             string;
-  wins:                 string[];
-  focus_areas:          string[];
-  exercise_callouts:    { name: string; note: string }[];
-  next_week_tip:        string;
-  training_consistency: string;
+  headline:                 string;
+  wins:                     string[];
+  focus_areas:              string[];
+  exercise_callouts:        { name: string; note: string; trajectory?: string }[];
+  next_week_tip?:           string;
+  training_consistency:     string;
+  volume_trend_analysis?:   string;
+  muscle_balance_assessment?: string;
+  pr_momentum?:             string;
+  action_items?:            string[];
 }
 
 interface ExerciseHighlight {
@@ -72,16 +76,19 @@ interface WeeklySummaryData {
   most_improved_group: string | null;
   muscle_volume:       Record<string, number>;
   insight:             string | null;
-  // New enriched fields
   volume_by_week:      { week: string; volume: number }[];
   muscle_split:        { muscle: string; volume: number; percentage: number }[];
   session_days:        string[];
   prs_this_week:       { exercise: string; record_type: string; value: number }[];
   ai_analysis:         AIAnalysis | null;
   exercise_highlights: ExerciseHighlight[];
+  period_days?:        number;
+  training_frequency?: { total_days: number; avg_per_week: number };
 }
 
-// ── Week helpers ───────────────────────────────────────────────────────────────
+type Mode = 'weekly' | 'rolling_30d';
+
+// ── Date helpers ──────────────────────────────────────────────────────────────
 
 function resolveWeekStart(input: string | undefined): string {
   let d: Date;
@@ -101,6 +108,12 @@ function resolveWeekStart(input: string | undefined): string {
 function addDays(isoDate: string, n: number): string {
   const d = new Date(isoDate + 'T00:00:00Z');
   d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().split('T')[0];
+}
+
+function todayISO(): string {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
   return d.toISOString().split('T')[0];
 }
 
@@ -227,6 +240,7 @@ function mostImprovedGroup(
 
 async function generateStructuredInsight(
   apiKey: string,
+  mode: Mode,
   stats: {
     workouts: number;
     volume: number;
@@ -240,69 +254,115 @@ async function generateStructuredInsight(
     prs: { exercise: string; record_type: string; value: number }[];
     sessionDays: string[];
     muscleSplit: { muscle: string; volume: number; percentage: number }[];
+    periodDays: number;
+    trainingFrequency?: { total_days: number; avg_per_week: number };
   },
 ): Promise<AIAnalysis | null> {
+  const periodLabel = mode === 'rolling_30d' ? 'last 30 days' : 'this week';
+  const comparisonLabel = mode === 'rolling_30d' ? 'previous 30-day period' : 'last week';
+
   const prevDelta = stats.prevVolume != null && stats.prevVolume > 0
-    ? `${stats.volume > stats.prevVolume ? '+' : ''}${Math.round((stats.volume - stats.prevVolume) / stats.prevVolume * 100)}% vs last week`
-    : 'first week on record';
+    ? `${stats.volume > stats.prevVolume ? '+' : ''}${Math.round((stats.volume - stats.prevVolume) / stats.prevVolume * 100)}% vs ${comparisonLabel}`
+    : `first ${periodLabel} on record`;
 
   const volumeTrend = stats.volumeByWeek
     .map((w) => `${w.week}: ${Math.round(w.volume)}kg`)
     .join(', ');
 
   const exerciseBreakdown = stats.exerciseHighlights
-    .slice(0, 8)
+    .slice(0, 10)
     .map((e) => {
-      const delta = e.delta_pct !== null ? ` (${e.delta_pct > 0 ? '+' : ''}${e.delta_pct}% vs prev week)` : '';
+      const delta = e.delta_pct !== null ? ` (${e.delta_pct > 0 ? '+' : ''}${e.delta_pct}% vs ${comparisonLabel})` : '';
       return `- ${e.name}: ${e.sets} sets, ${Math.round(e.volume)}kg volume, best set ${e.best_set}${delta}`;
     })
     .join('\n');
 
   const prList = stats.prs.length > 0
     ? stats.prs.map((p) => `- ${p.exercise}: ${p.record_type} = ${p.value}`).join('\n')
-    : 'None this week';
+    : `None in ${periodLabel}`;
 
   const muscleSplitText = stats.muscleSplit
     .map((m) => `${m.muscle}: ${Math.round(m.percentage)}%`)
     .join(', ');
 
-  const prompt =
-    `You are a knowledgeable strength coach analysing a lifter's weekly training data. Provide specific, actionable feedback.\n\n` +
-    `STATS:\n` +
-    `- Workouts this week: ${stats.workouts} (on ${stats.sessionDays.join(', ') || 'no days'})\n` +
-    `- Total volume: ${stats.volume}kg (${stats.totalSets} working sets)\n` +
-    `- Volume trend (last 4 weeks): ${volumeTrend || 'no prior data'}\n` +
-    `- Comparison: ${prevDelta}\n` +
-    `- Strongest lift: ${stats.strongest}\n` +
-    `- Most improved muscle group: ${stats.mostImproved ?? 'N/A'}\n\n` +
-    `MUSCLE SPLIT:\n${muscleSplitText || 'N/A'}\n\n` +
-    `EXERCISE BREAKDOWN:\n${exerciseBreakdown || 'No exercises logged'}\n\n` +
-    `PERSONAL RECORDS HIT:\n${prList}\n\n` +
-    `INSTRUCTIONS:\n` +
-    `Respond with a JSON object (no markdown, no code fences). The JSON must have exactly these fields:\n` +
-    `{\n` +
-    `  "headline": "One punchy sentence summarising the week (max 25 words)",\n` +
-    `  "wins": ["2-3 specific achievements — reference actual numbers and exercise names"],\n` +
-    `  "focus_areas": ["1-2 specific things to improve — reference muscle imbalances, missed groups, or stalled lifts"],\n` +
-    `  "exercise_callouts": [{"name": "Exercise Name", "note": "specific observation about this exercise"}],\n` +
-    `  "next_week_tip": "One actionable suggestion for next week based on the data",\n` +
-    `  "training_consistency": "Brief note on training frequency and schedule pattern"\n` +
-    `}\n\n` +
-    `RULES:\n` +
-    `1. Be specific — use the actual numbers, exercise names, and percentages from the data\n` +
-    `2. If volume is trending down, mention it honestly\n` +
-    `3. If muscle groups are imbalanced (e.g. 40%+ on one group, 0% on another), flag it\n` +
-    `4. Keep each string concise — no filler words\n` +
-    `5. exercise_callouts should cover 2-4 of the most notable exercises\n` +
-    `6. Don't invent data that wasn't provided\n` +
-    `7. Output ONLY the JSON object, nothing else`;
+  const freqText = stats.trainingFrequency
+    ? `${stats.trainingFrequency.total_days} total sessions (${stats.trainingFrequency.avg_per_week.toFixed(1)}/week avg)`
+    : `${stats.workouts} sessions`;
+
+  const is30d = mode === 'rolling_30d';
+
+  const prompt = is30d
+    ? `You are a knowledgeable strength coach analysing a lifter's last 30 days of training data. Provide detailed, specific, actionable coaching feedback.\n\n` +
+      `TRAINING PERIOD: Last 30 days\n\n` +
+      `STATS:\n` +
+      `- Training frequency: ${freqText}\n` +
+      `- Training days: ${stats.sessionDays.join(', ') || 'none logged'}\n` +
+      `- Total volume: ${stats.volume}kg (${stats.totalSets} working sets)\n` +
+      `- Weekly volume breakdown: ${volumeTrend || 'no data'}\n` +
+      `- Comparison: ${prevDelta}\n` +
+      `- Strongest lift: ${stats.strongest}\n` +
+      `- Most improved muscle group: ${stats.mostImproved ?? 'N/A'}\n\n` +
+      `MUSCLE SPLIT:\n${muscleSplitText || 'N/A'}\n\n` +
+      `EXERCISE BREAKDOWN:\n${exerciseBreakdown || 'No exercises logged'}\n\n` +
+      `PERSONAL RECORDS HIT:\n${prList}\n\n` +
+      `INSTRUCTIONS:\n` +
+      `Respond with a JSON object (no markdown, no code fences). The JSON must have exactly these fields:\n` +
+      `{\n` +
+      `  "headline": "One punchy sentence summarising the 30-day period (max 25 words)",\n` +
+      `  "wins": ["2-4 specific achievements — reference actual numbers and exercise names"],\n` +
+      `  "volume_trend_analysis": "2-3 sentences analysing the weekly volume trajectory — is it increasing, decreasing, or stable? Are there dips? What does the pattern suggest?",\n` +
+      `  "muscle_balance_assessment": "2-3 sentences on muscle group coverage. Flag any imbalances (e.g. too much push vs pull, no direct arm work, neglected posterior chain). Suggest corrections.",\n` +
+      `  "focus_areas": ["2-3 specific things to improve — reference muscle imbalances, missed groups, or stalled lifts"],\n` +
+      `  "exercise_callouts": [{"name": "Exercise Name", "note": "specific observation", "trajectory": "improving|stalled|declining"}],\n` +
+      `  "action_items": ["3 concrete, actionable recommendations for the next training block"],\n` +
+      `  "pr_momentum": "Brief assessment of PR frequency and what it indicates about progression rate",\n` +
+      `  "training_consistency": "Assessment of training frequency, schedule pattern, and recovery spacing"\n` +
+      `}\n\n` +
+      `RULES:\n` +
+      `1. Be specific — use the actual numbers, exercise names, and percentages from the data\n` +
+      `2. If volume is trending down, mention it honestly\n` +
+      `3. If muscle groups are imbalanced (e.g. 40%+ on one group, 0% on another), flag it clearly\n` +
+      `4. Keep each string concise — no filler words\n` +
+      `5. exercise_callouts should cover 3-5 of the most notable exercises with trajectory assessment\n` +
+      `6. action_items must be concrete ("Add 2 sets of face pulls on push days") not vague ("work on balance")\n` +
+      `7. Don't invent data that wasn't provided\n` +
+      `8. Output ONLY the JSON object, nothing else`
+    : `You are a knowledgeable strength coach analysing a lifter's weekly training data. Provide specific, actionable feedback.\n\n` +
+      `STATS:\n` +
+      `- Workouts this week: ${stats.workouts} (on ${stats.sessionDays.join(', ') || 'no days'})\n` +
+      `- Total volume: ${stats.volume}kg (${stats.totalSets} working sets)\n` +
+      `- Volume trend (last 4 weeks): ${volumeTrend || 'no prior data'}\n` +
+      `- Comparison: ${prevDelta}\n` +
+      `- Strongest lift: ${stats.strongest}\n` +
+      `- Most improved muscle group: ${stats.mostImproved ?? 'N/A'}\n\n` +
+      `MUSCLE SPLIT:\n${muscleSplitText || 'N/A'}\n\n` +
+      `EXERCISE BREAKDOWN:\n${exerciseBreakdown || 'No exercises logged'}\n\n` +
+      `PERSONAL RECORDS HIT:\n${prList}\n\n` +
+      `INSTRUCTIONS:\n` +
+      `Respond with a JSON object (no markdown, no code fences). The JSON must have exactly these fields:\n` +
+      `{\n` +
+      `  "headline": "One punchy sentence summarising the week (max 25 words)",\n` +
+      `  "wins": ["2-3 specific achievements — reference actual numbers and exercise names"],\n` +
+      `  "focus_areas": ["1-2 specific things to improve — reference muscle imbalances, missed groups, or stalled lifts"],\n` +
+      `  "exercise_callouts": [{"name": "Exercise Name", "note": "specific observation about this exercise"}],\n` +
+      `  "next_week_tip": "One actionable suggestion for next week based on the data",\n` +
+      `  "training_consistency": "Brief note on training frequency and schedule pattern"\n` +
+      `}\n\n` +
+      `RULES:\n` +
+      `1. Be specific — use the actual numbers, exercise names, and percentages from the data\n` +
+      `2. If volume is trending down, mention it honestly\n` +
+      `3. If muscle groups are imbalanced (e.g. 40%+ on one group, 0% on another), flag it\n` +
+      `4. Keep each string concise — no filler words\n` +
+      `5. exercise_callouts should cover 2-4 of the most notable exercises\n` +
+      `6. Don't invent data that wasn't provided\n` +
+      `7. Output ONLY the JSON object, nothing else`;
 
   const openai = new OpenAI({ apiKey });
 
   const response = await openai.chat.completions.create({
     model:       'gpt-5',
     temperature: 0.4,
-    max_tokens:  600,
+    max_tokens:  is30d ? 1200 : 600,
     messages: [
       { role: 'system', content: 'You are a strength coach. Respond with valid JSON only, no markdown.' },
       { role: 'user',   content: prompt },
@@ -313,10 +373,8 @@ async function generateStructuredInsight(
   if (!raw) return null;
 
   try {
-    // Strip potential markdown fences
     const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
     const parsed = JSON.parse(cleaned) as AIAnalysis;
-    // Validate required fields exist
     if (!parsed.headline || !Array.isArray(parsed.wins)) return null;
     return parsed;
   } catch {
@@ -344,32 +402,53 @@ Deno.serve(async (req: Request) => {
     if (authErr || !user) return json({ error: 'Unauthorized' }, 401);
 
     const body = await req.json().catch(() => ({}));
-    const weekStart = resolveWeekStart(body.week_start as string | undefined);
-    const weekEnd   = addDays(weekStart, 7);
-    const prevStart = addDays(weekStart, -7);
+    const mode: Mode = body.mode === 'rolling_30d' ? 'rolling_30d' : 'weekly';
+    const forceRefresh = body.force === true;
+
+    // ── Determine date range based on mode ────────────────────────────────
+    let rangeStart: string;
+    let rangeEnd: string;
+    let cacheKey: string;
+    let prevRangeStart: string;
+    let prevRangeEnd: string;
+
+    if (mode === 'rolling_30d') {
+      const today = todayISO();
+      rangeEnd = addDays(today, 1); // exclusive end
+      rangeStart = addDays(today, -29); // 30 days including today
+      cacheKey = 'rolling';
+      prevRangeEnd = rangeStart;
+      prevRangeStart = addDays(today, -59); // previous 30-day period
+    } else {
+      const weekStart = resolveWeekStart(body.week_start as string | undefined);
+      rangeStart = weekStart;
+      rangeEnd = addDays(weekStart, 7);
+      cacheKey = weekStart;
+      prevRangeStart = addDays(weekStart, -7);
+      prevRangeEnd = weekStart;
+    }
 
     // ── Check cache ───────────────────────────────────────────────────────
-    const forceRefresh = body.force === true;
     if (!forceRefresh) {
       const { data: cached } = await supabase
         .from('weekly_summaries')
         .select('summary_data')
         .eq('user_id', user.id)
-        .eq('week_start', weekStart)
+        .eq('week_start', cacheKey)
         .maybeSingle();
 
       if (cached?.summary_data) {
-        return json({ data: cached.summary_data, week_start: weekStart, source: 'cached' });
+        return json({ data: cached.summary_data, week_start: cacheKey, source: 'cached' });
       }
     }
 
-    // ── Fetch this week's sessions ────────────────────────────────────────
+    // ── Fetch sessions in range ──────────────────────────────────────────
     const { data: sessions } = await supabase
       .from('workout_sessions')
       .select('id, started_at')
       .eq('user_id', user.id)
-      .gte('started_at', weekStart + 'T00:00:00Z')
-      .lt('started_at',  weekEnd   + 'T00:00:00Z')
+      .gte('started_at', rangeStart + 'T00:00:00Z')
+      .lt('started_at',  rangeEnd   + 'T00:00:00Z')
       .not('completed_at', 'is', null);
 
     const sessionList = (sessions ?? []) as SessionRow[];
@@ -379,6 +458,14 @@ Deno.serve(async (req: Request) => {
     const sessionDays = [...new Set(
       sessionList.map((s) => DAY_NAMES[new Date(s.started_at).getUTCDay()])
     )];
+
+    // Training frequency for 30-day mode
+    const uniqueTrainingDates = new Set(
+      sessionList.map((s) => s.started_at.split('T')[0]),
+    );
+    const trainingFrequency = mode === 'rolling_30d'
+      ? { total_days: uniqueTrainingDates.size, avg_per_week: Math.round((uniqueTrainingDates.size / 30) * 7 * 10) / 10 }
+      : undefined;
 
     // ── Fetch session exercises + set_entries ─────────────────────────────
     const { data: seRows } = sessionIds.length
@@ -401,64 +488,143 @@ Deno.serve(async (req: Request) => {
       (exerciseRows ?? []).map((e: ExerciseRow) => [e.id, e]),
     );
 
-    // ── Aggregate current week ────────────────────────────────────────────
+    // ── Aggregate current period ─────────────────────────────────────────
     const cur = aggregate(seRows ?? [], exerciseMap);
 
-    // ── Fetch PRs achieved this week ──────────────────────────────────────
+    // ── Fetch PRs in range ───────────────────────────────────────────────
     const { data: prRows } = await supabase
       .from('personal_records')
       .select('exercise_id, record_type, record_value, achieved_at')
       .eq('user_id', user.id)
-      .gte('achieved_at', weekStart + 'T00:00:00Z')
-      .lt('achieved_at', weekEnd + 'T00:00:00Z');
+      .gte('achieved_at', rangeStart + 'T00:00:00Z')
+      .lt('achieved_at', rangeEnd + 'T00:00:00Z');
 
-    const prsThisWeek = (prRows ?? []).map((pr: PRRow) => ({
+    const prsInPeriod = (prRows ?? []).map((pr: PRRow) => ({
       exercise:    exerciseMap.get(pr.exercise_id)?.name ?? 'Unknown',
       record_type: pr.record_type,
       value:       pr.record_value,
     }));
 
-    // ── Fetch volume history (last 4 weeks including current) ─────────────
+    // ── Build volume-by-week from raw session data ────────────────────────
     const volumeByWeek: { week: string; volume: number }[] = [];
-    const weeksToFetch = [
-      addDays(weekStart, -21),
-      addDays(weekStart, -14),
-      addDays(weekStart, -7),
-      weekStart,
-    ];
 
-    // Fetch previous summaries for volume trend
-    const { data: prevSummaries } = await supabase
-      .from('weekly_summaries')
-      .select('week_start, summary_data')
-      .eq('user_id', user.id)
-      .in('week_start', weeksToFetch.slice(0, 3)); // first 3 weeks from cache
+    if (mode === 'rolling_30d') {
+      // Compute weekly buckets from raw sessions (4-5 weeks)
+      // Bucket sessions by week start (Monday)
+      const weekBuckets = new Map<string, SERow[]>();
 
-    const prevSummaryMap = new Map(
-      (prevSummaries ?? []).map((s: { week_start: string; summary_data: WeeklySummaryData }) => [
-        s.week_start, s.summary_data,
-      ]),
-    );
+      // We need per-session exercise data, so re-query with session_id linkage
+      const sessionDateMap = new Map<string, string>();
+      for (const s of sessionList) {
+        sessionDateMap.set(s.id, s.started_at);
+      }
 
-    for (const w of weeksToFetch) {
-      if (w === weekStart) {
-        volumeByWeek.push({ week: w, volume: cur.totalVolumeKg });
-      } else {
-        const prev = prevSummaryMap.get(w);
-        volumeByWeek.push({ week: w, volume: prev?.total_volume_kg ?? 0 });
+      // Fetch session_exercises with session_id for bucketing
+      const { data: seWithSession } = sessionIds.length
+        ? await supabase
+            .from('session_exercises')
+            .select('session_id, exercise_id, set_entries ( values, set_type, is_completed )')
+            .in('session_id', sessionIds)
+        : { data: [] };
+
+      for (const se of (seWithSession ?? [])) {
+        const sessionDate = sessionDateMap.get(se.session_id);
+        if (!sessionDate) continue;
+        const d = new Date(sessionDate);
+        const day = d.getUTCDay();
+        const offset = day === 0 ? -6 : 1 - day;
+        const monday = new Date(d);
+        monday.setUTCDate(monday.getUTCDate() + offset);
+        const weekKey = monday.toISOString().split('T')[0];
+        if (!weekBuckets.has(weekKey)) weekBuckets.set(weekKey, []);
+        weekBuckets.get(weekKey)!.push(se);
+      }
+
+      // Sort weeks chronologically
+      const sortedWeeks = [...weekBuckets.keys()].sort();
+      for (const weekKey of sortedWeeks) {
+        const weekSEs = weekBuckets.get(weekKey)!;
+        const weekAgg = aggregate(weekSEs, exerciseMap);
+        volumeByWeek.push({ week: weekKey, volume: weekAgg.totalVolumeKg });
+      }
+    } else {
+      // Weekly mode: fetch from cached summaries (last 4 weeks)
+      const weeksToFetch = [
+        addDays(rangeStart, -21),
+        addDays(rangeStart, -14),
+        addDays(rangeStart, -7),
+        rangeStart,
+      ];
+
+      const { data: prevSummaries } = await supabase
+        .from('weekly_summaries')
+        .select('week_start, summary_data')
+        .eq('user_id', user.id)
+        .in('week_start', weeksToFetch.slice(0, 3));
+
+      const prevSummaryMap = new Map(
+        (prevSummaries ?? []).map((s: { week_start: string; summary_data: WeeklySummaryData }) => [
+          s.week_start, s.summary_data,
+        ]),
+      );
+
+      for (const w of weeksToFetch) {
+        if (w === rangeStart) {
+          volumeByWeek.push({ week: w, volume: cur.totalVolumeKg });
+        } else {
+          const prev = prevSummaryMap.get(w);
+          volumeByWeek.push({ week: w, volume: prev?.total_volume_kg ?? 0 });
+        }
       }
     }
 
-    // ── Previous week data for deltas ─────────────────────────────────────
-    const prevData = prevSummaryMap.get(prevStart);
-    const prevMuscleVolume = prevData?.muscle_volume ?? {};
-    const prevVolumeKg = prevData?.total_volume_kg ?? null;
-
-    // Previous week per-exercise volumes for delta calculation
+    // ── Previous period data for deltas ───────────────────────────────────
+    let prevVolumeKg: number | null = null;
+    let prevMuscleVolume: Record<string, number> = {};
     let prevExerciseVolumes: Record<string, number> = {};
-    if (prevData?.exercise_highlights) {
-      for (const eh of prevData.exercise_highlights) {
-        prevExerciseVolumes[eh.name] = eh.volume;
+
+    if (mode === 'rolling_30d') {
+      // Fetch previous 30-day period sessions directly
+      const { data: prevSessions } = await supabase
+        .from('workout_sessions')
+        .select('id')
+        .eq('user_id', user.id)
+        .gte('started_at', prevRangeStart + 'T00:00:00Z')
+        .lt('started_at',  prevRangeEnd  + 'T00:00:00Z')
+        .not('completed_at', 'is', null);
+
+      const prevSessionIds = (prevSessions ?? []).map((s: { id: string }) => s.id);
+
+      if (prevSessionIds.length > 0) {
+        const { data: prevSERows } = await supabase
+          .from('session_exercises')
+          .select('exercise_id, set_entries ( values, set_type, is_completed )')
+          .in('session_id', prevSessionIds);
+
+        const prevAgg = aggregate(prevSERows ?? [], exerciseMap);
+        prevVolumeKg = prevAgg.totalVolumeKg;
+        prevMuscleVolume = prevAgg.muscleVolume;
+        for (const [, agg] of prevAgg.exerciseAggs) {
+          prevExerciseVolumes[agg.name] = agg.volume;
+        }
+      }
+    } else {
+      // Weekly mode: use cached previous week
+      const prevCacheKey = addDays(rangeStart, -7);
+      const { data: prevCached } = await supabase
+        .from('weekly_summaries')
+        .select('summary_data')
+        .eq('user_id', user.id)
+        .eq('week_start', prevCacheKey)
+        .maybeSingle();
+
+      const prevData = prevCached?.summary_data as WeeklySummaryData | null;
+      prevMuscleVolume = prevData?.muscle_volume ?? {};
+      prevVolumeKg = prevData?.total_volume_kg ?? null;
+      if (prevData?.exercise_highlights) {
+        for (const eh of prevData.exercise_highlights) {
+          prevExerciseVolumes[eh.name] = eh.volume;
+        }
       }
     }
 
@@ -506,9 +672,11 @@ Deno.serve(async (req: Request) => {
       volume_by_week:      volumeByWeek,
       muscle_split:        muscleSplit,
       session_days:        sessionDays,
-      prs_this_week:       prsThisWeek,
+      prs_this_week:       prsInPeriod,
       ai_analysis:         null,
       exercise_highlights: exerciseHighlights,
+      period_days:         mode === 'rolling_30d' ? 30 : 7,
+      training_frequency:  trainingFrequency,
     };
 
     // ── AI analysis ───────────────────────────────────────────────────────
@@ -516,7 +684,7 @@ Deno.serve(async (req: Request) => {
       const apiKey = Deno.env.get('OPENAI_API_KEY');
       if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
 
-      const aiResult = await generateStructuredInsight(apiKey, {
+      const aiResult = await generateStructuredInsight(apiKey, mode, {
         workouts:           sessionIds.length,
         volume:             cur.totalVolumeKg,
         totalSets:          cur.totalSets,
@@ -528,18 +696,19 @@ Deno.serve(async (req: Request) => {
         prevVolume:         prevVolumeKg,
         volumeByWeek,
         exerciseHighlights,
-        prs:                prsThisWeek,
+        prs:                prsInPeriod,
         sessionDays,
         muscleSplit,
+        periodDays:         mode === 'rolling_30d' ? 30 : 7,
+        trainingFrequency,
       });
 
       summaryData.ai_analysis = aiResult;
-      // Also set legacy insight field from headline for backward compat
       if (aiResult?.headline) {
         summaryData.insight = aiResult.headline;
       }
 
-      console.log('[generate-weekly-summary] AI analysis generated for user', user.id);
+      console.log(`[generate-weekly-summary] AI analysis generated (${mode}) for user`, user.id);
     } catch (aiErr) {
       console.error('[generate-weekly-summary] AI analysis failed:', (aiErr as Error).message);
     }
@@ -550,13 +719,13 @@ Deno.serve(async (req: Request) => {
       .upsert(
         {
           user_id:      user.id,
-          week_start:   weekStart,
+          week_start:   cacheKey,
           summary_data: summaryData,
         },
         { onConflict: 'user_id,week_start' },
       );
 
-    return json({ data: summaryData, week_start: weekStart, source: 'generated' });
+    return json({ data: summaryData, week_start: cacheKey, source: 'generated' });
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
