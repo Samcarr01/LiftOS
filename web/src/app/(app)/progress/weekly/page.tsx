@@ -1,12 +1,14 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Activity,
   ArrowLeft,
   Award,
   CheckCircle2,
+  ChevronDown,
   Dumbbell,
   Flame,
   Loader2,
@@ -29,16 +31,6 @@ const MuscleSplitChart = dynamic(
   () => import('@/components/progress/muscle-split-chart').then((m) => m.MuscleSplitChart),
   { ssr: false, loading: () => <Skeleton className="h-[200px] w-full rounded-2xl" /> },
 );
-
-function StatCard({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
-  return (
-    <div className="stat-card">
-      {icon && <div className="mb-1">{icon}</div>}
-      <p className="text-stat">{value}</p>
-      <p className="text-caption">{label}</p>
-    </div>
-  );
-}
 
 function InsightSection({
   icon,
@@ -70,6 +62,27 @@ const TRAJECTORY_ICON: Record<string, { icon: React.ReactNode; color: string }> 
   declining: { icon: <TrendingDown className="h-3 w-3" />, color: 'text-destructive' },
 };
 
+const PR_LABEL: Record<string, string> = {
+  best_weight: 'Weight',
+  best_reps_at_weight: 'Reps',
+  best_e1rm: 'Est. 1RM',
+  best_volume: 'Volume',
+};
+
+// Group PRs by exercise, pick best record type per exercise
+function groupPRs(prs: { exercise: string; record_type: string; value: number }[]) {
+  const byExercise = new Map<string, { exercise: string; records: { type: string; value: number }[] }>();
+  for (const pr of prs) {
+    if (pr.exercise === 'Unknown') continue;
+    if (!byExercise.has(pr.exercise)) {
+      byExercise.set(pr.exercise, { exercise: pr.exercise, records: [] });
+    }
+    byExercise.get(pr.exercise)!.records.push({ type: pr.record_type, value: pr.value });
+  }
+  // Sort by number of records (most notable first)
+  return [...byExercise.values()].sort((a, b) => b.records.length - a.records.length);
+}
+
 export default function TrainingSummaryPage() {
   const router = useRouter();
   const {
@@ -81,11 +94,19 @@ export default function TrainingSummaryPage() {
     refresh,
   } = useTrainingSummary();
 
+  const [showAllExercises, setShowAllExercises] = useState(false);
+  const [showAllPRs, setShowAllPRs] = useState(false);
+
   const ai = summary?.ai_analysis;
   const hasChartData = (summary?.volume_by_week?.length ?? 0) > 0;
   const hasMuscleSplit = (summary?.muscle_split?.length ?? 0) > 0;
   const prsCount = summary?.prs_this_week?.length ?? 0;
   const freq = summary?.training_frequency;
+  const groupedPRs = summary?.prs_this_week ? groupPRs(summary.prs_this_week) : [];
+
+  const exercises = summary?.exercise_highlights ?? [];
+  const visibleExercises = showAllExercises ? exercises : exercises.slice(0, 5);
+  const visiblePRGroups = showAllPRs ? groupedPRs : groupedPRs.slice(0, 5);
 
   return (
     <div className="page-shell">
@@ -127,6 +148,8 @@ export default function TrainingSummaryPage() {
           </div>
         ) : summary ? (
           <>
+            {/* ─── AI COACHING (hero content) ─── */}
+
             {/* AI Headline */}
             {ai?.headline && (
               <div className="content-card border-primary/20 bg-primary/[0.06]">
@@ -141,129 +164,7 @@ export default function TrainingSummaryPage() {
               </div>
             )}
 
-            {/* Stat cards — 2x2 grid */}
-            <div className="grid grid-cols-2 gap-2">
-              <StatCard label="Workouts" value={String(summary.workouts_completed)} />
-              <StatCard label="Working Sets" value={String(summary.total_sets)} />
-              <StatCard
-                label="Volume"
-                value={summary.total_volume_kg >= 1000
-                  ? `${(summary.total_volume_kg / 1000).toFixed(1)}t`
-                  : `${Math.round(summary.total_volume_kg)}kg`
-                }
-              />
-              <StatCard label="PRs" value={String(prsCount)} />
-            </div>
-
-            {/* Training frequency */}
-            {freq && (
-              <div className="content-card flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                  <Activity className="h-[18px] w-[18px]" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-caption">Training Frequency</p>
-                  <p className="font-display text-base font-bold">
-                    {freq.total_days} sessions
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {freq.avg_per_week}/week avg over 30 days
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Strongest lift */}
-            {summary.strongest_lift && (
-              <div className="content-card flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-primary">
-                  <Trophy className="h-[18px] w-[18px]" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-caption">Strongest lift</p>
-                  <p className="font-display text-base font-bold">
-                    {summary.strongest_lift.exercise}
-                  </p>
-                  <p className="text-sm font-semibold text-primary">
-                    {summary.strongest_lift.value}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Volume Trend chart */}
-            {hasChartData && (
-              <div className="content-card">
-                <h3 className="font-display text-sm font-bold mb-3">Volume Trend</h3>
-                <WeeklyVolumeTrend data={summary.volume_by_week!} />
-              </div>
-            )}
-
-            {/* Muscle Split chart */}
-            {hasMuscleSplit && (
-              <div className="content-card">
-                <h3 className="font-display text-sm font-bold mb-3">Muscle Volume Split</h3>
-                <MuscleSplitChart data={summary.muscle_split!} />
-              </div>
-            )}
-
-            {/* Exercise Highlights */}
-            {summary.exercise_highlights && summary.exercise_highlights.length > 0 && (
-              <div className="content-card">
-                <h3 className="font-display text-sm font-bold mb-3">Exercise Breakdown</h3>
-                <div className="space-y-2">
-                  {summary.exercise_highlights.map((ex) => (
-                    <div
-                      key={ex.name}
-                      className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5"
-                    >
-                      <Dumbbell className="h-4 w-4 shrink-0 text-muted-foreground/50" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{ex.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {ex.sets} sets · {Math.round(ex.volume)}kg · Best: {ex.best_set}
-                        </p>
-                      </div>
-                      {ex.delta_pct !== null && (
-                        <span className={`shrink-0 text-xs font-semibold ${
-                          ex.delta_pct > 0 ? 'text-[oklch(0.72_0.19_155)]' :
-                          ex.delta_pct < 0 ? 'text-destructive' :
-                          'text-muted-foreground'
-                        }`}>
-                          {ex.delta_pct > 0 ? '+' : ''}{ex.delta_pct}%
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* PRs */}
-            {prsCount > 0 && (
-              <div className="content-card">
-                <div className="flex items-center gap-2 mb-3">
-                  <Award className="h-4 w-4 text-primary" />
-                  <h3 className="font-display text-sm font-bold">Personal Records</h3>
-                </div>
-                <div className="grid grid-cols-1 gap-2">
-                  {summary.prs_this_week!.map((pr, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-2 rounded-xl border border-white/[0.10] bg-white/[0.04] px-3 py-2.5"
-                    >
-                      <Trophy className="h-3.5 w-3.5 shrink-0 text-primary" />
-                      <span className="text-sm font-medium">{pr.exercise}</span>
-                      <span className="ml-auto text-xs font-semibold text-primary">
-                        {pr.record_type.replace('best_', '').replace(/_/g, ' ')} — {pr.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* AI Insights — structured sections */}
+            {/* AI Insights — the main value of this page */}
             {ai && (
               <div className="space-y-3">
                 {/* Wins */}
@@ -303,24 +204,6 @@ export default function TrainingSummaryPage() {
                     color="oklch(0.70 0.15 180)"
                   >
                     <p className="text-sm text-muted-foreground leading-relaxed">{ai.muscle_balance_assessment}</p>
-                  </InsightSection>
-                )}
-
-                {/* Focus Areas */}
-                {ai.focus_areas.length > 0 && (
-                  <InsightSection
-                    icon={<Target className="h-3.5 w-3.5" style={{ color: 'oklch(0.72 0.19 155)' }} />}
-                    title="Focus Areas"
-                    color="oklch(0.72 0.19 155)"
-                  >
-                    <ul className="space-y-1.5">
-                      {ai.focus_areas.map((area, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[oklch(0.72_0.19_155)]" />
-                          {area}
-                        </li>
-                      ))}
-                    </ul>
                   </InsightSection>
                 )}
 
@@ -371,6 +254,24 @@ export default function TrainingSummaryPage() {
                   </InsightSection>
                 )}
 
+                {/* Focus Areas */}
+                {ai.focus_areas.length > 0 && (
+                  <InsightSection
+                    icon={<Target className="h-3.5 w-3.5" style={{ color: 'oklch(0.72 0.19 155)' }} />}
+                    title="Focus Areas"
+                    color="oklch(0.72 0.19 155)"
+                  >
+                    <ul className="space-y-1.5">
+                      {ai.focus_areas.map((area, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[oklch(0.72_0.19_155)]" />
+                          {area}
+                        </li>
+                      ))}
+                    </ul>
+                  </InsightSection>
+                )}
+
                 {/* PR Momentum */}
                 {ai.pr_momentum && (
                   <InsightSection
@@ -406,6 +307,15 @@ export default function TrainingSummaryPage() {
               </div>
             )}
 
+            {/* No AI yet — prompt to generate */}
+            {!ai && (
+              <div className="content-card border-primary/20 bg-primary/[0.06] text-center py-5">
+                <Sparkles className="mx-auto h-5 w-5 text-primary" />
+                <p className="mt-2 text-sm font-medium">AI coaching insights not generated yet</p>
+                <p className="mt-1 text-xs text-muted-foreground">Tap Refresh Analysis below to generate your personalised coaching report</p>
+              </div>
+            )}
+
             {/* Fallback: show old insight if no ai_analysis */}
             {!ai && summary.insight && (
               <div className="content-card">
@@ -416,6 +326,145 @@ export default function TrainingSummaryPage() {
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   {summary.insight}
                 </p>
+              </div>
+            )}
+
+            {/* ─── SUPPORTING DATA ─── */}
+
+            {/* Quick stats — compact 2x2 grid */}
+            <div className="grid grid-cols-4 gap-2">
+              <div className="stat-card">
+                <p className="text-stat text-lg">{summary.workouts_completed}</p>
+                <p className="text-caption text-xs">Workouts</p>
+              </div>
+              <div className="stat-card">
+                <p className="text-stat text-lg">{summary.total_sets}</p>
+                <p className="text-caption text-xs">Sets</p>
+              </div>
+              <div className="stat-card">
+                <p className="text-stat text-lg">
+                  {summary.total_volume_kg >= 1000
+                    ? `${(summary.total_volume_kg / 1000).toFixed(1)}t`
+                    : `${Math.round(summary.total_volume_kg)}kg`
+                  }
+                </p>
+                <p className="text-caption text-xs">Volume</p>
+              </div>
+              <div className="stat-card">
+                <p className="text-stat text-lg">{prsCount}</p>
+                <p className="text-caption text-xs">PRs</p>
+              </div>
+            </div>
+
+            {/* Training frequency + strongest lift — side by side */}
+            <div className="grid grid-cols-2 gap-2">
+              {freq && (
+                <div className="content-card">
+                  <p className="text-xs text-muted-foreground">Frequency</p>
+                  <p className="font-display text-base font-bold mt-0.5">{freq.avg_per_week}/week</p>
+                  <p className="text-xs text-muted-foreground">{freq.total_days} sessions</p>
+                </div>
+              )}
+              {summary.strongest_lift && (
+                <div className="content-card">
+                  <p className="text-xs text-muted-foreground">Strongest</p>
+                  <p className="font-display text-sm font-bold mt-0.5 truncate">{summary.strongest_lift.exercise}</p>
+                  <p className="text-xs font-semibold text-primary">{summary.strongest_lift.value}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Volume Trend chart */}
+            {hasChartData && (
+              <div className="content-card">
+                <h3 className="font-display text-sm font-bold mb-3">Volume Trend</h3>
+                <WeeklyVolumeTrend data={summary.volume_by_week!} />
+              </div>
+            )}
+
+            {/* Muscle Split chart */}
+            {hasMuscleSplit && (
+              <div className="content-card">
+                <h3 className="font-display text-sm font-bold mb-3">Muscle Volume Split</h3>
+                <MuscleSplitChart data={summary.muscle_split!} />
+              </div>
+            )}
+
+            {/* Exercise Breakdown — top 5, expandable */}
+            {exercises.length > 0 && (
+              <div className="content-card">
+                <h3 className="font-display text-sm font-bold mb-3">Exercise Breakdown</h3>
+                <div className="space-y-2">
+                  {visibleExercises.map((ex) => (
+                    <div
+                      key={ex.name}
+                      className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5"
+                    >
+                      <Dumbbell className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{ex.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {ex.sets} sets · {Math.round(ex.volume)}kg · Best: {ex.best_set}
+                        </p>
+                      </div>
+                      {ex.delta_pct !== null && (
+                        <span className={`shrink-0 text-xs font-semibold ${
+                          ex.delta_pct > 0 ? 'text-[oklch(0.72_0.19_155)]' :
+                          ex.delta_pct < 0 ? 'text-destructive' :
+                          'text-muted-foreground'
+                        }`}>
+                          {ex.delta_pct > 0 ? '+' : ''}{ex.delta_pct}%
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {exercises.length > 5 && (
+                  <button
+                    onClick={() => setShowAllExercises(!showAllExercises)}
+                    className="mt-2 flex w-full items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
+                  >
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showAllExercises ? 'rotate-180' : ''}`} />
+                    {showAllExercises ? 'Show less' : `Show all ${exercises.length} exercises`}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* PRs — grouped by exercise, top 5 */}
+            {groupedPRs.length > 0 && (
+              <div className="content-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <Award className="h-4 w-4 text-primary" />
+                  <h3 className="font-display text-sm font-bold">Personal Records</h3>
+                  <span className="ml-auto text-xs text-muted-foreground">{prsCount} total</span>
+                </div>
+                <div className="space-y-2">
+                  {visiblePRGroups.map((group) => (
+                    <div
+                      key={group.exercise}
+                      className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5"
+                    >
+                      <p className="text-sm font-medium">{group.exercise}</p>
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                        {group.records.map((r) => (
+                          <span key={r.type} className="text-xs text-primary font-semibold">
+                            {PR_LABEL[r.type] ?? r.type.replace('best_', '')} {r.value}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {groupedPRs.length > 5 && (
+                  <button
+                    onClick={() => setShowAllPRs(!showAllPRs)}
+                    className="mt-2 flex w-full items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
+                  >
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showAllPRs ? 'rotate-180' : ''}`} />
+                    {showAllPRs ? 'Show less' : `Show all ${groupedPRs.length} exercises`}
+                  </button>
+                )}
               </div>
             )}
 
@@ -434,7 +483,7 @@ export default function TrainingSummaryPage() {
             </button>
           </>
         ) : (
-          /* Empty state — should rarely show since we auto-generate */
+          /* Empty state */
           <div className="content-card flex flex-col items-center gap-4 px-6 py-10 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary">
               <Sparkles className="h-6 w-6" />
