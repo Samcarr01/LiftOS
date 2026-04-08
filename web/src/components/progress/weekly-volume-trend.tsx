@@ -60,8 +60,10 @@ export function WeeklyVolumeTrend({ data }: Props) {
             border:       '1px solid hsl(var(--border))',
             borderRadius: '8px',
             fontSize:     12,
+            color:        'hsl(var(--foreground))',
           }}
           labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
+          itemStyle={{ color: 'hsl(var(--foreground))' }}
           formatter={(v) => [formatVolumeTooltip(v as number), 'Volume']}
         />
         <Area
