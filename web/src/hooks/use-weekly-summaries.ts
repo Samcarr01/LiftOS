@@ -155,7 +155,7 @@ export function useTrainingSummary() {
       const { data, error: err } = await supabase
         .from('weekly_summaries')
         .select('summary_data')
-        .eq('week_start', 'rolling')
+        .eq('week_start', '9999-12-31')
         .maybeSingle();
 
       if (cancelled) return;

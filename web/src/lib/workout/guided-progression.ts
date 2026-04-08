@@ -446,7 +446,7 @@ export function buildGuidedSuggestion(params: {
       lastDisplay,
       targetValues: deload.values,
       targetDisplay: deload.display,
-      reason: `Performance dropping across sessions — deload to ${deload.display} for recovery, then build back`,
+      reason: `Your numbers have been declining — drop to ${deload.display} to recover, then build back stronger`,
       repRange,
       category,
       trend: 'sharp_decline',
@@ -470,7 +470,7 @@ export function buildGuidedSuggestion(params: {
       lastDisplay,
       targetValues: baselineValues,
       targetDisplay: lastDisplay,
-      reason: `Off day — repeat ${lastDisplay} next time`,
+      reason: `Dipped below your recent best — match ${lastDisplay} next session, everyone has off days`,
       repRange,
       category,
       trend: 'declining',
@@ -629,7 +629,7 @@ function buildDoubleProgressionSuggestion(params: {
       const targetDisplay = formatSetValues(targetValues as SetValues, schema);
 
       const setsLabel = numSets === 1 ? 'your set' : `all ${numSets} sets`;
-      const reason = `${repRange.max} reps on ${setsLabel} — increase to ${newLoad}${displayUnit}, start at ${resetReps} reps`;
+      const reason = `Nailed ${repRange.max} reps on ${setsLabel} — time to move up to ${newLoad}${displayUnit}, start at ${resetReps} reps and build again`;
 
       return buildResult({
         decision: 'progress',
@@ -669,15 +669,15 @@ function buildDoubleProgressionSuggestion(params: {
   const setsLabel = numSets === 1 ? 'your set' : `all ${numSets} sets`;
   let reason: string;
   if (reps.length > 1 && minRep < maxRep) {
-    reason = `Aim for ${targetRep} reps on ${setsLabel} at ${currentLoad}${displayUnit} (got ${latestAnalysis.setBreakdown})`;
+    reason = `You hit ${maxRep} on one set but ${minRep} on another — lock in ${targetRep} across ${setsLabel} at ${currentLoad}${displayUnit} before adding weight`;
   } else {
-    reason = `Build to ${targetRep} reps on ${setsLabel} at ${currentLoad}${displayUnit}`;
+    reason = `Solid work at ${currentLoad}${displayUnit} — push for ${targetRep} reps across ${setsLabel}, then you're ready to go up`;
   }
 
   // Plateau warning
   if (sessionsAtWeight >= plateauThreshold) {
     const label = params.loadKey === 'height' ? 'height' : 'weight';
-    reason += ` \u00b7 ${sessionsAtWeight} sessions at this ${label} \u2014 consider a deload week or exercise variation`;
+    reason += ` \u00b7 You've been at this ${label} for ${sessionsAtWeight} sessions \u2014 try a deload week or swap in a variation`;
   }
 
   return buildResult({
@@ -726,16 +726,16 @@ function buildCardioSuggestion(params: {
 
   if (keys.has('distance') && (baselineValues.distance ?? 0) > 0) {
     targetValues.distance = roundDistance((baselineValues.distance ?? 0) + 50);
-    reason = `Add 50m — aim for ${targetValues.distance}m`;
+    reason = `Good pace — push for ${targetValues.distance}m next time`;
     metric = 'distance';
   } else if (keys.has('duration') && (baselineValues.duration ?? 0) > 0) {
     const increment = (baselineValues.duration ?? 0) > 60 ? 10 : 5;
     targetValues.duration = (baselineValues.duration ?? 0) + increment;
-    reason = `Add ${increment}s — aim for ${targetValues.duration}s`;
+    reason = `Nice effort — try holding for ${targetValues.duration}s next session`;
     metric = 'duration';
   } else if (keys.has('laps')) {
     targetValues.laps = (baselineValues.laps ?? 0) + 1;
-    reason = `Add a lap — aim for ${targetValues.laps}`;
+    reason = `Strong finish — go for ${targetValues.laps} laps next time`;
     metric = 'laps';
   } else {
     return buildResult({
@@ -745,7 +745,7 @@ function buildCardioSuggestion(params: {
       lastDisplay,
       targetValues: baselineValues,
       targetDisplay: lastDisplay,
-      reason: 'Keep it up — maintain current pace',
+      reason: 'Consistent work — keep this pace and focus on form',
       repRange,
       category,
       trend,
@@ -803,19 +803,19 @@ function buildFallbackSuggestion(params: {
 
   const targetValues = { ...baselineValues };
   let metric: NonNullable<AISuggestionData['metric']> = 'reps';
-  let reason = 'Add a rep next time';
+  let reason = 'Good effort — try adding one more rep next session';
 
   if (keys.has('reps')) {
     targetValues.reps = (baselineValues.reps ?? 0) + 1;
-    reason = `Aim for ${targetValues.reps} reps`;
+    reason = `You're building well — go for ${targetValues.reps} reps next time`;
     metric = 'reps';
   } else if (keys.has('laps')) {
     targetValues.laps = (baselineValues.laps ?? 0) + 1;
-    reason = `Aim for ${targetValues.laps} laps`;
+    reason = `Solid session — push for ${targetValues.laps} laps next time`;
     metric = 'laps';
   } else if (keys.has('duration')) {
     targetValues.duration = (baselineValues.duration ?? 0) + 5;
-    reason = `Aim for ${targetValues.duration}s`;
+    reason = `Nice hold — aim for ${targetValues.duration}s next session`;
     metric = 'duration';
   }
 

@@ -416,7 +416,7 @@ Deno.serve(async (req: Request) => {
       const today = todayISO();
       rangeEnd = addDays(today, 1); // exclusive end
       rangeStart = addDays(today, -29); // 30 days including today
-      cacheKey = 'rolling';
+      cacheKey = '9999-12-31';
       prevRangeEnd = rangeStart;
       prevRangeStart = addDays(today, -59); // previous 30-day period
     } else {
