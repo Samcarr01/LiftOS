@@ -22,27 +22,29 @@ export function VolumeChart({ points }: Props) {
   return (
     <ResponsiveContainer width="100%" height={180}>
       <BarChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
         <XAxis
           dataKey="date"
-          tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+          tick={{ fontSize: 10, fill: '#a1a1aa' }}
           tickLine={false}
           axisLine={false}
         />
         <YAxis
-          tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+          tick={{ fontSize: 10, fill: '#a1a1aa' }}
           tickLine={false}
           axisLine={false}
           unit="kg"
         />
         <Tooltip
           contentStyle={{
-            background:   'hsl(var(--popover))',
-            border:       '1px solid hsl(var(--border))',
+            background:   '#1c1c2e',
+            border:       '1px solid rgba(255,255,255,0.1)',
             borderRadius: '8px',
             fontSize:     12,
+            color:        '#e4e4e7',
           }}
-          labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
+          labelStyle={{ color: '#a1a1aa' }}
+          itemStyle={{ color: '#e4e4e7' }}
           formatter={(v) => [`${v}kg`, 'Volume']}
         />
         <Bar dataKey="volume" fill="#38bdf8" radius={[3, 3, 0, 0]} />

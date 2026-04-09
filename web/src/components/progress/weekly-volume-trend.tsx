@@ -40,15 +40,15 @@ export function WeeklyVolumeTrend({ data }: Props) {
             <stop offset="95%" stopColor="oklch(0.75 0.18 55)" stopOpacity={0.02} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
         <XAxis
           dataKey="label"
-          tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+          tick={{ fontSize: 10, fill: '#a1a1aa' }}
           tickLine={false}
           axisLine={false}
         />
         <YAxis
-          tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+          tick={{ fontSize: 10, fill: '#a1a1aa' }}
           tickLine={false}
           axisLine={false}
           width={45}
@@ -56,14 +56,14 @@ export function WeeklyVolumeTrend({ data }: Props) {
         />
         <Tooltip
           contentStyle={{
-            background:   'hsl(var(--popover))',
-            border:       '1px solid hsl(var(--border))',
+            background:   '#1c1c2e',
+            border:       '1px solid rgba(255,255,255,0.1)',
             borderRadius: '8px',
             fontSize:     12,
-            color:        'hsl(var(--foreground))',
+            color:        '#e4e4e7',
           }}
-          labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
-          itemStyle={{ color: 'hsl(var(--foreground))' }}
+          labelStyle={{ color: '#a1a1aa' }}
+          itemStyle={{ color: '#e4e4e7' }}
           formatter={(v) => [formatVolumeTooltip(v as number), 'Volume']}
         />
         <Area

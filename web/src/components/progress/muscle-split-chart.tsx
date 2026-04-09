@@ -55,14 +55,14 @@ export function MuscleSplitChart({ data }: Props) {
             </Pie>
             <Tooltip
               contentStyle={{
-                background:   'hsl(var(--popover))',
-                border:       '1px solid hsl(var(--border))',
+                background:   '#1c1c2e',
+                border:       '1px solid rgba(255,255,255,0.1)',
                 borderRadius: '8px',
                 fontSize:     12,
-                color:        'hsl(var(--foreground))',
+                color:        '#e4e4e7',
               }}
-              labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
-              itemStyle={{ color: 'hsl(var(--foreground))' }}
+              labelStyle={{ color: '#a1a1aa' }}
+              itemStyle={{ color: '#e4e4e7' }}
               formatter={(v, name) => [`${Math.round(v as number)}kg`, name]}
             />
           </PieChart>
