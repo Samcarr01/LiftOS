@@ -12,6 +12,7 @@ import {
   Loader2,
   Play,
   Plus,
+  Trash2,
   TrendingUp,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -21,6 +22,8 @@ import { useStartWorkout } from '@/hooks/use-start-workout';
 import { useHomeData } from '@/hooks/use-home-data';
 import { formatShortDate, formatDistanceToNow } from '@/lib/format-date';
 import { useTutorialStore } from '@/store/tutorial-store';
+import { useActiveWorkoutStore } from '@/store/active-workout-store';
+import { createClient } from '@/lib/supabase/client';
 import GettingStartedTutorial from '@/components/tutorial/getting-started-tutorial';
 
 /* ── Helpers ────────────────────────────────────────────────── */
@@ -63,6 +66,90 @@ function getWeekdayFlags(sessions: { started_at: string }[]): boolean[] {
     }
   }
   return flags;
+}
+
+/* ── Resume Workout Banner ──────────────────────────────────── */
+
+function ResumeWorkoutBanner() {
+  const router = useRouter();
+  const workout = useActiveWorkoutStore((s) => s.workout);
+  const clearWorkout = useActiveWorkoutStore((s) => s.clearWorkout);
+  const [hydrated, setHydrated] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
+  const [elapsed, setElapsed] = useState('');
+
+  useEffect(() => {
+    // Wait for Zustand persist to rehydrate from localStorage
+    const unsub = useActiveWorkoutStore.persist.onFinishHydration(() => setHydrated(true));
+    if (useActiveWorkoutStore.persist.hasHydrated()) setHydrated(true);
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!workout) return;
+    const startedAt = new Date(workout.session.started_at).getTime();
+    function tick() {
+      const diff = Math.floor((Date.now() - startedAt) / 1000);
+      const h = Math.floor(diff / 3600);
+      const m = Math.floor((diff % 3600) / 60);
+      if (h > 0) {
+        setElapsed(`${h}h ${m}m`);
+      } else {
+        setElapsed(`${m}m`);
+      }
+    }
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, [workout]);
+
+  if (!hydrated || !workout) return null;
+
+  const templateName = workout.session.template_name ?? 'Workout';
+  const completedSets = workout.exercises.reduce(
+    (n, ex) => n + ex.sets.filter((s) => s.isCompleted).length, 0,
+  );
+  const totalSets = workout.exercises.reduce((n, ex) => n + ex.sets.length, 0);
+
+  return (
+    <div className="page-reveal relative overflow-hidden rounded-2xl border border-primary/30 bg-primary/[0.08] px-4 py-4">
+      <div className="flex items-center gap-3.5">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary">
+          <Dumbbell className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">{templateName}</p>
+          <p className="mt-0.5 text-caption">
+            {completedSets}/{totalSets} sets
+            {elapsed ? ` · ${elapsed} ago` : ''}
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 flex gap-2">
+        <button
+          onClick={() => router.push(`/workout/${workout.session.id}`)}
+          className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-primary-foreground transition-all duration-150 active:scale-[0.98]"
+          style={{ background: 'linear-gradient(135deg, oklch(0.75 0.18 55), oklch(0.62 0.17 40))' }}
+        >
+          <Play className="h-3.5 w-3.5" />
+          Continue
+        </button>
+        <button
+          onClick={async () => {
+            setDiscarding(true);
+            const supabase = createClient();
+            await supabase.from('workout_sessions').delete().eq('id', workout.session.id);
+            clearWorkout();
+          }}
+          disabled={discarding}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 text-muted-foreground transition-colors duration-150 hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
+          aria-label="Discard workout"
+        >
+          {discarding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 /* ── Start Workout Sheet ────────────────────────────────────── */
@@ -214,6 +301,9 @@ export default function HomePage() {
             </>
           )}
         </div>
+
+        {/* ── Resume in-progress workout ─────────── */}
+        <ResumeWorkoutBanner />
 
         {/* ── Start Workout CTA ──────────────────── */}
         <button

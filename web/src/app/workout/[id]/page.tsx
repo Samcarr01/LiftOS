@@ -233,11 +233,22 @@ export default function WorkoutPage() {
       {showLeaveDialog && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4" role="dialog" aria-modal="true" aria-labelledby="leave-dialog-title">
           <div className="w-full max-w-sm rounded-2xl border border-white/[0.10] bg-[oklch(0.16_0.015_260)] p-5 space-y-4">
-            <h3 id="leave-dialog-title" className="font-display text-lg font-bold">Discard workout?</h3>
+            <h3 id="leave-dialog-title" className="font-display text-lg font-bold">Leave workout?</h3>
             <p className="text-sm text-muted-foreground">
-              Your progress will be lost. This cannot be undone.
+              You can save your progress and come back later, or discard the workout entirely.
             </p>
             <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  // Keep store + DB session intact — resume from home page
+                  setShowLeaveDialog(false);
+                  router.replace('/');
+                }}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-primary-foreground transition-all duration-150 active:scale-[0.98]"
+                style={{ background: 'linear-gradient(135deg, oklch(0.75 0.18 55), oklch(0.62 0.17 40))' }}
+              >
+                Save & Exit
+              </button>
               <button
                 onClick={async () => {
                   const supabase = createClient();
