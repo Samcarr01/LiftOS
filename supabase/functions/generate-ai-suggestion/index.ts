@@ -749,32 +749,65 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Build AI prompt ──────────────────────────────────────────────────────
-    const sessionHistory = sessions.map((s, i) => ({
-      session:           i + 1, // 1 = most recent
-      date:              s.started_at.split('T')[0],
-      all_sets_complete: s.allSetsCompleted,
-      working_sets:      s.sets
+    const sessionHistory = sessions.map((s, i) => {
+      const workingSets = s.sets
         .filter((set) => (set.set_type === 'working' || set.set_type === 'top') && set.is_completed)
-        .map((set) => set.values),
-    }));
+        .map((set) => set.values);
+      return {
+        session:           i + 1, // 1 = most recent
+        date:              s.started_at.split('T')[0],
+        all_sets_complete: s.allSetsCompleted,
+        working_sets:      workingSets,
+        set_count:         workingSets.length,
+      };
+    });
 
-    const systemPrompt =
-      'You are a strength training progression coach. Respond ONLY with valid JSON. No markdown, no prose.';
+    // Compute session gap for context
+    const latestDate = new Date(sessions[0].started_at);
+    const now = new Date();
+    const daysSinceLastSession = Math.floor((now.getTime() - latestDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Detect per-set rep patterns for context
+    const latestWorkingSets = sessions[0].sets
+      .filter((s) => (s.set_type === 'working' || s.set_type === 'top') && s.is_completed);
+    const latestReps = latestWorkingSets.map((s) => Number(s.values.reps ?? 0)).filter((r) => r > 0);
+    const hasRepDropoff = latestReps.length >= 3 && latestReps[0] > latestReps[latestReps.length - 1];
+
+    // Build context section
+    const contextLines: string[] = [];
+    if (daysSinceLastSession >= 14) {
+      contextLines.push(`⚠️ It has been ${daysSinceLastSession} days since their last session. They are returning from a break — prioritise matching previous performance over progressing.`);
+    } else if (daysSinceLastSession >= 7) {
+      contextLines.push(`Note: ${daysSinceLastSession} days since last session — moderate gap, be conservative with progression.`);
+    }
+    if (plateau.is_plateau) {
+      contextLines.push(`⚠️ Plateau detected: estimated 1RM has not improved for ${plateau.stalled} consecutive sessions.`);
+    }
+    if (hasRepDropoff && latestReps.length >= 3) {
+      contextLines.push(`Rep pattern shows fatigue drop-off across sets: ${latestReps.join(', ')}. This is normal — factor it into realistic targets.`);
+    }
+
+    const systemPrompt = `You are a knowledgeable, encouraging strength coach giving brief next-session targets. Think like a coach who knows their athlete's numbers. Be specific and reference their actual data. Write rationales as short coaching cues (under 200 chars), not generic advice. Respond ONLY with valid JSON. No markdown, no prose.`;
 
     const userPrompt = `EXERCISE: ${exercise.name}
 TRACKING TYPE: ${trackingType}
+DAYS SINCE LAST SESSION: ${daysSinceLastSession}
+${contextLines.length > 0 ? `\nCONTEXT:\n${contextLines.join('\n')}\n` : ''}
 RECENT SESSIONS (session 1 = most recent):
 ${JSON.stringify(sessionHistory, null, 2)}
 
-RULES:
-1. Primary target: small progression using only the tracked fields for this exercise
-2. Alternative target: a different progression path
-3. If no improvement for 3+ consecutive sessions, set plateau_flag to true
-4. Never suggest more than +5% load, +2 reps, or +2 laps in one step
-5. Never reduce any tracked value below the latest completed session
-6. If progression is not there yet, keep the target the same instead of lowering it
-7. For bodyweight work, use reps and optional added external load only
-8. Reference actual numbers from the data
+COACHING RULES:
+1. Primary target: a realistic, achievable next-session target using only the tracked fields
+2. Alternative target: a different progression path (e.g., if primary is +weight, alternative could be +reps)
+3. Use the DOUBLE PROGRESSION model: increase reps within a range first, then bump weight and reset reps
+4. If no improvement for 3+ sessions at the same weight, set plateau_flag to true
+5. Never suggest more than +5% load, +2 reps, or +2 laps in one step
+6. Never reduce any tracked value below the latest completed session
+7. If they had an off day (performance dropped), suggest matching their recent best — don't regress
+8. If returning from a break (7+ days), suggest matching their last session, not progressing
+9. If reps drop across sets (e.g., 10, 9, 8), that's normal fatigue — set a realistic target for the weakest set, not just the best
+10. For bodyweight work (added_weight + reps), progress reps first, then add small external load
+11. Reference actual numbers from their data in the rationale
 
 Respond ONLY with this exact JSON structure (no other text):
 {"primary":{"weight":number|null,"added_weight":number|null,"reps":number|null,"laps":number|null,"duration":number|null,"distance":number|null,"rationale":"string max 200 chars"},"alternative":{"weight":number|null,"added_weight":number|null,"reps":number|null,"laps":number|null,"duration":number|null,"distance":number|null,"rationale":"string max 200 chars"},"plateau_flag":boolean}`;
@@ -792,8 +825,8 @@ Respond ONLY with this exact JSON structure (no other text):
       const response = await openai.chat.completions.create({
         model:           'gpt-5',
         response_format: { type: 'json_object' },
-        temperature:     0.2,
-        max_tokens:      300,
+        temperature:     0.3,
+        max_tokens:      400,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user',   content: userPrompt   },

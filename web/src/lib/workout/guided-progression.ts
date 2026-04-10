@@ -79,6 +79,10 @@ const DEFAULT_REP_RANGES: Record<ExerciseCategory, RepRange> = {
 const PLATEAU_THRESHOLD = 4;
 const E1RM_DECLINE_THRESHOLD = 0.10;
 
+// Session gap thresholds (days)
+const LONG_BREAK_DAYS = 14;
+const MODERATE_BREAK_DAYS = 7;
+
 // ── Helpers (kept from v1) ───────────────────────────────────────────────────
 
 function roundToStep(value: number, step: number): number {
@@ -324,25 +328,126 @@ function countSessionsAtSameLevel(
   return count;
 }
 
+// ── Session Gap ─────────────────────────────────────────────────────────────
+
+function daysBetween(dateA: string, dateB: string): number {
+  const a = new Date(dateA).getTime();
+  const b = new Date(dateB).getTime();
+  return Math.abs(b - a) / (1000 * 60 * 60 * 24);
+}
+
+// ── Historical Attempt Tracking ─────────────────────────────────────────────
+
+/** Check if user previously attempted a higher weight and didn't complete all sets */
+function findFailedAttemptAtWeight(
+  sessions: ProgressHistorySession[],
+  targetWeight: number,
+  weightKey: string,
+  schema: TrackingSchema,
+  repRange: RepRange,
+): { attempted: boolean; attempts: number; bestReps: number } {
+  let attempts = 0;
+  let bestReps = 0;
+
+  for (const session of sessions) {
+    const analysis = analyzeSession(session, schema, repRange);
+    if (!analysis) continue;
+
+    const sessionWeight = weightKey === 'height'
+      ? Math.max(...analysis.workingSets.map((s) => getNumeric(s.values, 'height')))
+      : analysis.weight;
+
+    // Check if they used a weight within 0.5 of the target
+    if (Math.abs(sessionWeight - targetWeight) < 0.5) {
+      if (!analysis.allSetsAtCeiling) {
+        attempts++;
+        const maxRep = Math.max(...analysis.reps, 0);
+        if (maxRep > bestReps) bestReps = maxRep;
+      }
+    }
+  }
+
+  return { attempted: attempts > 0, attempts, bestReps };
+}
+
+// ── Per-Set Pattern Detection ───────────────────────────────────────────────
+
+/** Detect if reps consistently drop off across sets (e.g., 10, 9, 8) */
+function detectRepDropoff(reps: number[]): { hasDropoff: boolean; avgDropPerSet: number } {
+  if (reps.length < 2) return { hasDropoff: false, avgDropPerSet: 0 };
+
+  let totalDrop = 0;
+  let drops = 0;
+
+  for (let i = 1; i < reps.length; i++) {
+    if (reps[i] < reps[i - 1]) {
+      totalDrop += reps[i - 1] - reps[i];
+      drops++;
+    }
+  }
+
+  const avgDropPerSet = drops > 0 ? totalDrop / drops : 0;
+  // Dropoff = most sets decline, with average drop >= 1 rep
+  const hasDropoff = drops >= Math.floor(reps.length / 2) && avgDropPerSet >= 1;
+  return { hasDropoff, avgDropPerSet };
+}
+
 // ── Suggestion Builders ──────────────────────────────────────────────────────
+
+function computeDeloadPercent(
+  sessions: ProgressHistorySession[],
+  schema: TrackingSchema,
+  repRange: RepRange,
+): number {
+  // Base: 10%. Scale based on how severe the decline is.
+  if (sessions.length < 3) return 0.10;
+
+  const analyses = sessions
+    .slice(0, 5)
+    .map((s) => analyzeSession(s, schema, repRange))
+    .filter((a): a is SessionAnalysis => a !== null && a.e1rm > 0);
+
+  if (analyses.length < 3) return 0.10;
+
+  // Count consecutive declining sessions
+  let decliningCount = 0;
+  for (let i = 0; i < analyses.length - 1; i++) {
+    if (analyses[i].e1rm < analyses[i + 1].e1rm * 0.97) {
+      decliningCount++;
+    } else {
+      break;
+    }
+  }
+
+  // Measure total drop from peak
+  const peak = Math.max(...analyses.map((a) => a.e1rm));
+  const current = analyses[0].e1rm;
+  const dropPercent = peak > 0 ? (peak - current) / peak : 0;
+
+  // Scale deload: 8% for mild, 10% for moderate, 15% for severe
+  if (decliningCount >= 3 || dropPercent > 0.15) return 0.15;
+  if (decliningCount >= 2 || dropPercent > 0.10) return 0.12;
+  return 0.10;
+}
 
 function buildDeloadTarget(
   baseValues: SuggestionValues,
   schema: TrackingSchema,
   repRange: RepRange,
   unitPreference: UnitPreference,
+  deloadPercent: number = 0.10,
 ): { values: SuggestionValues; display: string } {
   const keys = new Set(schema.fields.map((f) => f.key));
 
   if (keys.has('weight') && (baseValues.weight ?? 0) > 0) {
-    const deloadWeight = roundLoad((baseValues.weight ?? 0) * 0.9, unitPreference);
+    const deloadWeight = roundLoad((baseValues.weight ?? 0) * (1 - deloadPercent), unitPreference);
     const deloadReps = repRange.max > 0 ? Math.round((repRange.min + repRange.max) / 2) : baseValues.reps;
     const values = { ...baseValues, weight: deloadWeight, ...(deloadReps !== undefined ? { reps: deloadReps } : {}) };
     return { values, display: formatSetValues(values as SetValues, schema) };
   }
 
   if (keys.has('added_weight') && (baseValues.added_weight ?? 0) > 0) {
-    const deloadWeight = roundLoad((baseValues.added_weight ?? 0) * 0.9, unitPreference);
+    const deloadWeight = roundLoad((baseValues.added_weight ?? 0) * (1 - deloadPercent), unitPreference);
     const values = { ...baseValues, added_weight: Math.max(0, deloadWeight) };
     return { values, display: formatSetValues(values as SetValues, schema) };
   }
@@ -430,14 +535,57 @@ export function buildGuidedSuggestion(params: {
 
   const lastDisplay = formatSetValues(baselineValues as SetValues, schema);
 
-  // ── Phase 1: Detect regression / bad day ───────────────────────────────────
-
+  // ── Trend & plateau (computed early, used by multiple phases) ─────────────
   const trend = detectTrend(sessions, schema, repRange);
   const sessionsAtWeight = countSessionsAtSameLevel(sessions, schema, repRange);
 
+  // ── Session gap detection ─────────────────────────────────────────────────
+  const sessionGapDays = daysBetween(latestSession.completedAt, generatedAt);
+  const isLongBreak = sessionGapDays >= LONG_BREAK_DAYS;
+  const isModerateBreak = sessionGapDays >= MODERATE_BREAK_DAYS;
+
+  // After a long break (14+ days), suggest holding or slight reduction — don't progress
+  if (isLongBreak && isWeightReps) {
+    const weeksOff = Math.round(sessionGapDays / 7);
+    const holdValues = { ...baselineValues };
+    // Suggest ~5% reduction after very long breaks (21+ days)
+    if (sessionGapDays >= 21 && (holdValues.weight ?? holdValues.added_weight ?? 0) > 0) {
+      const loadKey = keys.has('weight') ? 'weight' : 'added_weight';
+      holdValues[loadKey] = roundLoad((holdValues[loadKey] ?? 0) * 0.95, unitPreference);
+    }
+    const holdDisplay = formatSetValues(holdValues as SetValues, schema);
+
+    return buildResult({
+      decision: sessionGapDays >= 21 ? 'deload' : 'hold',
+      metric: null,
+      baselineValues,
+      lastDisplay,
+      targetValues: holdValues,
+      targetDisplay: holdDisplay,
+      reason: sessionGapDays >= 21
+        ? `Welcome back after ${weeksOff} weeks — ease in at ${holdDisplay} to rebuild your groove before pushing hard`
+        : `It's been ${weeksOff} weeks — match ${lastDisplay} to find your rhythm again, then push from there`,
+      repRange,
+      category,
+      trend: 'stable',
+      setBreakdown: latestAnalysis.setBreakdown,
+      sessionsAtWeight,
+      latestSession,
+      latestWorkoutDate,
+      generatedAt,
+      previousHistory,
+      eligible: false,
+      exerciseNotes,
+    });
+  }
+
+  // ── Phase 1: Detect regression / bad day ───────────────────────────────────
+
   if (trend === 'sharp_decline' && isWeightReps) {
-    // 2+ declining sessions → deload
-    const deload = buildDeloadTarget(baselineValues, schema, repRange, unitPreference);
+    // 2+ declining sessions → deload with severity-scaled percentage
+    const deloadPercent = computeDeloadPercent(sessions, schema, repRange);
+    const deload = buildDeloadTarget(baselineValues, schema, repRange, unitPreference, deloadPercent);
+    const pctLabel = Math.round(deloadPercent * 100);
 
     return buildResult({
       decision: 'deload',
@@ -446,7 +594,9 @@ export function buildGuidedSuggestion(params: {
       lastDisplay,
       targetValues: deload.values,
       targetDisplay: deload.display,
-      reason: `Your numbers have been declining — drop to ${deload.display} to recover, then build back stronger`,
+      reason: deloadPercent >= 0.15
+        ? `Your numbers have dropped significantly across multiple sessions — take it back to ${deload.display} (${pctLabel}% deload) and rebuild from a solid base`
+        : `Your numbers have been declining — drop to ${deload.display} to recover, then build back stronger`,
       repRange,
       category,
       trend: 'sharp_decline',
@@ -462,7 +612,11 @@ export function buildGuidedSuggestion(params: {
   }
 
   if (trend === 'declining' && isWeightReps) {
-    // Single bad day → hold
+    // Single bad day → hold, but factor in break if moderate
+    const reason = isModerateBreak
+      ? `First session back after a week off — match ${lastDisplay} to get back in the groove`
+      : `Dipped below your recent best — match ${lastDisplay} next session, everyone has off days`;
+
     return buildResult({
       decision: 'hold',
       metric: null,
@@ -470,7 +624,7 @@ export function buildGuidedSuggestion(params: {
       lastDisplay,
       targetValues: baselineValues,
       targetDisplay: lastDisplay,
-      reason: `Dipped below your recent best — match ${lastDisplay} next session, everyone has off days`,
+      reason,
       repRange,
       category,
       trend: 'declining',
@@ -525,6 +679,8 @@ export function buildGuidedSuggestion(params: {
       sessionsAtWeight,
       plateauThreshold,
       exerciseNotes,
+      allSessions: sessions,
+      isModerateBreak,
     });
   }
 
@@ -552,6 +708,8 @@ export function buildGuidedSuggestion(params: {
       loadKey: 'height',
       loadUnit: 'cm',
       exerciseNotes,
+      allSessions: sessions,
+      isModerateBreak,
     });
   }
 
@@ -596,11 +754,14 @@ function buildDoubleProgressionSuggestion(params: {
   loadKey?: string;   // override: 'height' for height+reps exercises
   loadUnit?: string;  // override: 'cm' for height+reps exercises
   exerciseNotes?: string | null;
+  allSessions: ProgressHistorySession[];
+  isModerateBreak: boolean;
 }): GuidedSuggestionResult {
   const {
     keys, baselineValues, lastDisplay, latestAnalysis, latestSession,
     latestWorkoutDate, generatedAt, previousHistory, category, repRange,
     step, unitPreference, trend, sessionsAtWeight, schema, plateauThreshold,
+    allSessions, isModerateBreak,
   } = params;
 
   const weightKey = params.loadKey ?? (keys.has('added_weight') ? 'added_weight' : 'weight');
@@ -608,6 +769,9 @@ function buildDoubleProgressionSuggestion(params: {
   const displayUnit = params.loadUnit ?? (unitPreference === 'lb' ? 'lb' : 'kg');
   const numSets = latestAnalysis.workingSets.length;
   const reps = latestAnalysis.reps;
+
+  // Per-set pattern detection
+  const { hasDropoff } = detectRepDropoff(reps);
 
   // Check if all sets hit the rep range ceiling
   const currentLoad = (baselineValues as Record<string, number | undefined>)[weightKey] ?? 0;
@@ -620,16 +784,34 @@ function buildDoubleProgressionSuggestion(params: {
 
     // Regression guard: if rounding still lands on same weight, fall through to hold
     if (newLoad > currentLoad) {
+      // Historical attempt check: have they tried this weight before and struggled?
+      const pastAttempt = findFailedAttemptAtWeight(allSessions, newLoad, weightKey, schema, repRange);
+
       const resetReps = Math.ceil((repRange.min + repRange.max) / 2);
       const targetValues: SuggestionValues = {
         ...baselineValues,
         [weightKey]: newLoad,
-        reps: resetReps,
+        reps: pastAttempt.attempted ? Math.max(pastAttempt.bestReps, repRange.min) : resetReps,
       };
       const targetDisplay = formatSetValues(targetValues as SetValues, schema);
 
       const setsLabel = numSets === 1 ? 'your set' : `all ${numSets} sets`;
-      const reason = `Nailed ${repRange.max} reps on ${setsLabel} — time to move up to ${newLoad}${displayUnit}, start at ${resetReps} reps and build again`;
+      let reason: string;
+
+      if (isModerateBreak) {
+        // After a break, temper expectations even if they hit ceiling last time
+        reason = `You were hitting ${repRange.max} reps before your break — try ${newLoad}${displayUnit} but don't force it if the weight feels heavy`;
+      } else if (pastAttempt.attempted) {
+        // They've tried this weight before and didn't complete
+        const targetReps = targetValues.reps ?? resetReps;
+        if (pastAttempt.attempts >= 2) {
+          reason = `You've attempted ${newLoad}${displayUnit} ${pastAttempt.attempts} times before — you hit ${pastAttempt.bestReps} reps at best. Aim for ${targetReps} reps this time, you're stronger now`;
+        } else {
+          reason = `Nailed ${repRange.max} reps on ${setsLabel} — ${newLoad}${displayUnit} is next. You tried it once before and hit ${pastAttempt.bestReps} reps, go get it`;
+        }
+      } else {
+        reason = `Nailed ${repRange.max} reps on ${setsLabel} — time to move up to ${newLoad}${displayUnit}, start at ${resetReps} reps and build again`;
+      }
 
       return buildResult({
         decision: 'progress',
@@ -668,7 +850,16 @@ function buildDoubleProgressionSuggestion(params: {
 
   const setsLabel = numSets === 1 ? 'your set' : `all ${numSets} sets`;
   let reason: string;
-  if (reps.length > 1 && minRep < maxRep) {
+
+  if (isModerateBreak) {
+    // After a moderate break, focus on matching rather than pushing
+    reason = `First session back after a break — focus on matching ${currentLoad}${displayUnit} × ${maxRep} across ${setsLabel} before pushing for more`;
+  } else if (hasDropoff && reps.length >= 3) {
+    // Per-set awareness: acknowledge natural fatigue drop-off
+    const firstRep = reps[0];
+    const lastRep = reps[reps.length - 1];
+    reason = `Your reps dropped from ${firstRep} to ${lastRep} across sets — that's normal fatigue. Get ${targetRep} on your first ${Math.ceil(reps.length / 2)} sets, the rest will follow`;
+  } else if (reps.length > 1 && minRep < maxRep) {
     reason = `You hit ${maxRep} on one set but ${minRep} on another — lock in ${targetRep} across ${setsLabel} at ${currentLoad}${displayUnit} before adding weight`;
   } else {
     reason = `Solid work at ${currentLoad}${displayUnit} — push for ${targetRep} reps across ${setsLabel}, then you're ready to go up`;
