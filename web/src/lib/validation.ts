@@ -138,17 +138,32 @@ export const LastPerformanceSetsDataSchema = z.array(LastPerformanceSetSchema);
 
 // ── Weekly summary data ───────────────────────────────────────────────────────
 
+const CoachingSectionSchema = z.object({
+  title:     z.string().max(50),
+  content:   z.string().max(600),
+  sentiment: z.enum(['positive', 'neutral', 'constructive']),
+});
+
 const AIAnalysisSchema = z.object({
-  headline:                  z.string().max(200),
-  wins:                      z.array(z.string().max(200)).max(5),
-  focus_areas:               z.array(z.string().max(200)).max(5),
-  exercise_callouts:         z.array(z.object({
+  // New coaching-conversation fields
+  greeting:           z.string().max(300).optional(),
+  coaching_sections:  z.array(CoachingSectionSchema).max(6).optional(),
+  game_plan:          z.array(z.string().max(300)).max(5).optional(),
+  sign_off:           z.string().max(200).optional(),
+
+  // Shared field (used by both old and new formats)
+  exercise_callouts:  z.array(z.object({
     name:       z.string(),
     note:       z.string().max(200),
     trajectory: z.enum(['improving', 'stalled', 'declining']).optional(),
-  })).max(8),
+  })).max(8).optional(),
+
+  // Legacy fields (optional — old cached summaries still validate)
+  headline:                  z.string().max(200).optional(),
+  wins:                      z.array(z.string().max(200)).max(5).optional(),
+  focus_areas:               z.array(z.string().max(200)).max(5).optional(),
   next_week_tip:             z.string().max(300).optional(),
-  training_consistency:      z.string().max(300),
+  training_consistency:      z.string().max(300).optional(),
   volume_trend_analysis:     z.string().max(400).optional(),
   muscle_balance_assessment: z.string().max(400).optional(),
   pr_momentum:               z.string().max(200).optional(),

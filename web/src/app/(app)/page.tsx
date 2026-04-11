@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   BarChart3,
+  Brain,
   Calendar,
   ChevronRight,
   Dumbbell,
@@ -380,21 +381,36 @@ export default function HomePage() {
           );
         })()}
 
-        {/* ── Progress Link ──────────────────────── */}
+        {/* ── Coaching Report + Progress Links ──── */}
         {!loading && (data?.recentSessions?.length ?? 0) > 0 && (
-          <Link
-            href="/progress"
-            className="page-reveal delay-2 action-card group flex items-center gap-3.5 rounded-2xl px-4 py-4"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.72_0.17_252/0.15)] text-[oklch(0.78_0.15_252)]">
-              <BarChart3 className="h-[18px] w-[18px]" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold">Progress & Charts</p>
-              <p className="text-caption">Track PRs, trends, and weekly summaries</p>
-            </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40 transition-transform duration-150 group-hover:translate-x-0.5" />
-          </Link>
+          <div className="page-reveal delay-2 space-y-2.5">
+            <Link
+              href="/progress/weekly"
+              className="action-card group flex items-center gap-3.5 rounded-2xl px-4 py-4"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                <Brain className="h-[18px] w-[18px]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">Coaching Report</p>
+                <p className="text-caption">Your 30-day training check-in</p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40 transition-transform duration-150 group-hover:translate-x-0.5" />
+            </Link>
+            <Link
+              href="/progress"
+              className="action-card group flex items-center gap-3.5 rounded-2xl px-4 py-4"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.72_0.17_252/0.15)] text-[oklch(0.78_0.15_252)]">
+                <BarChart3 className="h-[18px] w-[18px]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">Exercise Charts</p>
+                <p className="text-caption">Track PRs, trends, and progress</p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40 transition-transform duration-150 group-hover:translate-x-0.5" />
+            </Link>
+          </div>
         )}
 
         {/* ── Your Workouts ───────────────────────── */}

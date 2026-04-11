@@ -47,17 +47,19 @@ interface PRRow {
   achieved_at:  string;
 }
 
+interface CoachingSection {
+  title:     string;
+  content:   string;
+  sentiment: 'positive' | 'neutral' | 'constructive';
+}
+
 interface AIAnalysis {
-  headline:                 string;
-  wins:                     string[];
-  focus_areas:              string[];
-  exercise_callouts:        { name: string; note: string; trajectory?: string }[];
-  next_week_tip?:           string;
-  training_consistency:     string;
-  volume_trend_analysis?:   string;
-  muscle_balance_assessment?: string;
-  pr_momentum?:             string;
-  action_items?:            string[];
+  // New coaching format
+  greeting:           string;
+  coaching_sections:  CoachingSection[];
+  exercise_callouts:  { name: string; note: string; trajectory?: string }[];
+  game_plan:          string[];
+  sign_off:           string;
 }
 
 interface ExerciseHighlight {
@@ -291,80 +293,86 @@ async function generateStructuredInsight(
 
   const is30d = mode === 'rolling_30d';
 
+  const dataSection =
+    `TRAINING PERIOD: ${is30d ? 'Last 30 days' : 'This week'}\n\n` +
+    `STATS:\n` +
+    `- Training frequency: ${freqText}\n` +
+    `- Training days: ${stats.sessionDays.join(', ') || 'none logged'}\n` +
+    `- Total volume: ${stats.volume}kg (${stats.totalSets} working sets)\n` +
+    `- Weekly volume breakdown: ${volumeTrend || 'no data'}\n` +
+    `- Comparison: ${prevDelta}\n` +
+    `- Strongest lift: ${stats.strongest}\n` +
+    `- Most improved muscle group: ${stats.mostImproved ?? 'N/A'}\n\n` +
+    `MUSCLE SPLIT:\n${muscleSplitText || 'N/A'}\n\n` +
+    `EXERCISE BREAKDOWN:\n${exerciseBreakdown || 'No exercises logged'}\n\n` +
+    `PERSONAL RECORDS HIT:\n${prList}`;
+
   const prompt = is30d
-    ? `You are a knowledgeable strength coach analysing a lifter's last 30 days of training data. Provide detailed, specific, actionable coaching feedback.\n\n` +
-      `TRAINING PERIOD: Last 30 days\n\n` +
-      `STATS:\n` +
-      `- Training frequency: ${freqText}\n` +
-      `- Training days: ${stats.sessionDays.join(', ') || 'none logged'}\n` +
-      `- Total volume: ${stats.volume}kg (${stats.totalSets} working sets)\n` +
-      `- Weekly volume breakdown: ${volumeTrend || 'no data'}\n` +
-      `- Comparison: ${prevDelta}\n` +
-      `- Strongest lift: ${stats.strongest}\n` +
-      `- Most improved muscle group: ${stats.mostImproved ?? 'N/A'}\n\n` +
-      `MUSCLE SPLIT:\n${muscleSplitText || 'N/A'}\n\n` +
-      `EXERCISE BREAKDOWN:\n${exerciseBreakdown || 'No exercises logged'}\n\n` +
-      `PERSONAL RECORDS HIT:\n${prList}\n\n` +
+    ? `Write a personal coaching check-in for your client based on their last 30 days of training.\n\n` +
+      `${dataSection}\n\n` +
       `INSTRUCTIONS:\n` +
       `Respond with a JSON object (no markdown, no code fences). The JSON must have exactly these fields:\n` +
       `{\n` +
-      `  "headline": "One punchy sentence summarising the 30-day period (max 25 words)",\n` +
-      `  "wins": ["2-4 specific achievements — reference actual numbers and exercise names"],\n` +
-      `  "volume_trend_analysis": "2-3 sentences analysing the weekly volume trajectory — is it increasing, decreasing, or stable? Are there dips? What does the pattern suggest?",\n` +
-      `  "muscle_balance_assessment": "2-3 sentences on muscle group coverage. Flag any imbalances (e.g. too much push vs pull, no direct arm work, neglected posterior chain). Suggest corrections.",\n` +
-      `  "focus_areas": ["2-3 specific things to improve — reference muscle imbalances, missed groups, or stalled lifts"],\n` +
-      `  "exercise_callouts": [{"name": "Exercise Name", "note": "specific observation", "trajectory": "improving|stalled|declining"}],\n` +
-      `  "action_items": ["3 concrete, actionable recommendations for the next training block"],\n` +
-      `  "pr_momentum": "Brief assessment of PR frequency and what it indicates about progression rate",\n` +
-      `  "training_consistency": "Assessment of training frequency, schedule pattern, and recovery spacing"\n` +
+      `  "greeting": "A warm, personalised opening that references something specific from their training. Address them directly with 'you'. Set the tone for the whole report. (max 40 words)",\n` +
+      `  "coaching_sections": [\n` +
+      `    {\n` +
+      `      "title": "Short section label (2-4 words, e.g. 'Volume & Consistency', 'Your Upper Body', 'Where You're Stalling')",\n` +
+      `      "content": "2-4 sentences of coaching prose. Address the client directly with 'you/your'. Reference specific numbers, exercises, and percentages from the data. Be honest — if something is declining, say so constructively. If something is great, celebrate it genuinely.",\n` +
+      `      "sentiment": "positive|neutral|constructive"\n` +
+      `    }\n` +
+      `  ],\n` +
+      `  "exercise_callouts": [{"name": "Exercise Name", "note": "specific observation about this exercise", "trajectory": "improving|stalled|declining"}],\n` +
+      `  "game_plan": ["3 specific, actionable things to focus on in the next training block — written as coach instructions, e.g. 'Add 2 sets of face pulls on your push days to balance out the pressing volume'"],\n` +
+      `  "sign_off": "A brief, genuine motivational closing line (max 20 words)"\n` +
       `}\n\n` +
       `RULES:\n` +
-      `1. Be specific — use the actual numbers, exercise names, and percentages from the data\n` +
-      `2. If volume is trending down, mention it honestly\n` +
-      `3. If muscle groups are imbalanced (e.g. 40%+ on one group, 0% on another), flag it clearly\n` +
-      `4. Keep each string concise — no filler words\n` +
-      `5. exercise_callouts should cover 3-5 of the most notable exercises with trajectory assessment\n` +
-      `6. action_items must be concrete ("Add 2 sets of face pulls on push days") not vague ("work on balance")\n` +
-      `7. Don't invent data that wasn't provided\n` +
-      `8. Output ONLY the JSON object, nothing else`
-    : `You are a knowledgeable strength coach analysing a lifter's weekly training data. Provide specific, actionable feedback.\n\n` +
-      `STATS:\n` +
-      `- Workouts this week: ${stats.workouts} (on ${stats.sessionDays.join(', ') || 'no days'})\n` +
-      `- Total volume: ${stats.volume}kg (${stats.totalSets} working sets)\n` +
-      `- Volume trend (last 4 weeks): ${volumeTrend || 'no prior data'}\n` +
-      `- Comparison: ${prevDelta}\n` +
-      `- Strongest lift: ${stats.strongest}\n` +
-      `- Most improved muscle group: ${stats.mostImproved ?? 'N/A'}\n\n` +
-      `MUSCLE SPLIT:\n${muscleSplitText || 'N/A'}\n\n` +
-      `EXERCISE BREAKDOWN:\n${exerciseBreakdown || 'No exercises logged'}\n\n` +
-      `PERSONAL RECORDS HIT:\n${prList}\n\n` +
+      `1. Write like a real coach talking to their client — warm, direct, specific. Not clinical or robotic.\n` +
+      `2. Always use 'you' and 'your' — this is a personal conversation, not a third-person analysis.\n` +
+      `3. Use the actual numbers, exercise names, and percentages from the data.\n` +
+      `4. coaching_sections should cover 3-5 topics. Choose what matters most: consistency, volume trends, muscle balance, PR progress, weak points, strong points. Don't force all topics — only discuss what the data warrants.\n` +
+      `5. Each coaching_sections entry should be 2-4 sentences of flowing prose, not bullet points.\n` +
+      `6. If something is going badly, say it directly but constructively ("Your leg volume has dropped 30% — that's worth addressing" not "Consider increasing leg work").\n` +
+      `7. If something is going well, be genuinely enthusiastic ("You've been absolutely crushing your bench work — 3 PRs in a month is serious progress").\n` +
+      `8. game_plan must be concrete ("Add 2 sets of face pulls on push days") not vague ("work on balance").\n` +
+      `9. exercise_callouts should cover 3-5 of the most notable exercises with trajectory assessment.\n` +
+      `10. Don't invent data that wasn't provided.\n` +
+      `11. Output ONLY the JSON object, nothing else.`
+    : `Write a brief weekly coaching note for your client.\n\n` +
+      `${dataSection}\n\n` +
       `INSTRUCTIONS:\n` +
       `Respond with a JSON object (no markdown, no code fences). The JSON must have exactly these fields:\n` +
       `{\n` +
-      `  "headline": "One punchy sentence summarising the week (max 25 words)",\n` +
-      `  "wins": ["2-3 specific achievements — reference actual numbers and exercise names"],\n` +
-      `  "focus_areas": ["1-2 specific things to improve — reference muscle imbalances, missed groups, or stalled lifts"],\n` +
-      `  "exercise_callouts": [{"name": "Exercise Name", "note": "specific observation about this exercise"}],\n` +
-      `  "next_week_tip": "One actionable suggestion for next week based on the data",\n` +
-      `  "training_consistency": "Brief note on training frequency and schedule pattern"\n` +
+      `  "greeting": "A brief, warm opening referencing this week's training (max 25 words)",\n` +
+      `  "coaching_sections": [\n` +
+      `    {\n` +
+      `      "title": "Short section label (2-4 words)",\n` +
+      `      "content": "1-2 sentences of coaching feedback addressing the client directly.",\n` +
+      `      "sentiment": "positive|neutral|constructive"\n` +
+      `    }\n` +
+      `  ],\n` +
+      `  "exercise_callouts": [{"name": "Exercise Name", "note": "specific observation"}],\n` +
+      `  "game_plan": ["1-2 actionable suggestions for next week"],\n` +
+      `  "sign_off": "Brief motivational closing (max 15 words)"\n` +
       `}\n\n` +
       `RULES:\n` +
-      `1. Be specific — use the actual numbers, exercise names, and percentages from the data\n` +
-      `2. If volume is trending down, mention it honestly\n` +
-      `3. If muscle groups are imbalanced (e.g. 40%+ on one group, 0% on another), flag it\n` +
-      `4. Keep each string concise — no filler words\n` +
-      `5. exercise_callouts should cover 2-4 of the most notable exercises\n` +
-      `6. Don't invent data that wasn't provided\n` +
-      `7. Output ONLY the JSON object, nothing else`;
+      `1. Write like a coach — warm, direct, use 'you/your'.\n` +
+      `2. Be specific with numbers and exercise names.\n` +
+      `3. coaching_sections: 2-3 topics, 1-2 sentences each.\n` +
+      `4. exercise_callouts: 2-4 notable exercises.\n` +
+      `5. Don't invent data. Output ONLY the JSON object.`;
 
   const openai = new OpenAI({ apiKey });
 
+  const systemMessage = is30d
+    ? 'You are an experienced personal strength coach writing a monthly check-in to your client. You know them well. Write in second person ("You\'ve been...", "Your bench press..."). Be warm but honest — celebrate wins genuinely, give constructive criticism directly, and be specific with numbers. Respond with valid JSON only, no markdown.'
+    : 'You are a strength coach writing a quick weekly note to your client. Be warm, specific, and direct. Respond with valid JSON only, no markdown.';
+
   const response = await openai.chat.completions.create({
     model:       'gpt-5',
-    temperature: 0.4,
-    max_tokens:  is30d ? 1200 : 600,
+    temperature: is30d ? 0.5 : 0.4,
+    max_tokens:  is30d ? 1800 : 800,
     messages: [
-      { role: 'system', content: 'You are a strength coach. Respond with valid JSON only, no markdown.' },
+      { role: 'system', content: systemMessage },
       { role: 'user',   content: prompt },
     ],
   });
@@ -375,7 +383,7 @@ async function generateStructuredInsight(
   try {
     const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
     const parsed = JSON.parse(cleaned) as AIAnalysis;
-    if (!parsed.headline || !Array.isArray(parsed.wins)) return null;
+    if (!parsed.greeting || !Array.isArray(parsed.coaching_sections)) return null;
     return parsed;
   } catch {
     console.error('[generate-weekly-summary] Failed to parse AI JSON:', raw.slice(0, 200));
@@ -704,8 +712,8 @@ Deno.serve(async (req: Request) => {
       });
 
       summaryData.ai_analysis = aiResult;
-      if (aiResult?.headline) {
-        summaryData.insight = aiResult.headline;
+      if (aiResult?.greeting) {
+        summaryData.insight = aiResult.greeting;
       }
 
       console.log(`[generate-weekly-summary] AI analysis generated (${mode}) for user`, user.id);
