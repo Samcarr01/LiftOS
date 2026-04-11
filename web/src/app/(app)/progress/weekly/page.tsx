@@ -12,11 +12,11 @@ import {
   Copy,
   Dumbbell,
   Loader2,
-  RefreshCw,
   Sparkles,
   Target,
   TrendingDown,
   TrendingUp,
+  Wand2,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTrainingSummary } from '@/hooks/use-weekly-summaries';
@@ -32,12 +32,6 @@ const MuscleSplitChart = dynamic(
 );
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-const SENTIMENT_BORDER: Record<string, string> = {
-  positive:     'border-l-[oklch(0.72_0.19_155)]',
-  neutral:      'border-l-[oklch(0.72_0.15_250)]',
-  constructive: 'border-l-[oklch(0.80_0.16_85)]',
-};
 
 const TRAJECTORY_ICON: Record<string, { icon: React.ReactNode; color: string }> = {
   improving: { icon: <TrendingUp className="h-3 w-3" />, color: 'text-[oklch(0.72_0.19_155)]' },
@@ -75,7 +69,26 @@ function formatCoachingText(ai: AIAnalysis, summary: WeeklySummaryData): string 
     lines.push('');
   }
 
-  if (ai.coaching_sections) {
+  if (ai.whats_working) {
+    lines.push("WHAT'S WORKING");
+    lines.push(ai.whats_working);
+    lines.push('');
+  }
+
+  if (ai.improving_on) {
+    lines.push('WHERE TO IMPROVE');
+    lines.push(ai.improving_on);
+    lines.push('');
+  }
+
+  if (ai.getting_stronger) {
+    lines.push('ARE YOU GETTING STRONGER?');
+    lines.push(ai.getting_stronger);
+    lines.push('');
+  }
+
+  // Older structured format fallback
+  if (!ai.whats_working && ai.coaching_sections) {
     for (const section of ai.coaching_sections) {
       lines.push(section.title.toUpperCase());
       lines.push(section.content);
@@ -94,7 +107,6 @@ function formatCoachingText(ai: AIAnalysis, summary: WeeklySummaryData): string 
     lines.push('');
   }
 
-  // Append key stats
   lines.push('---');
   const vol = summary.total_volume_kg >= 1000
     ? `${(summary.total_volume_kg / 1000).toFixed(1)}t`
@@ -102,6 +114,34 @@ function formatCoachingText(ai: AIAnalysis, summary: WeeklySummaryData): string 
   lines.push(`${summary.workouts_completed} workouts | ${summary.total_sets} sets | ${vol} total volume`);
 
   return lines.join('\n');
+}
+
+// ── Generating state ─────────────────────────────────────────────────────────
+
+function GeneratingCard({ generating }: { generating: boolean }) {
+  return (
+    <div className="content-card relative overflow-hidden border-primary/25 bg-primary/[0.06] py-8 text-center">
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-0 bg-[radial-gradient(ellipse_at_top,oklch(0.72_0.18_55/0.18),transparent_70%)]"
+      />
+      <div className="relative z-10 flex flex-col items-center gap-3">
+        <div className="relative flex h-14 w-14 items-center justify-center">
+          <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+          <span className="absolute inset-1 rounded-full bg-primary/15" />
+          <Sparkles className="relative h-6 w-6 text-primary animate-pulse" />
+        </div>
+        <div>
+          <p className="font-display text-base font-bold">
+            {generating ? 'Your coach is writing...' : 'Loading report...'}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {generating ? 'Reviewing the last 30 days of your training.' : 'Hang tight.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── Legacy fallback for old cached summaries ─────────────────────────────────
@@ -180,7 +220,8 @@ export default function TrainingSummaryPage() {
   const [copied, setCopied] = useState(false);
 
   const ai = summary?.ai_analysis;
-  const isCoachingFormat = !!ai?.greeting;
+  const isCoachingFormat = !!(ai?.whats_working || ai?.improving_on || ai?.getting_stronger);
+  const isLegacySections = !isCoachingFormat && Array.isArray(ai?.coaching_sections) && ai.coaching_sections.length > 0;
   const hasChartData = (summary?.volume_by_week?.length ?? 0) > 0;
   const hasMuscleSplit = (summary?.muscle_split?.length ?? 0) > 0;
   const prsCount = summary?.prs_this_week?.length ?? 0;
@@ -224,12 +265,7 @@ export default function TrainingSummaryPage() {
 
         {(loading || generating) && !summary ? (
           <div className="space-y-3">
-            <div className="content-card border-primary/20 bg-primary/[0.06] py-6 text-center">
-              <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
-              <p className="mt-3 text-sm font-medium text-muted-foreground">
-                {generating ? 'Your coach is reviewing your training...' : 'Loading report...'}
-              </p>
-            </div>
+            <GeneratingCard generating={generating} />
             <Skeleton className="h-24 rounded-2xl" />
             <Skeleton className="h-32 rounded-2xl" />
             <Skeleton className="h-20 rounded-2xl" />
@@ -238,29 +274,58 @@ export default function TrainingSummaryPage() {
           <>
             {/* ─── COACHING CONTENT ─── */}
 
-            {ai && isCoachingFormat ? (
+            {ai && (isCoachingFormat || isLegacySections) ? (
               <>
                 {/* Coach Greeting */}
-                <div className="content-card border-primary/20 bg-primary/[0.06]">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/20">
-                      <Sparkles className="h-4 w-4 text-primary" />
+                {ai.greeting && (
+                  <div className="content-card border-primary/20 bg-primary/[0.06]">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/20">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </div>
+                      <p className="text-base font-medium leading-relaxed pt-1">
+                        {ai.greeting}
+                      </p>
                     </div>
-                    <p className="text-base font-medium leading-relaxed pt-1">
-                      {ai.greeting}
-                    </p>
                   </div>
-                </div>
+                )}
 
-                {/* Coaching Sections — flowing prose */}
-                {ai.coaching_sections && ai.coaching_sections.length > 0 && (
+                {/* Three coaching paragraphs */}
+                {isCoachingFormat && (
+                  <div className="content-card space-y-5">
+                    {ai.whats_working && (
+                      <div>
+                        <p className="text-overline mb-2">What's Working</p>
+                        <p className="text-sm leading-relaxed text-foreground">
+                          {ai.whats_working}
+                        </p>
+                      </div>
+                    )}
+                    {ai.improving_on && (
+                      <div>
+                        <p className="text-overline mb-2">Where to Improve</p>
+                        <p className="text-sm leading-relaxed text-foreground">
+                          {ai.improving_on}
+                        </p>
+                      </div>
+                    )}
+                    {ai.getting_stronger && (
+                      <div>
+                        <p className="text-overline mb-2">Are You Getting Stronger?</p>
+                        <p className="text-sm leading-relaxed text-foreground">
+                          {ai.getting_stronger}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Legacy structured sections — render as plain paragraphs */}
+                {isLegacySections && ai.coaching_sections && (
                   <div className="content-card space-y-5">
                     {ai.coaching_sections.map((section, i) => (
-                      <div
-                        key={i}
-                        className={`border-l-2 pl-4 ${SENTIMENT_BORDER[section.sentiment] ?? SENTIMENT_BORDER.neutral}`}
-                      >
-                        <p className="text-overline mb-1.5">{section.title}</p>
+                      <div key={i}>
+                        <p className="text-overline mb-2">{section.title}</p>
                         <p className="text-sm leading-relaxed text-foreground">
                           {section.content}
                         </p>
@@ -328,10 +393,12 @@ export default function TrainingSummaryPage() {
             ) : (
               /* No AI yet */
               <>
-                <div className="content-card border-primary/20 bg-primary/[0.06] text-center py-5">
-                  <Sparkles className="mx-auto h-5 w-5 text-primary" />
-                  <p className="mt-2 text-sm font-medium">Coaching report not generated yet</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Tap Refresh below to generate your personalised coaching report</p>
+                <div className="content-card border-primary/20 bg-primary/[0.06] text-center py-6">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                  </div>
+                  <p className="mt-3 font-display text-base font-bold">Ready when you are</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Tap Generate My Report below for a personal 30-day check-in.</p>
                 </div>
                 {summary.insight && (
                   <div className="content-card">
@@ -354,7 +421,7 @@ export default function TrainingSummaryPage() {
               className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-white/[0.08] bg-white/[0.03] py-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
             >
               <ChevronDown className={`h-4 w-4 transition-transform ${showData ? 'rotate-180' : ''}`} />
-              {showData ? 'Hide Training Data' : 'View Training Data'}
+              {showData ? 'Hide Workout Stats' : 'View Workout Stats'}
             </button>
 
             {showData && (
@@ -499,6 +566,9 @@ export default function TrainingSummaryPage() {
             )}
 
             {/* ─── ACTION BAR ─── */}
+            {generating && ai && (
+              <GeneratingCard generating />
+            )}
             <div className="flex gap-2">
               {ai && (
                 <button
@@ -521,9 +591,9 @@ export default function TrainingSummaryPage() {
                 {generating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <RefreshCw className="h-4 w-4" />
+                  <Wand2 className="h-4 w-4" />
                 )}
-                {generating ? 'Generating...' : 'Refresh'}
+                {generating ? 'Writing...' : ai ? 'Regenerate Report' : 'Generate My Report'}
               </button>
             </div>
           </>
@@ -544,8 +614,8 @@ export default function TrainingSummaryPage() {
               disabled={generating}
               className="premium-button disabled:opacity-60"
             >
-              {generating && <Loader2 className="h-4 w-4 animate-spin" />}
-              Generate Report
+              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+              {generating ? 'Writing...' : 'Generate My Report'}
             </button>
           </div>
         )}

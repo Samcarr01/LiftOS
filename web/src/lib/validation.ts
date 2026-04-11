@@ -145,13 +145,18 @@ const CoachingSectionSchema = z.object({
 });
 
 const AIAnalysisSchema = z.object({
-  // New coaching-conversation fields
+  // Simple coaching paragraphs (current format)
   greeting:           z.string().max(300).optional(),
-  coaching_sections:  z.array(CoachingSectionSchema).max(6).optional(),
+  whats_working:      z.string().max(1000).optional(),
+  improving_on:       z.string().max(1000).optional(),
+  getting_stronger:   z.string().max(1000).optional(),
   game_plan:          z.array(z.string().max(300)).max(5).optional(),
   sign_off:           z.string().max(200).optional(),
 
-  // Shared field (used by both old and new formats)
+  // Older structured-sections format (kept for backward compat)
+  coaching_sections:  z.array(CoachingSectionSchema).max(6).optional(),
+
+  // Shared field (used by all formats)
   exercise_callouts:  z.array(z.object({
     name:       z.string(),
     note:       z.string().max(200),

@@ -2,11 +2,8 @@
 
 import dynamic from 'next/dynamic';
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
 import {
   Award,
-  Brain,
-  ChevronRight,
   Search,
   Trophy,
 } from 'lucide-react';
@@ -224,23 +221,6 @@ export default function ProgressPage() {
               )}
             </section>
           )}
-
-          {/* Training Summary link */}
-          <section>
-            <Link
-              href="/progress/weekly"
-              className="action-card group flex items-center gap-3.5 rounded-2xl px-4 py-4"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                <Brain className="h-[18px] w-[18px]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-card-title">Training Summary</p>
-                <p className="mt-0.5 text-caption">30-day AI coaching report</p>
-              </div>
-              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40 transition-transform duration-150 group-hover:translate-x-0.5" />
-            </Link>
-          </section>
 
           {!selectedExercise && exercises.length > 0 && (
             <div className="content-card py-8 text-center">

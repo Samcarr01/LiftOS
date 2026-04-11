@@ -47,16 +47,11 @@ interface PRRow {
   achieved_at:  string;
 }
 
-interface CoachingSection {
-  title:     string;
-  content:   string;
-  sentiment: 'positive' | 'neutral' | 'constructive';
-}
-
 interface AIAnalysis {
-  // New coaching format
   greeting:           string;
-  coaching_sections:  CoachingSection[];
+  whats_working:      string;
+  improving_on:       string;
+  getting_stronger:   string;
   exercise_callouts:  { name: string; note: string; trajectory?: string }[];
   game_plan:          string[];
   sign_off:           string;
@@ -313,53 +308,43 @@ async function generateStructuredInsight(
       `INSTRUCTIONS:\n` +
       `Respond with a JSON object (no markdown, no code fences). The JSON must have exactly these fields:\n` +
       `{\n` +
-      `  "greeting": "A warm, personalised opening that references something specific from their training. Address them directly with 'you'. Set the tone for the whole report. (max 40 words)",\n` +
-      `  "coaching_sections": [\n` +
-      `    {\n` +
-      `      "title": "Short section label (2-4 words, e.g. 'Volume & Consistency', 'Your Upper Body', 'Where You're Stalling')",\n` +
-      `      "content": "2-4 sentences of coaching prose. Address the client directly with 'you/your'. Reference specific numbers, exercises, and percentages from the data. Be honest — if something is declining, say so constructively. If something is great, celebrate it genuinely.",\n` +
-      `      "sentiment": "positive|neutral|constructive"\n` +
-      `    }\n` +
-      `  ],\n` +
+      `  "greeting": "A warm, personal opening that references something specific from their training. Address them directly with 'you'. (max 40 words)",\n` +
+      `  "whats_working": "A flowing paragraph (4-6 sentences) celebrating what they've been doing well. Be specific: name exercises, cite numbers, mention volume jumps, PRs hit, consistent training days, muscle groups they've prioritised. Sound like a proud coach genuinely impressed with the work.",\n` +
+      `  "improving_on": "A flowing paragraph (4-6 sentences) about what they can work on next. Be direct and constructive — point out muscle imbalances, exercises that have stalled, low volume areas, missed sessions, or anything that's slipping. Frame it as coaching, not criticism. Use specific numbers and exercise names.",\n` +
+      `  "getting_stronger": "A flowing paragraph (4-6 sentences) directly answering 'are you actually getting stronger?'. Look at e1RM trends, weight progression on key lifts, PR frequency, and volume changes. Be honest — if they're plateauing on bench but progressing on squat, say exactly that. Use the actual numbers.",\n` +
       `  "exercise_callouts": [{"name": "Exercise Name", "note": "specific observation about this exercise", "trajectory": "improving|stalled|declining"}],\n` +
-      `  "game_plan": ["3 specific, actionable things to focus on in the next training block — written as coach instructions, e.g. 'Add 2 sets of face pulls on your push days to balance out the pressing volume'"],\n` +
+      `  "game_plan": ["3 concrete, actionable things to focus on next, e.g. 'Add 2 sets of face pulls on push days to balance pressing volume'"],\n` +
       `  "sign_off": "A brief, genuine motivational closing line (max 20 words)"\n` +
       `}\n\n` +
       `RULES:\n` +
       `1. Write like a real coach talking to their client — warm, direct, specific. Not clinical or robotic.\n` +
       `2. Always use 'you' and 'your' — this is a personal conversation, not a third-person analysis.\n` +
-      `3. Use the actual numbers, exercise names, and percentages from the data.\n` +
-      `4. coaching_sections should cover 3-5 topics. Choose what matters most: consistency, volume trends, muscle balance, PR progress, weak points, strong points. Don't force all topics — only discuss what the data warrants.\n` +
-      `5. Each coaching_sections entry should be 2-4 sentences of flowing prose, not bullet points.\n` +
-      `6. If something is going badly, say it directly but constructively ("Your leg volume has dropped 30% — that's worth addressing" not "Consider increasing leg work").\n` +
-      `7. If something is going well, be genuinely enthusiastic ("You've been absolutely crushing your bench work — 3 PRs in a month is serious progress").\n` +
-      `8. game_plan must be concrete ("Add 2 sets of face pulls on push days") not vague ("work on balance").\n` +
-      `9. exercise_callouts should cover 3-5 of the most notable exercises with trajectory assessment.\n` +
-      `10. Don't invent data that wasn't provided.\n` +
-      `11. Output ONLY the JSON object, nothing else.`
+      `3. Use the actual numbers, exercise names, and percentages from the data above.\n` +
+      `4. whats_working, improving_on, and getting_stronger should each be flowing prose paragraphs — NOT bullet lists, NOT structured headings, just natural sentences a coach would write.\n` +
+      `5. Be honest. If they're declining, say so directly but constructively ("Your leg volume has dropped 30% this month — that's worth addressing"). Don't sugarcoat.\n` +
+      `6. If they're crushing it, sound genuinely enthusiastic ("You've added 7.5kg to your bench top set in 30 days — that's serious progress").\n` +
+      `7. game_plan must be concrete ("Add 2 sets of face pulls on push days") not vague ("work on balance").\n` +
+      `8. exercise_callouts should cover 3-5 of the most notable exercises with trajectory assessment.\n` +
+      `9. Don't invent data that wasn't provided.\n` +
+      `10. Output ONLY the JSON object, nothing else.`
     : `Write a brief weekly coaching note for your client.\n\n` +
       `${dataSection}\n\n` +
       `INSTRUCTIONS:\n` +
       `Respond with a JSON object (no markdown, no code fences). The JSON must have exactly these fields:\n` +
       `{\n` +
       `  "greeting": "A brief, warm opening referencing this week's training (max 25 words)",\n` +
-      `  "coaching_sections": [\n` +
-      `    {\n` +
-      `      "title": "Short section label (2-4 words)",\n` +
-      `      "content": "1-2 sentences of coaching feedback addressing the client directly.",\n` +
-      `      "sentiment": "positive|neutral|constructive"\n` +
-      `    }\n` +
-      `  ],\n` +
+      `  "whats_working": "2-3 sentences celebrating what went well this week. Specific: numbers, exercises, sessions.",\n` +
+      `  "improving_on": "2-3 sentences on what to focus on. Direct, constructive, specific.",\n` +
+      `  "getting_stronger": "2-3 sentences honestly assessing strength progress this week. Use actual numbers.",\n` +
       `  "exercise_callouts": [{"name": "Exercise Name", "note": "specific observation"}],\n` +
       `  "game_plan": ["1-2 actionable suggestions for next week"],\n` +
       `  "sign_off": "Brief motivational closing (max 15 words)"\n` +
       `}\n\n` +
       `RULES:\n` +
-      `1. Write like a coach — warm, direct, use 'you/your'.\n` +
-      `2. Be specific with numbers and exercise names.\n` +
-      `3. coaching_sections: 2-3 topics, 1-2 sentences each.\n` +
-      `4. exercise_callouts: 2-4 notable exercises.\n` +
-      `5. Don't invent data. Output ONLY the JSON object.`;
+      `1. Write like a coach — warm, direct, use 'you/your'. Flowing prose, not bullets.\n` +
+      `2. Be specific with numbers and exercise names from the data.\n` +
+      `3. exercise_callouts: 2-4 notable exercises.\n` +
+      `4. Don't invent data. Output ONLY the JSON object.`;
 
   const openai = new OpenAI({ apiKey });
 
@@ -383,7 +368,7 @@ async function generateStructuredInsight(
   try {
     const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
     const parsed = JSON.parse(cleaned) as AIAnalysis;
-    if (!parsed.greeting || !Array.isArray(parsed.coaching_sections)) return null;
+    if (!parsed.greeting || !parsed.whats_working || !parsed.improving_on || !parsed.getting_stronger) return null;
     return parsed;
   } catch {
     console.error('[generate-weekly-summary] Failed to parse AI JSON:', raw.slice(0, 200));
