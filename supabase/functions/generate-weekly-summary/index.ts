@@ -352,10 +352,11 @@ async function generateStructuredInsight(
     ? 'You are an experienced personal strength coach writing a monthly check-in to your client. You know them well. Write in second person ("You\'ve been...", "Your bench press..."). Be warm but honest — celebrate wins genuinely, give constructive criticism directly, and be specific with numbers. Respond with valid JSON only, no markdown.'
     : 'You are a strength coach writing a quick weekly note to your client. Be warm, specific, and direct. Respond with valid JSON only, no markdown.';
 
+  // gpt-5 is a reasoning model: requires max_completion_tokens, only temperature=1.
+  // Reasoning tokens count toward the budget, so we need a generous limit.
   const response = await openai.chat.completions.create({
-    model:       'gpt-5',
-    temperature: is30d ? 0.5 : 0.4,
-    max_tokens:  is30d ? 1800 : 800,
+    model:                 'gpt-5',
+    max_completion_tokens: is30d ? 6000 : 3000,
     messages: [
       { role: 'system', content: systemMessage },
       { role: 'user',   content: prompt },
@@ -363,15 +364,24 @@ async function generateStructuredInsight(
   });
 
   const raw = response.choices[0]?.message?.content?.trim();
-  if (!raw) return null;
+  const finishReason = response.choices[0]?.finish_reason;
+  console.log('[generate-weekly-summary] OpenAI finish_reason:', finishReason, '| usage:', JSON.stringify(response.usage));
+
+  if (!raw) {
+    console.error('[generate-weekly-summary] Empty AI response. finish_reason:', finishReason);
+    return null;
+  }
 
   try {
     const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
     const parsed = JSON.parse(cleaned) as AIAnalysis;
-    if (!parsed.greeting || !parsed.whats_working || !parsed.improving_on || !parsed.getting_stronger) return null;
+    if (!parsed.greeting || !parsed.whats_working || !parsed.improving_on || !parsed.getting_stronger) {
+      console.error('[generate-weekly-summary] AI JSON missing required fields. Keys:', Object.keys(parsed).join(','));
+      return null;
+    }
     return parsed;
-  } catch {
-    console.error('[generate-weekly-summary] Failed to parse AI JSON:', raw.slice(0, 200));
+  } catch (parseErr) {
+    console.error('[generate-weekly-summary] Failed to parse AI JSON:', (parseErr as Error).message, '| raw:', raw.slice(0, 300));
     return null;
   }
 }
@@ -673,6 +683,7 @@ Deno.serve(async (req: Request) => {
     };
 
     // ── AI analysis ───────────────────────────────────────────────────────
+    let aiError: string | null = null;
     try {
       const apiKey = Deno.env.get('OPENAI_API_KEY');
       if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
@@ -700,10 +711,13 @@ Deno.serve(async (req: Request) => {
       if (aiResult?.greeting) {
         summaryData.insight = aiResult.greeting;
       }
+      if (!aiResult) aiError = 'AI returned no usable response (see edge function logs)';
 
-      console.log(`[generate-weekly-summary] AI analysis generated (${mode}) for user`, user.id);
+      console.log(`[generate-weekly-summary] AI analysis generated (${mode}) for user`, user.id, '| ok:', !!aiResult);
     } catch (aiErr) {
-      console.error('[generate-weekly-summary] AI analysis failed:', (aiErr as Error).message);
+      const err = aiErr as Error & { status?: number; error?: { message?: string } };
+      aiError = err?.error?.message ?? err?.message ?? 'Unknown AI error';
+      console.error('[generate-weekly-summary] AI analysis failed:', aiError, '| status:', err?.status);
     }
 
     // ── Upsert ────────────────────────────────────────────────────────────
@@ -718,7 +732,7 @@ Deno.serve(async (req: Request) => {
         { onConflict: 'user_id,week_start' },
       );
 
-    return json({ data: summaryData, week_start: cacheKey, source: 'generated' });
+    return json({ data: summaryData, week_start: cacheKey, source: 'generated', ai_error: aiError });
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
