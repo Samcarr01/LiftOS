@@ -629,7 +629,7 @@ async function storeSuggestion(
     exercise_id:      exerciseId,
     suggestion_data:  suggestion,
     history_snapshot: { source, generated_at: new Date().toISOString() },
-    model_version:    source === 'ai' ? 'gpt-5' : 'rule-based',
+    model_version:    source === 'ai' ? 'gpt-4o' : 'rule-based',
     expires_at:       expiresAt.toISOString(),
   });
 }
@@ -823,7 +823,7 @@ Respond ONLY with this exact JSON structure (no other text):
       const openai = new OpenAI({ apiKey });
 
       const response = await openai.chat.completions.create({
-        model:           'gpt-5',
+        model:           'gpt-4o',
         response_format: { type: 'json_object' },
         temperature:     0.3,
         max_tokens:      400,
