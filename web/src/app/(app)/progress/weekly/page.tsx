@@ -210,6 +210,7 @@ export default function TrainingSummaryPage() {
     loading,
     generating,
     error,
+    aiError,
     periodLabel,
     refresh,
   } = useTrainingSummary();
@@ -261,6 +262,9 @@ export default function TrainingSummaryPage() {
 
         {error && (
           <p className="text-sm text-destructive">{error}</p>
+        )}
+        {aiError && (
+          <p className="text-sm text-destructive">AI error: {aiError}</p>
         )}
 
         {(loading || generating) && !summary ? (

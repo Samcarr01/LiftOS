@@ -352,11 +352,10 @@ async function generateStructuredInsight(
     ? 'You are an experienced personal strength coach writing a monthly check-in to your client. You know them well. Write in second person ("You\'ve been...", "Your bench press..."). Be warm but honest — celebrate wins genuinely, give constructive criticism directly, and be specific with numbers. Respond with valid JSON only, no markdown.'
     : 'You are a strength coach writing a quick weekly note to your client. Be warm, specific, and direct. Respond with valid JSON only, no markdown.';
 
-  // gpt-5 is a reasoning model: requires max_completion_tokens, only temperature=1.
-  // Reasoning tokens count toward the budget, so we need a generous limit.
   const response = await openai.chat.completions.create({
-    model:                 'gpt-5',
-    max_completion_tokens: is30d ? 6000 : 3000,
+    model:       'gpt-4o',
+    temperature: is30d ? 0.7 : 0.5,
+    max_tokens:  is30d ? 1800 : 800,
     messages: [
       { role: 'system', content: systemMessage },
       { role: 'user',   content: prompt },
