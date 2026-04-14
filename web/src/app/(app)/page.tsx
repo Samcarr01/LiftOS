@@ -479,39 +479,37 @@ export default function HomePage() {
             <Skeleton className="h-[72px] w-full rounded-xl" />
           </div>
         ) : (data?.pinned?.length ?? 0) > 0 ? (
-          <section className="page-reveal delay-3 min-w-0">
+          <section className="page-reveal delay-3">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="section-title">Favourites</h2>
               <Link href="/templates" className="text-xs font-semibold text-primary hover:underline">View all</Link>
             </div>
-            <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <div className="flex gap-2.5">
-                {data!.pinned.map((template) => (
-                  <button
-                    key={template.id}
-                    onClick={() => void handleQuickStart(template.id)}
-                    disabled={starting !== null}
-                    className="action-card group flex w-[150px] shrink-0 flex-col gap-2.5 rounded-2xl px-3.5 py-3.5 text-left active:scale-[0.995] disabled:opacity-60"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-primary">
-                        {starting === template.id
-                          ? <Loader2 className="h-4 w-4 animate-spin" />
-                          : <Dumbbell className="h-4 w-4" />}
-                      </div>
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[oklch(0.75_0.18_55/0.15)] text-primary opacity-60 transition-opacity duration-150 group-hover:opacity-100">
-                        <Play className="h-3 w-3" />
-                      </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              {data!.pinned.slice(0, 4).map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => void handleQuickStart(template.id)}
+                  disabled={starting !== null}
+                  className="action-card group flex min-w-0 flex-col gap-2.5 rounded-2xl px-3.5 py-3.5 text-left active:scale-[0.995] disabled:opacity-60"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-primary">
+                      {starting === template.id
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : <Dumbbell className="h-4 w-4" />}
                     </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold">{template.name}</p>
-                      <p className="mt-0.5 truncate text-caption">
-                        {template.exercise_count} exercise{template.exercise_count !== 1 ? 's' : ''}
-                      </p>
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[oklch(0.75_0.18_55/0.15)] text-primary opacity-60 transition-opacity duration-150 group-hover:opacity-100">
+                      <Play className="h-3 w-3" />
                     </div>
-                  </button>
-                ))}
-              </div>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{template.name}</p>
+                    <p className="mt-0.5 truncate text-caption">
+                      {template.exercise_count} exercise{template.exercise_count !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </button>
+              ))}
             </div>
           </section>
         ) : allTemplates.length > 0 ? (
