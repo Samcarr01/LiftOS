@@ -71,7 +71,7 @@ export default function HistoryPage() {
     <div className="page-shell">
       <div className="page-content py-5 md:py-7 space-y-5">
         <div className="page-header">
-          <h1 className="page-header-title">History</h1>
+          <h1 className="page-header-title">Log</h1>
         </div>
 
         {error && (

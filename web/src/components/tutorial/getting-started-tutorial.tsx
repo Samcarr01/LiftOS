@@ -27,7 +27,7 @@ const STEPS = [
     kicker: 'STEP 1 OF 4',
     title: 'Create a Workout Template',
     body: "Start by creating a workout template — your reusable blueprint for a training session. Name it something like 'Push Day' or 'Full Body A'.",
-    hint: 'Head to the Workouts tab and tap + New.',
+    hint: 'Head to the Templates tab and tap + New.',
   },
   {
     kicker: 'STEP 2 OF 4',

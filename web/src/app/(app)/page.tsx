@@ -9,19 +9,17 @@ import {
   Calendar,
   ChevronRight,
   Dumbbell,
-  Flame,
   Loader2,
   Play,
   Plus,
   Trash2,
-  TrendingUp,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTemplates, type TemplateWithCount } from '@/hooks/use-templates';
+import { useTemplates } from '@/hooks/use-templates';
 import { useStartWorkout } from '@/hooks/use-start-workout';
 import { useHomeData } from '@/hooks/use-home-data';
-import { formatShortDate, formatDistanceToNow } from '@/lib/format-date';
+import { formatShortDate } from '@/lib/format-date';
 import { useTutorialStore } from '@/store/tutorial-store';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { createClient } from '@/lib/supabase/client';
@@ -67,6 +65,103 @@ function getWeekdayFlags(sessions: { started_at: string }[]): boolean[] {
     }
   }
   return flags;
+}
+
+const WEEKLY_TARGET = 4;
+
+function getWeeklyBuckets(sessions: { started_at: string }[], weeks: number): number[] {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const thisMonday = new Date(now);
+  thisMonday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+  thisMonday.setHours(0, 0, 0, 0);
+
+  const buckets = new Array(weeks).fill(0);
+  for (const s of sessions) {
+    const d = new Date(s.started_at);
+    const diffDays = Math.floor((thisMonday.getTime() - d.getTime()) / 86_400_000);
+    const weeksAgo = Math.floor(diffDays / 7) + (diffDays < 0 ? 0 : 0);
+    const bucketIdx = weeks - 1 - weeksAgo;
+    if (bucketIdx >= 0 && bucketIdx < weeks) buckets[bucketIdx] += 1;
+  }
+  return buckets;
+}
+
+/* ── Week Ring ───────────────────────────────────────────────── */
+
+function WeekRing({ count, target, dayFlags }: { count: number; target: number; dayFlags: boolean[] }) {
+  const pct = Math.min(count / target, 1);
+  const size = 72;
+  const stroke = 6;
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - pct);
+  const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const remaining = Math.max(target - count, 0);
+  const copy = count === 0
+    ? `Start your first session`
+    : count >= target
+      ? `Goal hit — keep the momentum`
+      : `${remaining} more to hit your goal`;
+
+  return (
+    <div className="action-card flex items-center gap-4 rounded-2xl px-4 py-4">
+      <div className="relative flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="oklch(1 0 0 / 0.08)" strokeWidth={stroke} />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            stroke="oklch(0.75 0.18 55)"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={offset}
+            style={{ transition: 'stroke-dashoffset 600ms ease-out' }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+          <span className="font-display text-xl font-bold">{count}</span>
+          <span className="mt-0.5 text-[10px] text-muted-foreground">of {target}</span>
+        </div>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold">This week</p>
+        <p className="mt-0.5 text-caption">{copy}</p>
+        <div className="mt-2.5 flex items-center gap-2">
+          {days.map((label, i) => (
+            <div key={i} className="flex flex-col items-center gap-1">
+              <div className={`h-1.5 w-1.5 rounded-full ${dayFlags[i] ? 'bg-primary' : 'bg-white/[0.10]'}`} />
+              <span className="text-[10px] text-muted-foreground/70">{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Activity Spark ──────────────────────────────────────────── */
+
+function ActivitySpark({ buckets }: { buckets: number[] }) {
+  const max = Math.max(...buckets, 1);
+  return (
+    <div className="flex h-8 items-end gap-[3px]">
+      {buckets.map((v, i) => {
+        const h = v === 0 ? 3 : Math.max(6, Math.round((v / max) * 28));
+        const isLast = i === buckets.length - 1;
+        return (
+          <div
+            key={i}
+            className={`w-1 rounded-sm ${isLast ? 'bg-primary' : 'bg-primary/35'}`}
+            style={{ height: `${h}px` }}
+          />
+        );
+      })}
+    </div>
+  );
 }
 
 /* ── Resume Workout Banner ──────────────────────────────────── */
@@ -271,7 +366,6 @@ export default function HomePage() {
     }
   }
 
-  const lastSession = data?.recentSessions?.[0] ?? null;
   const allTemplates = [...(data?.pinned ?? []), ...(data?.suggested ?? [])];
   const thisWeekCount = data ? getThisWeekCount(data.recentSessions) : 0;
 
@@ -331,55 +425,18 @@ export default function HomePage() {
           </div>
         </button>
 
-        {/* ── Quick Stats ─────────────────────────── */}
+        {/* ── Week Ring ───────────────────────────── */}
         {loading ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Skeleton className="h-[76px] rounded-xl" />
-            <Skeleton className="h-[76px] rounded-xl" />
-          </div>
+          <Skeleton className="h-[104px] rounded-2xl" />
         ) : (data?.recentSessions?.length ?? 0) > 0 ? (
-          <div className="page-reveal delay-2 grid grid-cols-2 gap-3">
-            <div className="action-card flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-[oklch(0.80_0.16_55)]">
-                <Flame className="h-[18px] w-[18px]" />
-              </div>
-              <div>
-                <p className="font-display text-xl font-bold">{thisWeekCount}</p>
-                <p className="text-caption">This week</p>
-              </div>
-            </div>
-            {lastSession && (
-              <button
-                onClick={() => router.push(`/history/${lastSession.id}`)}
-                className="action-card flex items-center gap-3 text-left transition-colors duration-150"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.72_0.19_155/0.15)] text-[oklch(0.78_0.17_155)]">
-                  <TrendingUp className="h-[18px] w-[18px]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{lastSession.template_name ?? 'Workout'}</p>
-                  <p className="text-caption">{formatDistanceToNow(lastSession.started_at)}</p>
-                </div>
-              </button>
-            )}
+          <div className="page-reveal delay-2">
+            <WeekRing
+              count={thisWeekCount}
+              target={WEEKLY_TARGET}
+              dayFlags={getWeekdayFlags(data!.recentSessions)}
+            />
           </div>
         ) : null}
-
-        {/* ── Weekly Activity Dots ─────────────────── */}
-        {!loading && (data?.recentSessions?.length ?? 0) > 0 && (() => {
-          const flags = getWeekdayFlags(data!.recentSessions);
-          const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-          return (
-            <div className="page-reveal delay-2 flex items-center justify-between gap-1 px-2">
-              {days.map((label, i) => (
-                <div key={i} className="flex flex-col items-center gap-1.5">
-                  <div className={`h-2 w-2 rounded-full ${flags[i] ? 'bg-primary' : 'bg-white/[0.08]'}`} />
-                  <span className="text-xs text-muted-foreground">{label}</span>
-                </div>
-              ))}
-            </div>
-          );
-        })()}
 
         {/* ── Coaching Report + Progress Links ──── */}
         {!loading && (data?.recentSessions?.length ?? 0) > 0 && (
@@ -395,6 +452,7 @@ export default function HomePage() {
                 <p className="text-sm font-semibold">Coaching Report</p>
                 <p className="text-caption">Your 30-day training check-in</p>
               </div>
+              <ActivitySpark buckets={getWeeklyBuckets(data!.recentSessions, 4)} />
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40 transition-transform duration-150 group-hover:translate-x-0.5" />
             </Link>
             <Link
@@ -420,10 +478,54 @@ export default function HomePage() {
             <Skeleton className="h-[72px] w-full rounded-xl" />
             <Skeleton className="h-[72px] w-full rounded-xl" />
           </div>
+        ) : allTemplates.length >= 3 ? (
+          <section className="page-reveal delay-3">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="section-title">Your templates</h2>
+              <Link href="/templates" className="text-xs font-semibold text-primary hover:underline">View all</Link>
+            </div>
+            <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex gap-2.5">
+                {allTemplates.map((template) => (
+                  <button
+                    key={template.id}
+                    onClick={() => void handleQuickStart(template.id)}
+                    disabled={starting !== null}
+                    className="action-card group flex w-[160px] shrink-0 flex-col gap-2.5 rounded-2xl px-3.5 py-3.5 text-left active:scale-[0.995] disabled:opacity-60"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-primary">
+                        {starting === template.id
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : <Dumbbell className="h-4 w-4" />}
+                      </div>
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[oklch(0.75_0.18_55/0.15)] text-primary opacity-60 transition-opacity duration-150 group-hover:opacity-100">
+                        <Play className="h-3 w-3" />
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{template.name}</p>
+                      <p className="mt-0.5 truncate text-caption">
+                        {template.exercise_count} exercise{template.exercise_count !== 1 ? 's' : ''}
+                        {template.last_used_at ? ` · ${formatShortDate(template.last_used_at)}` : ''}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+                <button
+                  onClick={() => router.push('/templates?create=1')}
+                  className="flex h-auto w-[120px] shrink-0 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] px-3 py-4 text-sm font-semibold text-muted-foreground transition-all duration-150 hover:border-white/[0.2] hover:bg-white/[0.03] hover:text-foreground active:scale-[0.995]"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="text-xs">New template</span>
+                </button>
+              </div>
+            </div>
+          </section>
         ) : allTemplates.length > 0 ? (
           <section className="page-reveal delay-3">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="section-title">Your workouts</h2>
+              <h2 className="section-title">Your templates</h2>
               <Link href="/templates" className="text-xs font-semibold text-primary hover:underline">View all</Link>
             </div>
             <div className="space-y-2.5">
@@ -456,9 +558,8 @@ export default function HomePage() {
                 className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] px-4 py-3.5 text-sm font-semibold text-muted-foreground transition-all duration-150 hover:border-white/[0.2] hover:bg-white/[0.03] hover:text-foreground active:scale-[0.995]"
               >
                 <Plus className="h-4 w-4" />
-                Create New Workout
+                Create new template
               </button>
-
             </div>
           </section>
         ) : (

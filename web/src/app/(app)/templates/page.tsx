@@ -296,7 +296,7 @@ export default function TemplatesPage() {
       <div className="page-content py-5 md:py-7 space-y-5">
         {/* Header */}
         <div className="page-header">
-          <h1 className="page-header-title">Workouts</h1>
+          <h1 className="page-header-title">Templates</h1>
           <button
             onClick={() => setAutoOpenCreate(true)}
             className="flex h-9 cursor-pointer items-center gap-1.5 rounded-2xl bg-primary px-4 text-xs font-semibold text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
@@ -339,7 +339,7 @@ export default function TemplatesPage() {
 
             {/* All Workouts */}
             <section>
-              <h2 className="section-title mb-2">{pinned.length > 0 ? 'All Workouts' : 'Saved Workouts'}</h2>
+              <h2 className="section-title mb-2">{pinned.length > 0 ? 'All Templates' : 'Saved Templates'}</h2>
               {templates.length === 0 ? (
                 <div className="content-card py-10 text-center">
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[oklch(0.75_0.18_55/0.15)]">
