@@ -478,20 +478,20 @@ export default function HomePage() {
             <Skeleton className="h-[72px] w-full rounded-xl" />
             <Skeleton className="h-[72px] w-full rounded-xl" />
           </div>
-        ) : allTemplates.length >= 3 ? (
-          <section className="page-reveal delay-3">
+        ) : (data?.pinned?.length ?? 0) > 0 ? (
+          <section className="page-reveal delay-3 min-w-0">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="section-title">Your templates</h2>
+              <h2 className="section-title">Favourites</h2>
               <Link href="/templates" className="text-xs font-semibold text-primary hover:underline">View all</Link>
             </div>
-            <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex gap-2.5">
-                {allTemplates.map((template) => (
+                {data!.pinned.map((template) => (
                   <button
                     key={template.id}
                     onClick={() => void handleQuickStart(template.id)}
                     disabled={starting !== null}
-                    className="action-card group flex w-[160px] shrink-0 flex-col gap-2.5 rounded-2xl px-3.5 py-3.5 text-left active:scale-[0.995] disabled:opacity-60"
+                    className="action-card group flex w-[150px] shrink-0 flex-col gap-2.5 rounded-2xl px-3.5 py-3.5 text-left active:scale-[0.995] disabled:opacity-60"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-primary">
@@ -507,18 +507,10 @@ export default function HomePage() {
                       <p className="truncate text-sm font-semibold">{template.name}</p>
                       <p className="mt-0.5 truncate text-caption">
                         {template.exercise_count} exercise{template.exercise_count !== 1 ? 's' : ''}
-                        {template.last_used_at ? ` · ${formatShortDate(template.last_used_at)}` : ''}
                       </p>
                     </div>
                   </button>
                 ))}
-                <button
-                  onClick={() => router.push('/templates?create=1')}
-                  className="flex h-auto w-[120px] shrink-0 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] px-3 py-4 text-sm font-semibold text-muted-foreground transition-all duration-150 hover:border-white/[0.2] hover:bg-white/[0.03] hover:text-foreground active:scale-[0.995]"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="text-xs">New template</span>
-                </button>
               </div>
             </div>
           </section>
