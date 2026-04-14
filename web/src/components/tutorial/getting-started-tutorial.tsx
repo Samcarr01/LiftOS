@@ -59,7 +59,7 @@ function StepIllustration({ step }: { step: number }) {
         <div className="flex w-full max-w-[260px] flex-col gap-1.5">
           <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-primary/40 bg-primary/8 px-3 py-2.5">
             <Plus className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold text-primary">New Workout</span>
+            <span className="text-sm font-semibold text-primary">New Template</span>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
             <span className="text-sm text-muted-foreground">Push Day</span>

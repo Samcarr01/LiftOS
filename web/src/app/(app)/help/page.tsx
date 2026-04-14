@@ -145,7 +145,7 @@ export default function HelpPage() {
               <p className="font-semibold text-foreground">Starting a workout</p>
               <p>
                 Tap <span className="font-medium text-foreground">Start Workout</span> from
-                Home or the Workouts tab. Pick a template and your workout opens with sets
+                Home or the Templates tab. Pick a template and your workout opens with sets
                 prefilled from last time.
               </p>
             </div>
@@ -199,7 +199,7 @@ export default function HelpPage() {
         >
           <div className="space-y-3">
             <p>
-              Go to the <span className="font-medium text-foreground">Workouts</span> tab and
+              Go to the <span className="font-medium text-foreground">Templates</span> tab and
               tap <span className="font-medium text-foreground">+ New</span> to create a template.
               Give it a name, then add exercises.
             </p>
@@ -256,7 +256,7 @@ export default function HelpPage() {
             />
             <FAQ
               q="Can I delete a workout template?"
-              a="Open the template editor and use the delete option in the menu. This won't delete your past sessions — those are kept in History."
+              a="Open the template editor and use the delete option in the menu. This won't delete your past sessions — those are kept in your Log."
             />
             <FAQ
               q="What does the AI actually do?"
