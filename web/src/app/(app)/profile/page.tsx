@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
@@ -11,7 +11,7 @@ import {
   HelpCircle,
   LogOut,
   Pencil,
-  Scale,
+  RefreshCw,
   Smartphone,
   Trash2,
 } from 'lucide-react';
@@ -29,8 +29,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { useUnitStore } from '@/store/unit-store';
 import { usePwaInstall } from '@/hooks/use-pwa-install';
 import { exportUserData } from '@/lib/export';
-import { db } from '@/lib/offline/indexed-db';
-import { clearFailed, getQueueSize, processQueue } from '@/lib/offline/sync-queue';
+import { getQueueSize, processQueue } from '@/lib/offline/sync-queue';
 
 const APP_VERSION = '0.1.0';
 
@@ -129,7 +128,7 @@ function DeleteAccountDialog({
   );
 }
 
-function SettingRow({
+function LinkRow({
   icon,
   label,
   description,
@@ -167,6 +166,25 @@ function SettingRow({
   );
 }
 
+function useDebouncedEffect(fn: () => void, deps: unknown[], delay: number) {
+  const firstRun = useRef(true);
+  useEffect(() => {
+    if (firstRun.current) {
+      firstRun.current = false;
+      return;
+    }
+    const id = setTimeout(fn, delay);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}
+
+function formatMemberSince(iso?: string | null): string {
+  if (!iso) return '';
+  const date = new Date(iso);
+  return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
@@ -177,27 +195,39 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [savingName, setSavingName] = useState(false);
+  const [memberSince, setMemberSince] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [syncing, setSyncing] = useState(false);
 
-  // Training preferences
   const [trainingGoals, setTrainingGoals] = useState<string[]>([]);
   const [experienceLevel, setExperienceLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
   const [bodyWeight, setBodyWeight] = useState('');
   const [repMin, setRepMin] = useState('');
   const [repMax, setRepMax] = useState('');
-  const [savingTraining, setSavingTraining] = useState(false);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
+  const [prefsSaved, setPrefsSaved] = useState(false);
+
+  const [workoutCount, setWorkoutCount] = useState<number | null>(null);
+  const [setCount, setSetCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
-    supabase
+    void supabase
       .from('users')
-      .select('display_name, training_goals, experience_level, body_weight_kg, preferred_rep_range')
+      .select('display_name, training_goals, experience_level, body_weight_kg, preferred_rep_range, created_at')
       .single()
       .then(({ data }) => {
-        const row = data as { display_name: string | null; training_goals: string[]; experience_level: string; body_weight_kg: number | null; preferred_rep_range: { min: number; max: number } | null } | null;
+        const row = data as {
+          display_name: string | null;
+          training_goals: string[];
+          experience_level: string;
+          body_weight_kg: number | null;
+          preferred_rep_range: { min: number; max: number } | null;
+          created_at: string | null;
+        } | null;
         setDisplayName(row?.display_name ?? '');
         setTrainingGoals(row?.training_goals ?? []);
         setExperienceLevel((row?.experience_level as 'beginner' | 'intermediate' | 'advanced') ?? 'intermediate');
@@ -208,11 +238,21 @@ export default function ProfilePage() {
           setRepMin(String(row.preferred_rep_range.min));
           setRepMax(String(row.preferred_rep_range.max));
         }
+        setMemberSince(row?.created_at ?? user.created_at ?? null);
+        setPrefsLoaded(true);
       });
+
+    void Promise.all([
+      supabase.from('workout_sessions').select('id', { count: 'exact', head: true }).eq('status', 'completed'),
+      supabase.from('set_entries').select('id', { count: 'exact', head: true }),
+    ]).then(([sessions, sets]) => {
+      setWorkoutCount(sessions.count ?? 0);
+      setSetCount(sets.count ?? 0);
+    });
   }, [user, unit]);
 
   useEffect(() => {
-    getQueueSize().then(setPendingCount);
+    void getQueueSize().then(setPendingCount);
   }, []);
 
   async function saveDisplayName() {
@@ -243,6 +283,44 @@ export default function ProfilePage() {
       .eq('id', user.id);
   }
 
+  // Auto-save training preferences (debounced)
+  useDebouncedEffect(
+    () => {
+      if (!user || !prefsLoaded) return;
+      const supabase = createClient();
+      let bodyWeightKg: number | null = null;
+      if (bodyWeight.trim()) {
+        const parsed = parseFloat(bodyWeight);
+        if (!isNaN(parsed) && parsed > 0) {
+          bodyWeightKg = unit === 'lb' ? Math.round((parsed / 2.205) * 10) / 10 : parsed;
+        }
+      }
+      const parsedMin = parseInt(repMin);
+      const parsedMax = parseInt(repMax);
+      const preferredRepRange =
+        !isNaN(parsedMin) && !isNaN(parsedMax) && parsedMin > 0 && parsedMax >= parsedMin
+          ? { min: parsedMin, max: parsedMax }
+          : null;
+      void supabase
+        .from('users')
+        .update({
+          training_goals: trainingGoals,
+          experience_level: experienceLevel,
+          body_weight_kg: bodyWeightKg,
+          preferred_rep_range: preferredRepRange,
+        })
+        .eq('id', user.id)
+        .then(({ error }) => {
+          if (!error) {
+            setPrefsSaved(true);
+            setTimeout(() => setPrefsSaved(false), 1500);
+          }
+        });
+    },
+    [trainingGoals, experienceLevel, bodyWeight, repMin, repMax],
+    600,
+  );
+
   async function handleExport() {
     setExporting(true);
     try {
@@ -255,18 +333,32 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleRetrySync() {
+    setSyncing(true);
+    try {
+      await processQueue();
+      const remaining = await getQueueSize();
+      setPendingCount(remaining);
+      if (remaining === 0) toast.success('All uploaded');
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   async function handleSignOut() {
     await signOut();
   }
 
+  const initial = (displayName || user?.email || '?')[0].toUpperCase();
+
   return (
     <div className="page-shell">
-      <div className="page-content py-5 md:py-7 space-y-5">
+      <div className="page-content py-5 md:py-7 space-y-6">
         <div className="page-header">
           <h1 className="page-header-title">Profile</h1>
         </div>
 
-        {/* Name + email */}
+        {/* ── Hero identity ─────────────────────────────── */}
         <div className="content-card">
           {editingName ? (
             <div className="flex flex-col gap-2 md:flex-row">
@@ -295,82 +387,94 @@ export default function ProfilePage() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[oklch(0.75_0.18_55/0.12)] text-[oklch(0.80_0.16_55)] font-display text-lg font-bold">
-                {(displayName || user?.email || '?')[0].toUpperCase()}
+            <div className="flex flex-col items-center gap-3 py-2 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[oklch(0.75_0.18_55/0.12)] text-[oklch(0.80_0.16_55)] font-display text-2xl font-bold">
+                {initial}
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">{displayName || 'Add your name'}</p>
-                <p className="text-sm text-muted-foreground">{user?.email}</p>
+              <div className="min-w-0">
+                <div className="flex items-center justify-center gap-1.5">
+                  <p className="truncate text-base font-semibold">{displayName || 'Add your name'}</p>
+                  <button
+                    onClick={() => setEditingName(true)}
+                    aria-label="Edit display name"
+                    className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                </div>
+                <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
+                {memberSince && (
+                  <p className="mt-0.5 text-xs text-muted-foreground/60">Member since {formatMemberSince(memberSince)}</p>
+                )}
               </div>
-              <button
-                onClick={() => setEditingName(true)}
-                aria-label="Edit display name"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </button>
+
+              {/* Stats strip */}
+              {(workoutCount !== null || setCount !== null) && (
+                <div className="mt-2 grid w-full grid-cols-2 gap-2">
+                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-center">
+                    <p className="font-display text-lg font-bold">{workoutCount ?? '—'}</p>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Workouts</p>
+                  </div>
+                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-center">
+                    <p className="font-display text-lg font-bold">{setCount ?? '—'}</p>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Sets logged</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Preferences */}
-        <section>
-          <h2 className="section-title mb-2">Preferences</h2>
-          <div className="list-row justify-between">
-            <span className="text-sm font-semibold">Weight Unit</span>
-            <div className="flex rounded-lg border border-white/10 bg-black/15 p-0.5">
-              {(['kg', 'lb'] as const).map((value) => (
-                <button
-                  key={value}
-                  onClick={() => void handleUnitChange(value)}
-                  className={`h-7 min-w-[42px] rounded-md px-3 text-xs font-semibold transition-colors ${
-                    unit === value
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {value}
-                </button>
-              ))}
+        {/* ── Pending upload notice (only if queue has items) ── */}
+        {pendingCount > 0 && (
+          <div className="flex items-center gap-3 rounded-xl border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.06)] px-3.5 py-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[oklch(0.75_0.16_60/0.15)] text-[oklch(0.82_0.15_60)]">
+              <RefreshCw className={`h-3.5 w-3.5 ${syncing ? 'animate-spin' : ''}`} />
             </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">
+                {pendingCount} change{pendingCount !== 1 ? 's' : ''} still uploading
+              </p>
+              <p className="text-xs text-muted-foreground">We&apos;ll keep trying in the background.</p>
+            </div>
+            <button
+              onClick={() => void handleRetrySync()}
+              disabled={syncing}
+              className="text-xs font-semibold text-primary disabled:opacity-60"
+            >
+              Retry now
+            </button>
           </div>
-        </section>
+        )}
 
-        {/* Training */}
+        {/* ── Training preferences (auto-save) ─────────────── */}
         <section>
-          <h2 className="section-title mb-2">Training</h2>
-          <div className="space-y-3">
-            {/* Goals */}
-            <div className="list-row flex-col items-stretch gap-2">
-              <span className="text-sm font-semibold">Goals</span>
-              <div className="flex flex-wrap gap-1.5">
-                {([
-                  { id: 'strength', label: 'Strength' },
-                  { id: 'muscle', label: 'Muscle' },
-                  { id: 'fat_loss', label: 'Fat Loss' },
-                  { id: 'endurance', label: 'Endurance' },
-                  { id: 'athletic', label: 'Athletic' },
-                  { id: 'health', label: 'Health' },
-                ] as const).map((goal) => {
-                  const selected = trainingGoals.includes(goal.id);
-                  return (
-                    <button
-                      key={goal.id}
-                      onClick={() => setTrainingGoals((prev) =>
-                        prev.includes(goal.id) ? prev.filter((g) => g !== goal.id) : [...prev, goal.id],
-                      )}
-                      className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors ${
-                        selected
-                          ? 'border-primary/40 bg-primary/15 text-primary'
-                          : 'border-white/10 text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {selected && <Check className="h-3 w-3" />}
-                      {goal.label}
-                    </button>
-                  );
-                })}
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="section-title">Training</h2>
+            {prefsSaved && (
+              <span className="flex items-center gap-1 text-[11px] text-[oklch(0.72_0.19_155)]">
+                <Check className="h-3 w-3" />
+                Saved
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            {/* Units */}
+            <div className="list-row justify-between">
+              <span className="text-sm font-semibold">Weight unit</span>
+              <div className="flex rounded-lg border border-white/10 bg-black/15 p-0.5">
+                {(['kg', 'lb'] as const).map((value) => (
+                  <button
+                    key={value}
+                    onClick={() => void handleUnitChange(value)}
+                    className={`h-7 min-w-[42px] rounded-md px-3 text-xs font-semibold transition-colors ${
+                      unit === value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {value}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -383,9 +487,7 @@ export default function ProfilePage() {
                     key={level}
                     onClick={() => setExperienceLevel(level)}
                     className={`h-7 rounded-md px-2.5 text-xs font-semibold capitalize transition-colors ${
-                      experienceLevel === level
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
+                      experienceLevel === level ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     {level}
@@ -394,9 +496,9 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Rep Range */}
+            {/* Rep range */}
             <div className="list-row justify-between">
-              <span className="text-sm font-semibold">Rep Range</span>
+              <span className="text-sm font-semibold">Rep range</span>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -419,12 +521,9 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Body Weight */}
+            {/* Body weight */}
             <div className="list-row justify-between">
-              <div className="flex items-center gap-2">
-                <Scale className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">Body Weight</span>
-              </div>
+              <span className="text-sm font-semibold">Body weight</span>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -441,154 +540,99 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Save button */}
-            <button
-              onClick={async () => {
-                setSavingTraining(true);
-                try {
-                  const supabase = createClient();
-                  let bodyWeightKg: number | null = null;
-                  if (bodyWeight.trim()) {
-                    const parsed = parseFloat(bodyWeight);
-                    if (!isNaN(parsed) && parsed > 0) {
-                      bodyWeightKg = unit === 'lb' ? Math.round(parsed / 2.205 * 10) / 10 : parsed;
-                    }
-                  }
-                  const parsedMin = parseInt(repMin);
-                  const parsedMax = parseInt(repMax);
-                  const preferredRepRange = !isNaN(parsedMin) && !isNaN(parsedMax) && parsedMin > 0 && parsedMax >= parsedMin
-                    ? { min: parsedMin, max: parsedMax }
-                    : null;
-
-                  const { error } = await supabase.from('users').update({
-                    training_goals: trainingGoals,
-                    experience_level: experienceLevel,
-                    body_weight_kg: bodyWeightKg,
-                    preferred_rep_range: preferredRepRange,
-                  }).eq('id', user!.id);
-                  if (error) throw error;
-                  toast.success('Training preferences saved');
-                } catch {
-                  toast.error('Failed to save preferences');
-                } finally {
-                  setSavingTraining(false);
-                }
-              }}
-              disabled={savingTraining}
-              className="flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-primary/10 text-sm font-semibold text-primary disabled:opacity-60"
-            >
-              {savingTraining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Save Training Preferences'}
-            </button>
-          </div>
-        </section>
-
-        {/* Data */}
-        <section>
-          <h2 className="section-title mb-2">Data</h2>
-          <div className="space-y-2">
-            <SettingRow
-              icon={<Download className="h-4 w-4" />}
-              label="Export Data"
-              description="Download all data as JSON"
-              onClick={() => void handleExport()}
-              loading={exporting}
-            />
-
-            {pendingCount > 0 && (
-              <div className="list-row flex-col items-stretch gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.75_0.16_60/0.12)] text-[oklch(0.82_0.15_60)]">
-                    <AlertTriangle className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">Pending sync</p>
-                    <p className="text-sm text-muted-foreground">{pendingCount} change{pendingCount !== 1 ? 's' : ''} waiting to sync</p>
-                  </div>
-                </div>
-                <div className="flex gap-2 pl-12">
-                  <button
-                    onClick={async () => {
-                      toast.success('Syncing now...');
-                      await processQueue();
-                      const remaining = await getQueueSize();
-                      setPendingCount(remaining);
-                      if (remaining === 0) toast.success('All synced');
-                      else toast.error(`${remaining} item${remaining !== 1 ? 's' : ''} still pending`);
-                    }}
-                    className="flex h-8 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
-                  >
-                    Sync Now
-                  </button>
-                  <button
-                    onClick={async () => {
-                      await clearFailed();
-                      // Also clear any remaining pending items the user wants to discard
-                      await db.syncQueue.clear();
-                      setPendingCount(0);
-                      toast.success('Queue cleared');
-                    }}
-                    className="flex h-8 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
-                  >
-                    Discard All
-                  </button>
-                </div>
+            {/* Goals */}
+            <div className="list-row flex-col items-stretch gap-2">
+              <span className="text-sm font-semibold">Goals</span>
+              <div className="flex flex-wrap gap-1.5">
+                {([
+                  { id: 'strength', label: 'Strength' },
+                  { id: 'muscle', label: 'Muscle' },
+                  { id: 'fat_loss', label: 'Fat Loss' },
+                  { id: 'endurance', label: 'Endurance' },
+                  { id: 'athletic', label: 'Athletic' },
+                  { id: 'health', label: 'Health' },
+                ] as const).map((goal) => {
+                  const selected = trainingGoals.includes(goal.id);
+                  return (
+                    <button
+                      key={goal.id}
+                      onClick={() =>
+                        setTrainingGoals((prev) =>
+                          prev.includes(goal.id) ? prev.filter((g) => g !== goal.id) : [...prev, goal.id],
+                        )
+                      }
+                      className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors ${
+                        selected
+                          ? 'border-primary/40 bg-primary/15 text-primary'
+                          : 'border-white/10 text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {selected && <Check className="h-3 w-3" />}
+                      {goal.label}
+                    </button>
+                  );
+                })}
               </div>
-            )}
-
-            <SettingRow
-              icon={<span className="text-xs font-mono">{APP_VERSION}</span>}
-              label="App Version"
-            />
+            </div>
           </div>
         </section>
 
-        {/* Install */}
-        {(isInstallable && !isDismissed && !isInstalled) && (
-          <section>
-            <h2 className="section-title mb-2">Install</h2>
-            <SettingRow
-              icon={<Smartphone className="h-4 w-4" />}
-              label="Add To Home Screen"
-              description="Install as a PWA for faster access"
-              onClick={() => void install()}
-            />
-          </section>
-        )}
-
-        {isInstalled && (
-          <section>
-            <h2 className="section-title mb-2">Install</h2>
-            <SettingRow
-              icon={<Smartphone className="h-4 w-4" />}
-              label="App installed"
-              description="LiftOS is on your home screen"
-            />
-          </section>
-        )}
-
-        {/* Support */}
+        {/* ── Data ─────────────────────────────────────── */}
         <section>
-          <h2 className="section-title mb-2">Support</h2>
-          <SettingRow
-            icon={<HelpCircle className="h-4 w-4" />}
-            label="Help & Getting Started"
-            description="Tutorials, guides, and FAQ"
-            onClick={() => router.push('/help')}
+          <h2 className="section-title mb-2">Your data</h2>
+          <LinkRow
+            icon={<Download className="h-4 w-4" />}
+            label="Export all data"
+            description="Download everything as JSON"
+            onClick={() => void handleExport()}
+            loading={exporting}
           />
         </section>
 
-        {/* Account */}
+        {/* ── App ──────────────────────────────────────── */}
+        <section>
+          <h2 className="section-title mb-2">App</h2>
+          <div className="space-y-2">
+            <LinkRow
+              icon={<HelpCircle className="h-4 w-4" />}
+              label="Help & Getting Started"
+              description="Tutorials, guides, and FAQ"
+              onClick={() => router.push('/help')}
+            />
+            {isInstallable && !isDismissed && !isInstalled && (
+              <LinkRow
+                icon={<Smartphone className="h-4 w-4" />}
+                label="Add to Home Screen"
+                description="Install as a PWA for faster access"
+                onClick={() => void install()}
+              />
+            )}
+            {isInstalled && (
+              <LinkRow
+                icon={<Smartphone className="h-4 w-4" />}
+                label="App installed"
+                description="LiftOS is on your home screen"
+              />
+            )}
+            <div className="list-row justify-between">
+              <span className="text-sm text-muted-foreground">Version</span>
+              <span className="font-mono text-xs text-muted-foreground/70">{APP_VERSION}</span>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Account ──────────────────────────────────── */}
         <section>
           <h2 className="section-title mb-2">Account</h2>
           <div className="space-y-2">
-            <SettingRow
+            <LinkRow
               icon={<LogOut className="h-4 w-4" />}
-              label="Sign Out"
+              label="Sign out"
               onClick={() => void handleSignOut()}
             />
-            <SettingRow
+            <LinkRow
               icon={<Trash2 className="h-4 w-4" />}
-              label="Delete Account"
+              label="Delete account"
               description="Permanently erase all data"
               onClick={() => setDeleteOpen(true)}
               destructive
