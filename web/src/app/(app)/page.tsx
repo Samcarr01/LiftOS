@@ -383,18 +383,32 @@ export default function HomePage() {
       <div className="page-content space-y-6 py-6 md:py-8">
 
         {/* ── Header ──────────────────────────────── */}
-        <div className="page-reveal">
-          {loading ? (
-            <>
-              <Skeleton className="h-8 w-48 rounded-lg" />
-              <Skeleton className="mt-1.5 h-4 w-36 rounded-md" />
-            </>
-          ) : (
-            <>
-              <h1 className="page-header-title">{greeting(data?.displayName ?? null)}</h1>
-              <p className="mt-0.5 text-caption">{formatToday()}</p>
-            </>
-          )}
+        <div className="page-reveal flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            {loading ? (
+              <>
+                <Skeleton className="h-8 w-48 rounded-lg" />
+                <Skeleton className="mt-1.5 h-4 w-36 rounded-md" />
+              </>
+            ) : (
+              <>
+                <h1 className="page-header-title">{greeting(data?.displayName ?? null)}</h1>
+                <p className="mt-0.5 text-caption">{formatToday()}</p>
+              </>
+            )}
+          </div>
+          <Link
+            href="/profile"
+            aria-label="Open profile"
+            className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[oklch(0.75_0.18_55/0.12)] text-[oklch(0.80_0.16_55)] font-display text-sm font-bold transition-opacity hover:opacity-85 md:hidden"
+          >
+            {data?.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={data.avatarUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              (data?.displayName || '?')[0]?.toUpperCase() ?? '?'
+            )}
+          </Link>
         </div>
 
         {/* ── Resume in-progress workout ─────────── */}

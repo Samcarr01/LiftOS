@@ -29,6 +29,7 @@ export interface Database {
           body_weight_kg: number | null;
           preferred_rep_range: { min: number; max: number } | null;
           onboarding_completed: boolean;
+          avatar_url: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -43,6 +44,7 @@ export interface Database {
           body_weight_kg?: number | null;
           preferred_rep_range?: { min: number; max: number } | null;
           onboarding_completed?: boolean;
+          avatar_url?: string | null;
         };
         Update: {
           id?: string;
@@ -55,6 +57,7 @@ export interface Database {
           body_weight_kg?: number | null;
           preferred_rep_range?: { min: number; max: number } | null;
           onboarding_completed?: boolean;
+          avatar_url?: string | null;
         };
         Relationships: [];
       };

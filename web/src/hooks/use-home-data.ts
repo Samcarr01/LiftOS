@@ -18,6 +18,7 @@ import type { Json } from '@/types/database';
 
 export interface HomeData {
   displayName:      string | null;
+  avatarUrl:        string | null;
   suggested:        TemplateWithCount[];
   pinned:           TemplateWithCount[];
   recentSessions:   HistorySessionSummary[];
@@ -31,7 +32,7 @@ async function fetchHomeData(): Promise<HomeData> {
     templatesResult,
     sessionsResult,
   ] = await Promise.all([
-    supabase.from('users').select('display_name').single(),
+    supabase.from('users').select('display_name, avatar_url').single(),
 
     supabase
       .from('workout_templates')
@@ -56,7 +57,9 @@ async function fetchHomeData(): Promise<HomeData> {
       .limit(10),
   ]);
 
-  const displayName = (profileResult.data as { display_name: string | null } | null)?.display_name ?? null;
+  const profileRow = profileResult.data as { display_name: string | null; avatar_url: string | null } | null;
+  const displayName = profileRow?.display_name ?? null;
+  const avatarUrl   = profileRow?.avatar_url   ?? null;
 
   // Map templates
   const rawTemplates = (templatesResult.data ?? []) as Array<{
@@ -132,7 +135,7 @@ async function fetchHomeData(): Promise<HomeData> {
     };
   });
 
-  return { displayName, suggested, pinned, recentSessions };
+  return { displayName, avatarUrl, suggested, pinned, recentSessions };
 }
 
 export function useHomeData() {
