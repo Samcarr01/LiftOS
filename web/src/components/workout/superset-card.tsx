@@ -1,6 +1,6 @@
 'use client';
 
-import { Link2, Plus } from 'lucide-react';
+import { Link2, Minus, Plus } from 'lucide-react';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { logSetEntry } from '@/lib/offline';
 import type { ActiveExerciseState, SetValues } from '@/types/app';
@@ -179,13 +179,23 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
         })}
       </div>
 
-      {/* Add Round */}
-      <div className="mt-3">
+      {/* Add / Remove Round */}
+      <div className="mt-3 flex gap-2">
+        {maxRounds > 1 && (
+          <button
+            type="button"
+            onClick={() => handleDeleteRound(maxRounds - 1)}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:border-destructive/30 hover:text-destructive"
+            aria-label="Remove last round"
+          >
+            <Minus className="h-3.5 w-3.5" />
+          </button>
+        )}
         <button
           type="button"
           onClick={handleAddRound}
           aria-label="Add round to superset"
-          className="flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl border border-white/10 text-sm font-semibold text-muted-foreground hover:text-foreground"
+          className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-2xl border border-white/10 text-sm font-semibold text-muted-foreground hover:text-foreground"
         >
           <Plus className="h-3.5 w-3.5" />
           Add Round

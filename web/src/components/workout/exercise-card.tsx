@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useCallback, useMemo, useState } from 'react';
-import { ArrowRight, ChevronDown, ChevronUp, Plus, TrendingDown, TrendingUp, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Minus, Plus, TrendingDown, TrendingUp, X } from 'lucide-react';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { logSetEntry } from '@/lib/offline';
@@ -66,6 +66,13 @@ export const ExerciseCard = memo(function ExerciseCard({
   }, [updateSet, exerciseIndex]);
 
   const handleAddSet = useCallback(() => addSet(exerciseIndex), [addSet, exerciseIndex]);
+
+  const handleRemoveSet = useCallback(() => {
+    // Remove the last uncompleted set; if all are completed, remove the very last one
+    const lastUncompleted = [...sets].reverse().find((s) => !s.isCompleted);
+    const target = lastUncompleted ?? sets[sets.length - 1];
+    if (target) deleteSet(exerciseIndex, target.id);
+  }, [sets, deleteSet, exerciseIndex]);
   const handleAccept = useCallback(() => acceptSuggestion(exerciseIndex), [acceptSuggestion, exerciseIndex]);
   const handleDismiss = useCallback(() => dismissSuggestion(exerciseIndex), [dismissSuggestion, exerciseIndex]);
 
@@ -171,6 +178,16 @@ export const ExerciseCard = memo(function ExerciseCard({
       </div>
 
       <div className="mt-3 flex gap-2">
+        {sets.length > 1 && (
+          <button
+            type="button"
+            onClick={handleRemoveSet}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:border-destructive/30 hover:text-destructive"
+            aria-label="Remove set"
+          >
+            <Minus className="h-3.5 w-3.5" />
+          </button>
+        )}
         <button
           type="button"
           onClick={handleAddSet}
