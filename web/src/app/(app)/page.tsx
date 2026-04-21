@@ -124,7 +124,7 @@ function WeekRing({ count, target, dayFlags }: { count: number; target: number; 
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
           <span className="font-display text-xl font-bold">{count}</span>
-          <span className="mt-0.5 text-[10px] text-muted-foreground">of {target}</span>
+          <span className="mt-0.5 text-xs text-muted-foreground">of {target}</span>
         </div>
       </div>
       <div className="min-w-0 flex-1">
@@ -134,7 +134,7 @@ function WeekRing({ count, target, dayFlags }: { count: number; target: number; 
           {days.map((label, i) => (
             <div key={i} className="flex flex-col items-center gap-1">
               <div className={`h-1.5 w-1.5 rounded-full ${dayFlags[i] ? 'bg-primary' : 'bg-white/[0.10]'}`} />
-              <span className="text-[10px] text-muted-foreground/70">{label}</span>
+              <span className="text-xs text-muted-foreground/70">{label}</span>
             </div>
           ))}
         </div>

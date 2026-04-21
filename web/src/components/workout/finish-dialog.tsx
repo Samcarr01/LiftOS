@@ -113,8 +113,8 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
       clearWorkout();
       router.replace('/workout/complete');
     } catch (err: unknown) {
-      const message = (err as { message?: string }).message ?? 'Failed to save workout';
-      toast.error(message);
+      console.error('[finish-workout]', err);
+      toast.error('Failed to save workout. Please try again.');
       setIsCompleting(false);
       setSaving(false);
       onClose();

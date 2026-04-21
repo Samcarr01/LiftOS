@@ -160,6 +160,15 @@ export function AvatarUploader({ userId, displayName, email, avatarUrl, onChange
   const initial = (displayName || email || '?')[0]?.toUpperCase() ?? '?';
 
   async function handleFile(file: File) {
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('Image must be under 10MB');
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
     try {
       const dataUrl = await fileToDataUrl(file);
       setCropSource(dataUrl);

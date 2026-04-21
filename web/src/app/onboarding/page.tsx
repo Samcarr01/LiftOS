@@ -382,7 +382,7 @@ export default function OnboardingPage() {
                       selected ? 'bg-primary/20 text-primary' : 'bg-white/8 text-muted-foreground',
                     )}>
                       <span className="text-base font-bold leading-none">{preset.range}</span>
-                      <span className="text-[10px] font-medium">reps</span>
+                      <span className="text-xs font-medium">reps</span>
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold">{preset.label}</p>

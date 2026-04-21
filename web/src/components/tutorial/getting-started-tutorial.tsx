@@ -143,7 +143,7 @@ function StepIllustration({ step }: { step: number }) {
           <TrendingUp className="h-4 w-4 shrink-0 text-primary" />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-primary">Target: 82.5kg × 5</p>
-            <p className="text-[10px] text-primary/60">You hit 80kg × 8 across all sets — time to go up!</p>
+            <p className="text-xs text-primary/60">You hit 80kg × 8 across all sets — time to go up!</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">
