@@ -192,9 +192,16 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate font-display text-lg font-bold">
-              {loading ? 'Loading...' : (detail?.template_name ?? 'Workout')}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="truncate font-display text-lg font-bold">
+                {loading ? 'Loading...' : (detail?.template_name ?? 'Workout')}
+              </h1>
+              {detail?.is_light_session && (
+                <span className="shrink-0 rounded-md border border-white/15 bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Light
+                </span>
+              )}
+            </div>
             {detail && (
               <p className="text-sm text-muted-foreground">{formatLongDate(detail.started_at)}</p>
             )}

@@ -77,7 +77,8 @@ const DEFAULT_REP_RANGES: Record<ExerciseCategory, RepRange> = {
 };
 
 const PLATEAU_THRESHOLD = 4;
-const E1RM_DECLINE_THRESHOLD = 0.10;
+const DECLINE_CUMULATIVE_THRESHOLD = 0.05;
+const SHARP_DECLINE_PEAK_THRESHOLD = 0.15;
 
 // Session gap thresholds (days)
 const LONG_BREAK_DAYS = 14;
@@ -269,6 +270,8 @@ function detectTrend(
 ): TrendDirection {
   if (sessions.length < 2) return 'stable';
 
+  // Light sessions are filtered upstream in loadHistorySessions, so every
+  // session here counts as a "real" data point for trend math.
   const analyses = sessions
     .slice(0, 5)
     .map((s) => analyzeSession(s, schema, repRange))
@@ -277,22 +280,42 @@ function detectTrend(
   if (analyses.length < 2) return 'stable';
 
   const latest = analyses[0];
-  const previousAvg = analyses.slice(1, 4).reduce((sum, a) => sum + a.e1rm, 0) / Math.min(analyses.length - 1, 3);
 
-  if (previousAvg === 0) return 'stable';
-
-  const ratio = latest.e1rm / previousAvg;
-
-  // Sharp decline: >10% drop
-  if (ratio < (1 - E1RM_DECLINE_THRESHOLD)) {
-    // Check if the previous session was also declining
-    if (analyses.length >= 3 && analyses[1].e1rm < previousAvg * 0.95) {
-      return 'sharp_decline'; // 2+ declining sessions → deload
+  // Count consecutive trending-down pairs starting from the most recent session.
+  // analyses[0] is newest; pair (i, i+1) trends down if newer < older.
+  let consecutiveDownRun = 0;
+  for (let i = 0; i < analyses.length - 1; i += 1) {
+    if (analyses[i].e1rm < analyses[i + 1].e1rm) {
+      consecutiveDownRun += 1;
+    } else {
+      break;
     }
-    return 'declining'; // Single bad day
   }
 
-  if (ratio > 1.02) return 'improving';
+  // Slow-drift escape hatch: latest is 15%+ below the window peak.
+  const peak = Math.max(...analyses.map((a) => a.e1rm));
+  const dropFromPeak = peak > 0 ? (peak - latest.e1rm) / peak : 0;
+
+  if (consecutiveDownRun >= 3 || dropFromPeak >= SHARP_DECLINE_PEAK_THRESHOLD) {
+    return 'sharp_decline';
+  }
+
+  if (consecutiveDownRun >= 2) {
+    // Cumulative drop from oldest-in-run to latest must clear the noise floor.
+    const oldestInRun = analyses[consecutiveDownRun].e1rm;
+    const cumulativeDrop = oldestInRun > 0 ? (oldestInRun - latest.e1rm) / oldestInRun : 0;
+    if (cumulativeDrop >= DECLINE_CUMULATIVE_THRESHOLD) {
+      return 'declining';
+    }
+  }
+
+  // Improving: latest is 2%+ above the avg of the prior up-to-3 sessions.
+  const priorWindow = analyses.slice(1, 4);
+  if (priorWindow.length > 0) {
+    const priorAvg = priorWindow.reduce((sum, a) => sum + a.e1rm, 0) / priorWindow.length;
+    if (priorAvg > 0 && latest.e1rm / priorAvg > 1.02) return 'improving';
+  }
+
   return 'stable';
 }
 

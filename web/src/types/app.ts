@@ -91,10 +91,11 @@ export interface ActiveExerciseState {
 }
 
 export interface ActiveWorkoutState {
-  session:      WorkoutSessionRow;
-  exercises:    ActiveExerciseState[];
-  elapsedTimer: number;  // seconds elapsed since session.started_at
-  isCompleting: boolean;
+  session:        WorkoutSessionRow;
+  exercises:      ActiveExerciseState[];
+  elapsedTimer:   number;  // seconds elapsed since session.started_at
+  isCompleting:   boolean;
+  isLightSession: boolean; // user-tagged "light / off day" — excluded from prefill + AI trend
 }
 
 // ── start-workout Edge Function I/O ──────────────────────────────────────────
@@ -135,6 +136,7 @@ export interface HistorySessionSummary {
   volume_kg:        number;
   primary_exercise_name: string | null;
   primary_result:        string | null;
+  is_light_session: boolean;
 }
 
 export interface SessionDetailSet {
@@ -176,6 +178,7 @@ export interface SessionDetail {
   exercises:        SessionDetailExercise[];
   total_volume_kg:  number;
   total_sets:       number;
+  is_light_session: boolean;
 }
 
 export interface CompleteWorkoutExerciseSuggestion {

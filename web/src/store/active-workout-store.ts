@@ -29,9 +29,10 @@ interface ActiveWorkoutStore {
   dismissedSuggestions: number[]; // exerciseIndex values
 
   // Lifecycle
-  hydrateWorkout:  (response: StartWorkoutResponse) => void;
-  clearWorkout:    () => void;
-  setIsCompleting: (v: boolean) => void;
+  hydrateWorkout:    (response: StartWorkoutResponse) => void;
+  clearWorkout:      () => void;
+  setIsCompleting:   (v: boolean) => void;
+  setIsLightSession: (v: boolean) => void;
 
   // Exercise mutations
   addExercise: (sessionExercise: SessionExerciseRow, exercise: ExerciseWithSchema, setCount: number) => void;
@@ -104,10 +105,11 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
 
     set({
       workout: {
-        session:      response.session,
+        session:        response.session,
         exercises,
-        elapsedTimer: 0,
-        isCompleting: false,
+        elapsedTimer:   0,
+        isCompleting:   false,
+        isLightSession: false,
       },
       restTimer:            DEFAULT_REST,
       dismissedSuggestions: [],
@@ -151,6 +153,10 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
 
   setIsCompleting(v) {
     set((s) => s.workout ? { workout: { ...s.workout, isCompleting: v } } : {});
+  },
+
+  setIsLightSession(v) {
+    set((s) => s.workout ? { workout: { ...s.workout, isLightSession: v } } : {});
   },
 
   addSet(exerciseIndex) {

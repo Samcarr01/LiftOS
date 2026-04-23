@@ -28,6 +28,7 @@ export function useSessionDetail(sessionId: string) {
           duration_seconds,
           notes,
           template_name,
+          is_light_session,
           workout_templates ( name ),
           session_exercises (
             id,
@@ -74,6 +75,7 @@ export function useSessionDetail(sessionId: string) {
         duration_seconds: number | null;
         notes: string | null;
         template_name: string | null;
+        is_light_session: boolean;
         workout_templates: { name: string } | null;
         session_exercises: Array<{
           id: string;
@@ -155,6 +157,7 @@ export function useSessionDetail(sessionId: string) {
         exercises,
         total_volume_kg:  totalVolume,
         total_sets:       totalSets,
+        is_light_session: row.is_light_session,
       });
       setLoading(false);
     }

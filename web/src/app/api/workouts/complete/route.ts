@@ -30,6 +30,7 @@ const SetPayloadSchema = z.object({
 
 const CompleteWorkoutRequestSchema = z.object({
   sessionId: z.string().uuid(),
+  isLightSession: z.boolean().optional().default(false),
   exercises: z.array(z.object({
     sessionExerciseId: z.string().uuid(),
     sets: z.array(SetPayloadSchema).max(100),
@@ -317,7 +318,8 @@ async function loadHistorySessions(
       session_id,
       exercise_id,
       workout_sessions!inner (
-        completed_at
+        completed_at,
+        is_light_session
       ),
       set_entries (
         set_index,
@@ -335,7 +337,7 @@ async function loadHistorySessions(
   const historyRows = (data ?? []) as Array<{
     session_id: string;
     exercise_id: string;
-    workout_sessions: { completed_at: string } | null;
+    workout_sessions: { completed_at: string; is_light_session: boolean } | null;
     set_entries: Array<{
       set_index: number;
       values: Json;
@@ -346,6 +348,7 @@ async function loadHistorySessions(
   }>;
 
   return historyRows
+    .filter((row) => !row.workout_sessions?.is_light_session)
     .map((row) => ({
       sessionId: row.session_id,
       completedAt: row.workout_sessions?.completed_at as string,
@@ -489,6 +492,7 @@ export async function POST(request: Request) {
       .update({
         completed_at: completedAt,
         duration_seconds: summary.duration_seconds,
+        is_light_session: payload.isLightSession,
       })
       .eq('id', session.id);
 
@@ -505,13 +509,17 @@ export async function POST(request: Request) {
     }
 
     const exerciseIds = exercisesAfterSave.map((exercise) => exercise.exercise_id);
-    const snapshotRows = buildSnapshotRows(exercisesAfterSave, user.id, session.id, completedAt);
-    if (snapshotRows.length > 0) {
-      const { error: snapshotError } = await supabase
-        .from('last_performance_snapshots')
-        .upsert(snapshotRows, { onConflict: 'user_id,exercise_id' });
-      if (snapshotError) {
-        console.warn('[api/workouts/complete] failed to update last performance snapshots', snapshotError);
+    // Skip snapshot writes for light sessions so prefill keeps pointing at the
+    // prior non-light session.
+    if (!payload.isLightSession) {
+      const snapshotRows = buildSnapshotRows(exercisesAfterSave, user.id, session.id, completedAt);
+      if (snapshotRows.length > 0) {
+        const { error: snapshotError } = await supabase
+          .from('last_performance_snapshots')
+          .upsert(snapshotRows, { onConflict: 'user_id,exercise_id' });
+        if (snapshotError) {
+          console.warn('[api/workouts/complete] failed to update last performance snapshots', snapshotError);
+        }
       }
     }
 

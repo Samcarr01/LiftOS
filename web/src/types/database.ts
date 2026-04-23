@@ -173,6 +173,7 @@ export interface Database {
           completed_at: string | null;
           duration_seconds: number | null;
           notes: string | null;
+          is_light_session: boolean;
           created_at: string;
         };
         Insert: {
@@ -183,6 +184,7 @@ export interface Database {
           completed_at?: string | null;
           duration_seconds?: number | null;
           notes?: string | null;
+          is_light_session?: boolean;
         };
         Update: {
           user_id?: string;
@@ -192,6 +194,7 @@ export interface Database {
           completed_at?: string | null;
           duration_seconds?: number | null;
           notes?: string | null;
+          is_light_session?: boolean;
         };
         Relationships: [];
       };

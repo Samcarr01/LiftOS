@@ -26,6 +26,7 @@ function computeSummary(workout: ActiveWorkoutState) {
 export function FinishDialog({ open, onClose }: FinishDialogProps) {
   const workout = useActiveWorkoutStore((state) => state.workout);
   const setIsCompleting = useActiveWorkoutStore((state) => state.setIsCompleting);
+  const setIsLightSession = useActiveWorkoutStore((state) => state.setIsLightSession);
   const clearWorkout = useActiveWorkoutStore((state) => state.clearWorkout);
   const setResult = useCompletionStore((state) => state.setResult);
   const router = useRouter();
@@ -77,6 +78,7 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
         },
         body: JSON.stringify({
           sessionId: workout.session.id,
+          isLightSession: workout.isLightSession,
           exercises: workout.exercises.map((exercise) => ({
             sessionExerciseId: exercise.sessionExercise.id,
             sets: exercise.sets.map((set) => ({
@@ -161,6 +163,35 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
               {remainingSets} open set{remainingSets !== 1 ? 's' : ''} will be kept with the workout.
             </div>
           )}
+
+          {/* Light / off-day toggle */}
+          <button
+            type="button"
+            onClick={() => setIsLightSession(!workout.isLightSession)}
+            disabled={saving}
+            aria-pressed={workout.isLightSession}
+            className="mt-3 flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left transition-colors hover:bg-white/[0.06] disabled:opacity-60"
+          >
+            <div
+              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                workout.isLightSession
+                  ? 'border-[oklch(0.80_0.16_55)] bg-[oklch(0.80_0.16_55)]'
+                  : 'border-white/25 bg-transparent'
+              }`}
+            >
+              {workout.isLightSession && (
+                <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 text-black" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 8.5l3.5 3.5L13 4" />
+                </svg>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">Light / off day</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Won&apos;t count toward progression or prefill
+              </p>
+            </div>
+          </button>
 
           {/* Buttons */}
           <div className="mt-5 flex flex-col gap-2.5">

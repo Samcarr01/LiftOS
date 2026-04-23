@@ -49,6 +49,7 @@ async function fetchHomeData(): Promise<HomeData> {
         completed_at,
         duration_seconds,
         template_name,
+        is_light_session,
         workout_templates ( name ),
         session_exercises ( id, order_index, set_entries ( count ), exercises ( name, tracking_schema ) )
       `)
@@ -97,6 +98,7 @@ async function fetchHomeData(): Promise<HomeData> {
     completed_at: string | null;
     duration_seconds: number | null;
     template_name: string | null;
+    is_light_session: boolean;
     workout_templates: { name: string } | null;
     session_exercises: {
       id: string;
@@ -132,6 +134,7 @@ async function fetchHomeData(): Promise<HomeData> {
       volume_kg:        0,
       primary_exercise_name: primaryName,
       primary_result: primaryResult,
+      is_light_session: s.is_light_session,
     };
   });
 

@@ -35,6 +35,7 @@ export function useHistory() {
         duration_seconds,
         template_id,
         template_name,
+        is_light_session,
         workout_templates ( name ),
         session_exercises ( id, set_entries ( count ) )
       `)
@@ -54,6 +55,7 @@ export function useHistory() {
       completed_at: string | null;
       duration_seconds: number | null;
       template_name: string | null;
+      is_light_session: boolean;
       workout_templates: { name: string } | null;
       session_exercises: { id: string; set_entries: { count: number }[] }[];
     }) => ({
@@ -67,6 +69,7 @@ export function useHistory() {
       volume_kg:        0,
       primary_exercise_name: null,
       primary_result: null,
+      is_light_session: row.is_light_session,
     }));
 
     const previews = await fetchSessionPreviews(

@@ -38,7 +38,14 @@ function SessionRow({
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-card-title">{name}</p>
+        <div className="flex items-center gap-2">
+          <p className="truncate text-card-title">{name}</p>
+          {session.is_light_session && (
+            <span className="shrink-0 rounded-md border border-white/15 bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Light
+            </span>
+          )}
+        </div>
         <p className="text-sm text-muted-foreground">
           {formatShortDate(session.started_at)} · {session.exercise_count} ex · {session.total_sets} set{session.total_sets !== 1 ? 's' : ''}
         </p>
