@@ -121,9 +121,27 @@ export function useStartWorkout() {
 
       const exerciseIds = templateExercises.map((exercise) => exercise.exercise_id);
 
-      const [{ data: lastPerformanceRows, error: lastPerformanceError }, { data: suggestionRows, error: suggestionError }] =
-        exerciseIds.length > 0
-          ? await Promise.all([
+      // Generate IDs client-side so the write chain (insert session → insert
+      // session_exercises) can race with the read branch (snapshots + suggestions)
+      // instead of waiting for the writes to return their generated IDs.
+      const sessionId = crypto.randomUUID();
+      const startedAt = new Date().toISOString();
+      const sessionExercisesToInsert: SessionExerciseRow[] = templateExercises.map((exercise) => ({
+        id: crypto.randomUUID(),
+        session_id: sessionId,
+        exercise_id: exercise.exercise_id,
+        order_index: exercise.order_index,
+        rest_seconds: exercise.rest_seconds,
+        superset_group_id: exercise.superset_group_id,
+        notes: exercise.notes,
+      }));
+
+      const readBranch: Promise<{
+        lastPerformanceRows: { exercise_id: string; sets_data: unknown }[];
+        suggestionRows:      { exercise_id: string; suggestion_data: unknown }[];
+      }> = exerciseIds.length > 0
+        ? (async () => {
+            const [lp, sg] = await Promise.all([
               supabase
                 .from('last_performance_snapshots')
                 .select('exercise_id, sets_data')
@@ -135,50 +153,47 @@ export function useStartWorkout() {
                 .eq('user_id', user.id)
                 .in('exercise_id', exerciseIds)
                 .gt('expires_at', new Date().toISOString()),
-            ])
-          : [
-              { data: [], error: null },
-              { data: [], error: null },
-            ];
+            ]);
+            if (lp.error) throw lp.error;
+            if (sg.error) throw sg.error;
+            return {
+              lastPerformanceRows: lp.data ?? [],
+              suggestionRows:      sg.data ?? [],
+            };
+          })()
+        : Promise.resolve({ lastPerformanceRows: [], suggestionRows: [] });
 
-      if (lastPerformanceError) throw lastPerformanceError;
-      if (suggestionError) throw suggestionError;
+      const writeBranch = (async (): Promise<WorkoutSessionRow> => {
+        const { data: session, error: sessionError } = await supabase
+          .from('workout_sessions')
+          .insert({
+            id: sessionId,
+            user_id: user.id,
+            template_id: templateId,
+            template_name: templateName,
+            started_at: startedAt,
+          })
+          .select()
+          .single() as { data: WorkoutSessionRow | null; error: unknown };
 
-      const { data: session, error: sessionError } = await supabase
-        .from('workout_sessions')
-        .insert({
-          user_id: user.id,
-          template_id: templateId,
-          template_name: templateName,
-          started_at: new Date().toISOString(),
-        })
-        .select()
-        .single() as { data: WorkoutSessionRow | null; error: unknown };
+        if (sessionError || !session) {
+          throw sessionError ?? new Error('Failed to create workout session');
+        }
 
-      if (sessionError || !session) {
-        throw sessionError ?? new Error('Failed to create workout session');
-      }
-
-      const sessionExercisesToInsert = templateExercises.map((exercise) => ({
-        session_id: session.id,
-        exercise_id: exercise.exercise_id,
-        order_index: exercise.order_index,
-        rest_seconds: exercise.rest_seconds,
-        superset_group_id: exercise.superset_group_id,
-        notes: exercise.notes,
-      }));
-
-      const insertedSessionExercises = sessionExercisesToInsert.length > 0
-        ? await supabase
+        if (sessionExercisesToInsert.length > 0) {
+          const { error: seError } = await supabase
             .from('session_exercises')
-            .insert(sessionExercisesToInsert)
-            .select() as { data: SessionExerciseRow[] | null; error: unknown }
-        : { data: [], error: null };
+            .insert(sessionExercisesToInsert);
+          if (seError) throw seError;
+        }
 
-      if (insertedSessionExercises.error) throw insertedSessionExercises.error;
+        return session;
+      })();
+
+      const [{ lastPerformanceRows, suggestionRows }, session] = await Promise.all([readBranch, writeBranch]);
 
       const sessionExerciseByOrder = new Map(
-        (insertedSessionExercises.data ?? []).map((exercise) => [exercise.order_index, exercise]),
+        sessionExercisesToInsert.map((exercise) => [exercise.order_index, exercise]),
       );
 
       const lastPerformanceByExercise = new Map<string, LastPerformanceSet[] | null>(
