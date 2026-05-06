@@ -37,3 +37,8 @@ yarn-error.log*
 # Testing
 coverage/
 __pycache__/
+test-results/
+.playwright-mcp/
+
+# Next.js build output
+.next/
