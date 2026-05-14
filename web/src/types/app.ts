@@ -194,6 +194,11 @@ export interface CompleteWorkoutResponse {
     total_sets: number;
     total_volume_kg: number;
     duration_seconds: number;
+    previous: {
+      total_volume_kg: number;
+      total_sets: number;
+      duration_seconds: number;
+    } | null;
   };
   newPrs: Array<{
     exercise_id: string;

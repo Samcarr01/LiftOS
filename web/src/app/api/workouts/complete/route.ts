@@ -363,15 +363,48 @@ async function loadHistorySessions(
     .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
 }
 
+async function loadPreviousSessionTotals(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  templateId: string | null,
+  excludeSessionId: string,
+): Promise<{ total_volume_kg: number; total_sets: number; duration_seconds: number } | null> {
+  if (!templateId) return null;
+
+  const { data: prev, error } = await supabase
+    .from('workout_sessions')
+    .select('id, started_at, completed_at')
+    .eq('user_id', userId)
+    .eq('template_id', templateId)
+    .eq('is_light_session', false)
+    .neq('id', excludeSessionId)
+    .not('completed_at', 'is', null)
+    .order('completed_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !prev?.completed_at) return null;
+
+  const exercises = await loadSessionContext(supabase, prev.id);
+  const summary = buildSummary(prev.started_at, exercises, prev.completed_at);
+  return {
+    total_volume_kg: summary.total_volume_kg,
+    total_sets: summary.total_sets,
+    duration_seconds: summary.duration_seconds,
+  };
+}
+
 async function buildAlreadyCompletedResponse(
   supabase: Awaited<ReturnType<typeof createClient>>,
   sessionId: string,
+  userId: string,
+  templateId: string | null,
   startedAt: string,
   completedAt: string,
 ): Promise<CompleteWorkoutResponse> {
   const exercises = await loadSessionContext(supabase, sessionId);
   const exerciseIds = exercises.map((exercise) => exercise.exercise_id);
-  const [prsResult, suggestionsResult] = await Promise.all([
+  const [prsResult, suggestionsResult, previous] = await Promise.all([
     exerciseIds.length > 0
       ? supabase
           .from('personal_records')
@@ -384,6 +417,7 @@ async function buildAlreadyCompletedResponse(
           .select('exercise_id, suggestion_data')
           .in('exercise_id', exerciseIds)
       : { data: [], error: null },
+    loadPreviousSessionTotals(supabase, userId, templateId, sessionId),
   ]);
 
   if (prsResult.error) throw prsResult.error;
@@ -397,7 +431,7 @@ async function buildAlreadyCompletedResponse(
 
   return {
     sessionId,
-    summary: buildSummary(startedAt, exercises, completedAt),
+    summary: { ...buildSummary(startedAt, exercises, completedAt), previous },
     newPrs: (prsResult.data ?? []) as CompleteWorkoutResponse['newPrs'],
     exerciseNames: exercises.map((exercise) => exercise.exercise.name),
     suggestions: exercises.map((exercise) => ({
@@ -447,6 +481,8 @@ export async function POST(request: Request) {
       const completedResponse = await buildAlreadyCompletedResponse(
         supabase,
         session.id,
+        user.id,
+        session.template_id,
         session.started_at,
         session.completed_at,
       );
@@ -485,7 +521,14 @@ export async function POST(request: Request) {
 
     const completedAt = new Date().toISOString();
     const exercisesAfterSave = await loadSessionContext(supabase, session.id);
-    const summary = buildSummary(session.started_at, exercisesAfterSave, completedAt);
+    const baseSummary = buildSummary(session.started_at, exercisesAfterSave, completedAt);
+    const previousTotals = await loadPreviousSessionTotals(
+      supabase,
+      user.id,
+      session.template_id,
+      session.id,
+    );
+    const summary = { ...baseSummary, previous: previousTotals };
 
     const { error: sessionUpdateError } = await supabase
       .from('workout_sessions')
