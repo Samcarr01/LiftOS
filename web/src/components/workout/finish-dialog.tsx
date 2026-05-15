@@ -27,7 +27,6 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
   const workout = useActiveWorkoutStore((state) => state.workout);
   const setIsCompleting = useActiveWorkoutStore((state) => state.setIsCompleting);
   const setIsLightSession = useActiveWorkoutStore((state) => state.setIsLightSession);
-  const clearWorkout = useActiveWorkoutStore((state) => state.clearWorkout);
   const setResult = useCompletionStore((state) => state.setResult);
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -112,7 +111,6 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
         toast.success('Workout complete.');
       }
 
-      clearWorkout();
       router.replace('/workout/complete');
     } catch (err: unknown) {
       console.error('[finish-workout]', err);

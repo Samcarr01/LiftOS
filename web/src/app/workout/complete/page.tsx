@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Trophy, Award, CheckCircle2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useCompletionStore, recoverCompletionResult } from '@/store/completion-store';
+import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import type { CompletionPR, CompletionSummary } from '@/store/completion-store';
 
 const PR_LABEL: Record<CompletionPR['record_type'], string> = {
@@ -84,7 +85,12 @@ export default function WorkoutCompletePage() {
       const recovered = recoverCompletionResult();
       if (recovered) setResult(recovered);
       else router.replace('/');
+      return;
     }
+    // Splash is showing real data — safe to clear the active workout now.
+    // Done here (not in finish-dialog) so the /workout/[id] guard can't
+    // race router.replace('/') against router.replace('/workout/complete').
+    useActiveWorkoutStore.getState().clearWorkout();
   }, [storeResult, setResult, router]);
 
   useEffect(() => {
