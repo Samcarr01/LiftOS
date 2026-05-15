@@ -190,7 +190,7 @@ export default function WorkoutPage() {
               }
             }}
             trigger={
-              <button className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 py-3.5 text-sm font-semibold text-muted-foreground transition-colors hover:border-white/25 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+              <button className="mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 py-3.5 text-sm font-semibold text-muted-foreground transition-colors hover:border-white/25 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                 <Plus className="h-4 w-4" />
                 Add Exercise
               </button>
@@ -217,7 +217,7 @@ export default function WorkoutPage() {
             <button
               onClick={() => setFinishOpen(true)}
               disabled={workout.isCompleting}
-              className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-semibold text-primary-foreground shadow-[0_8px_32px_-8px_oklch(0.75_0.18_55/0.4)] transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-60 disabled:shadow-none"
+              className="mt-8 flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-semibold text-primary-foreground shadow-[0_8px_32px_-8px_oklch(0.75_0.18_55/0.4)] transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-60 disabled:shadow-none"
               style={{ background: 'linear-gradient(135deg, oklch(0.75 0.18 55), oklch(0.62 0.17 40))' }}
             >
               {workout.isCompleting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
