@@ -66,6 +66,7 @@ export const AISuggestionDataSchema = z.object({
   last_result: SuggestionResultSchema.nullable(),
   next_target: SuggestionResultSchema.nullable(),
   reason: z.string().max(500),
+  reason_codes: z.array(z.string().max(64)).max(8).optional(),
   progression: z.object({
     eligible: z.boolean(),
     separate_win_count: z.number().int().min(0),

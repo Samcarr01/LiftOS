@@ -77,12 +77,34 @@ const DEFAULT_REP_RANGES: Record<ExerciseCategory, RepRange> = {
 };
 
 const PLATEAU_THRESHOLD = 4;
-const DECLINE_CUMULATIVE_THRESHOLD = 0.05;
-const SHARP_DECLINE_PEAK_THRESHOLD = 0.15;
+
+// e1RM trend bands (fraction of e1RM). Movement smaller than these is noise.
+const E1RM_IMPROVING_BAND = 0.02;             // latest > 2% above prior avg = improving
+const E1RM_MEANINGFUL_DECLINE = 0.05;         // ≥5% cumulative drop across run = declining
+const E1RM_SHARP_DECLINE_FROM_PEAK = 0.15;    // ≥15% below window peak = sharp_decline
 
 // Session gap thresholds (days)
 const LONG_BREAK_DAYS = 14;
 const MODERATE_BREAK_DAYS = 7;
+
+// Machine-readable codes for the reason behind each suggestion. The UI / tests
+// can branch on these without parsing copy. Codes are additive — a single
+// suggestion may emit several (e.g. PLATEAU_SAME_LOAD_REPS + FAILED_ATTEMPT_AT_WEIGHT).
+export const REASON_CODES = {
+  ALL_SETS_AT_REP_CEILING:    'ALL_SETS_AT_REP_CEILING',
+  PARTIAL_REP_PROGRESS:       'PARTIAL_REP_PROGRESS',
+  REP_DROPOFF_DETECTED:       'REP_DROPOFF_DETECTED',
+  RECENT_PERFORMANCE_DECLINE: 'RECENT_PERFORMANCE_DECLINE',
+  SHARP_PERFORMANCE_DECLINE:  'SHARP_PERFORMANCE_DECLINE',
+  RETURN_FROM_BREAK_SHORT:    'RETURN_FROM_BREAK_SHORT',   // 7–13 days
+  RETURN_FROM_BREAK_LONG:     'RETURN_FROM_BREAK_LONG',    // 14–20 days
+  RETURN_FROM_BREAK_DELOAD:   'RETURN_FROM_BREAK_DELOAD',  // 21+ days
+  PLATEAU_SAME_LOAD_REPS:     'PLATEAU_SAME_LOAD_REPS',
+  FAILED_ATTEMPT_AT_WEIGHT:   'FAILED_ATTEMPT_AT_WEIGHT',
+  STABLE_PERFORMANCE:         'STABLE_PERFORMANCE',
+  INSUFFICIENT_HISTORY:       'INSUFFICIENT_HISTORY',
+} as const;
+export type ReasonCode = typeof REASON_CODES[keyof typeof REASON_CODES];
 
 // ── Helpers (kept from v1) ───────────────────────────────────────────────────
 
@@ -296,7 +318,7 @@ function detectTrend(
   const peak = Math.max(...analyses.map((a) => a.e1rm));
   const dropFromPeak = peak > 0 ? (peak - latest.e1rm) / peak : 0;
 
-  if (consecutiveDownRun >= 3 || dropFromPeak >= SHARP_DECLINE_PEAK_THRESHOLD) {
+  if (consecutiveDownRun >= 3 || dropFromPeak >= E1RM_SHARP_DECLINE_FROM_PEAK) {
     return 'sharp_decline';
   }
 
@@ -304,16 +326,16 @@ function detectTrend(
     // Cumulative drop from oldest-in-run to latest must clear the noise floor.
     const oldestInRun = analyses[consecutiveDownRun].e1rm;
     const cumulativeDrop = oldestInRun > 0 ? (oldestInRun - latest.e1rm) / oldestInRun : 0;
-    if (cumulativeDrop >= DECLINE_CUMULATIVE_THRESHOLD) {
+    if (cumulativeDrop >= E1RM_MEANINGFUL_DECLINE) {
       return 'declining';
     }
   }
 
-  // Improving: latest is 2%+ above the avg of the prior up-to-3 sessions.
+  // Improving: latest is meaningfully above the avg of the prior up-to-3 sessions.
   const priorWindow = analyses.slice(1, 4);
   if (priorWindow.length > 0) {
     const priorAvg = priorWindow.reduce((sum, a) => sum + a.e1rm, 0) / priorWindow.length;
-    if (priorAvg > 0 && latest.e1rm / priorAvg > 1.02) return 'improving';
+    if (priorAvg > 0 && latest.e1rm / priorAvg > 1 + E1RM_IMPROVING_BAND) return 'improving';
   }
 
   return 'stable';
@@ -588,6 +610,9 @@ export function buildGuidedSuggestion(params: {
       reason: sessionGapDays >= 21
         ? `Welcome back after ${weeksOff} weeks — ease in at ${holdDisplay} to rebuild your groove before pushing hard`
         : `It's been ${weeksOff} weeks — match ${lastDisplay} to find your rhythm again, then push from there`,
+      reasonCodes: [sessionGapDays >= 21
+        ? REASON_CODES.RETURN_FROM_BREAK_DELOAD
+        : REASON_CODES.RETURN_FROM_BREAK_LONG],
       repRange,
       category,
       trend: 'stable',
@@ -599,6 +624,7 @@ export function buildGuidedSuggestion(params: {
       previousHistory,
       eligible: false,
       exerciseNotes,
+      sessionCount: sessions.length,
     });
   }
 
@@ -620,6 +646,7 @@ export function buildGuidedSuggestion(params: {
       reason: deloadPercent >= 0.15
         ? `Your numbers have dropped significantly across multiple sessions — take it back to ${deload.display} (${pctLabel}% deload) and rebuild from a solid base`
         : `Your numbers have been declining — drop to ${deload.display} to recover, then build back stronger`,
+      reasonCodes: [REASON_CODES.SHARP_PERFORMANCE_DECLINE],
       repRange,
       category,
       trend: 'sharp_decline',
@@ -631,6 +658,7 @@ export function buildGuidedSuggestion(params: {
       previousHistory,
       eligible: false,
       exerciseNotes,
+      sessionCount: sessions.length,
     });
   }
 
@@ -640,6 +668,9 @@ export function buildGuidedSuggestion(params: {
       ? `First session back after a week off — match ${lastDisplay} to get back in the groove`
       : `Dipped below your recent best — match ${lastDisplay} next session, everyone has off days`;
 
+    const decliningCodes: ReasonCode[] = [REASON_CODES.RECENT_PERFORMANCE_DECLINE];
+    if (isModerateBreak) decliningCodes.push(REASON_CODES.RETURN_FROM_BREAK_SHORT);
+
     return buildResult({
       decision: 'hold',
       metric: null,
@@ -648,6 +679,7 @@ export function buildGuidedSuggestion(params: {
       targetValues: baselineValues,
       targetDisplay: lastDisplay,
       reason,
+      reasonCodes: decliningCodes,
       repRange,
       category,
       trend: 'declining',
@@ -659,6 +691,7 @@ export function buildGuidedSuggestion(params: {
       previousHistory,
       eligible: false,
       exerciseNotes,
+      sessionCount: sessions.length,
     });
   }
 
@@ -678,6 +711,7 @@ export function buildGuidedSuggestion(params: {
       trend,
       sessionsAtWeight,
       exerciseNotes,
+      sessionCount: sessions.length,
     });
   }
 
@@ -704,6 +738,7 @@ export function buildGuidedSuggestion(params: {
       exerciseNotes,
       allSessions: sessions,
       isModerateBreak,
+      sessionCount: sessions.length,
     });
   }
 
@@ -733,6 +768,7 @@ export function buildGuidedSuggestion(params: {
       exerciseNotes,
       allSessions: sessions,
       isModerateBreak,
+      sessionCount: sessions.length,
     });
   }
 
@@ -752,6 +788,7 @@ export function buildGuidedSuggestion(params: {
     sessionsAtWeight,
     latestAnalysis,
     exerciseNotes,
+    sessionCount: sessions.length,
   });
 }
 
@@ -779,12 +816,13 @@ function buildDoubleProgressionSuggestion(params: {
   exerciseNotes?: string | null;
   allSessions: ProgressHistorySession[];
   isModerateBreak: boolean;
+  sessionCount: number;
 }): GuidedSuggestionResult {
   const {
     keys, baselineValues, lastDisplay, latestAnalysis, latestSession,
     latestWorkoutDate, generatedAt, previousHistory, category, repRange,
     step, unitPreference, trend, sessionsAtWeight, schema, plateauThreshold,
-    allSessions, isModerateBreak,
+    allSessions, isModerateBreak, sessionCount,
   } = params;
 
   const weightKey = params.loadKey ?? (keys.has('added_weight') ? 'added_weight' : 'weight');
@@ -836,6 +874,10 @@ function buildDoubleProgressionSuggestion(params: {
         reason = `Nailed ${repRange.max} reps on ${setsLabel} — time to move up to ${newLoad}${displayUnit}, start at ${resetReps} reps and build again`;
       }
 
+      const progressCodes: ReasonCode[] = [REASON_CODES.ALL_SETS_AT_REP_CEILING];
+      if (pastAttempt.attempted) progressCodes.push(REASON_CODES.FAILED_ATTEMPT_AT_WEIGHT);
+      if (isModerateBreak) progressCodes.push(REASON_CODES.RETURN_FROM_BREAK_SHORT);
+
       return buildResult({
         decision: 'progress',
         metric: metricKey,
@@ -844,6 +886,7 @@ function buildDoubleProgressionSuggestion(params: {
         targetValues,
         targetDisplay,
         reason,
+        reasonCodes: progressCodes,
         repRange,
         category,
         trend,
@@ -855,6 +898,7 @@ function buildDoubleProgressionSuggestion(params: {
         previousHistory,
         eligible: true,
         exerciseNotes: params.exerciseNotes,
+        sessionCount,
       });
     }
     // newLoad == currentLoad after rounding — fall through to hold path
@@ -889,10 +933,16 @@ function buildDoubleProgressionSuggestion(params: {
   }
 
   // Plateau warning
-  if (sessionsAtWeight >= plateauThreshold) {
+  const isPlateau = sessionsAtWeight >= plateauThreshold;
+  if (isPlateau) {
     const label = params.loadKey === 'height' ? 'height' : 'weight';
     reason += ` \u00b7 You've been at this ${label} for ${sessionsAtWeight} sessions \u2014 try a deload week or swap in a variation`;
   }
+
+  const holdCodes: ReasonCode[] = [REASON_CODES.PARTIAL_REP_PROGRESS];
+  if (hasDropoff && reps.length >= 3) holdCodes.push(REASON_CODES.REP_DROPOFF_DETECTED);
+  if (isPlateau) holdCodes.push(REASON_CODES.PLATEAU_SAME_LOAD_REPS);
+  if (isModerateBreak) holdCodes.push(REASON_CODES.RETURN_FROM_BREAK_SHORT);
 
   return buildResult({
     decision: 'hold',
@@ -902,6 +952,7 @@ function buildDoubleProgressionSuggestion(params: {
     targetValues,
     targetDisplay,
     reason,
+    reasonCodes: holdCodes,
     repRange,
     category,
     trend,
@@ -913,6 +964,7 @@ function buildDoubleProgressionSuggestion(params: {
     previousHistory,
     eligible: false,
     exerciseNotes: params.exerciseNotes,
+    sessionCount,
   });
 }
 
@@ -931,8 +983,9 @@ function buildCardioSuggestion(params: {
   trend: TrendDirection;
   sessionsAtWeight: number;
   exerciseNotes?: string | null;
+  sessionCount: number;
 }): GuidedSuggestionResult {
-  const { keys, baselineValues, lastDisplay, latestSession, latestWorkoutDate, generatedAt, previousHistory, category, repRange, trend, sessionsAtWeight } = params;
+  const { keys, baselineValues, lastDisplay, latestSession, latestWorkoutDate, generatedAt, previousHistory, category, repRange, trend, sessionsAtWeight, sessionCount } = params;
 
   const targetValues = { ...baselineValues };
   let metric: NonNullable<AISuggestionData['metric']> = 'distance';
@@ -960,6 +1013,7 @@ function buildCardioSuggestion(params: {
       targetValues: baselineValues,
       targetDisplay: lastDisplay,
       reason: 'Consistent work — keep this pace and focus on form',
+      reasonCodes: [REASON_CODES.STABLE_PERFORMANCE],
       repRange,
       category,
       trend,
@@ -971,6 +1025,7 @@ function buildCardioSuggestion(params: {
       previousHistory,
       eligible: false,
       exerciseNotes: params.exerciseNotes,
+      sessionCount,
     });
   }
 
@@ -982,6 +1037,7 @@ function buildCardioSuggestion(params: {
     targetValues,
     targetDisplay: lastDisplay, // Will be formatted below
     reason,
+    reasonCodes: [REASON_CODES.STABLE_PERFORMANCE],
     repRange,
     category,
     trend,
@@ -993,6 +1049,7 @@ function buildCardioSuggestion(params: {
     previousHistory,
     eligible: true,
     exerciseNotes: params.exerciseNotes,
+    sessionCount,
   });
 }
 
@@ -1012,8 +1069,9 @@ function buildFallbackSuggestion(params: {
   sessionsAtWeight: number;
   latestAnalysis: SessionAnalysis;
   exerciseNotes?: string | null;
+  sessionCount: number;
 }): GuidedSuggestionResult {
-  const { keys, baselineValues, lastDisplay, latestSession, latestWorkoutDate, generatedAt, previousHistory, category, repRange, trend, sessionsAtWeight, latestAnalysis } = params;
+  const { keys, baselineValues, lastDisplay, latestSession, latestWorkoutDate, generatedAt, previousHistory, category, repRange, trend, sessionsAtWeight, latestAnalysis, sessionCount } = params;
 
   const targetValues = { ...baselineValues };
   let metric: NonNullable<AISuggestionData['metric']> = 'reps';
@@ -1041,6 +1099,7 @@ function buildFallbackSuggestion(params: {
     targetValues,
     targetDisplay: lastDisplay,
     reason,
+    reasonCodes: [REASON_CODES.STABLE_PERFORMANCE],
     repRange,
     category,
     trend,
@@ -1052,6 +1111,7 @@ function buildFallbackSuggestion(params: {
     previousHistory,
     eligible: true,
     exerciseNotes: params.exerciseNotes,
+    sessionCount,
   });
 }
 
@@ -1065,6 +1125,7 @@ function buildResult(params: {
   targetValues: SuggestionValues;
   targetDisplay: string;
   reason: string;
+  reasonCodes: ReasonCode[];
   repRange: RepRange;
   category: ExerciseCategory;
   trend: TrendDirection;
@@ -1076,11 +1137,20 @@ function buildResult(params: {
   previousHistory: PreviousProgressionHistory;
   eligible: boolean;
   exerciseNotes?: string | null;
+  sessionCount: number;
 }): GuidedSuggestionResult {
   // Append exercise notes to reason so the user sees context (e.g. "reps = each arm")
   let reason = params.reason;
   if (params.exerciseNotes) {
     reason += ` · ${params.exerciseNotes}`;
+  }
+
+  // Tag low-history suggestions so the UI can de-emphasize them. We still
+  // produce a target — first-session prefill is core UX — but consumers can
+  // soften wording / styling when this code is present.
+  const reasonCodes: ReasonCode[] = [...params.reasonCodes];
+  if (params.sessionCount < 2 && !reasonCodes.includes(REASON_CODES.INSUFFICIENT_HISTORY)) {
+    reasonCodes.push(REASON_CODES.INSUFFICIENT_HISTORY);
   }
 
   const suggestion: AISuggestionData = {
@@ -1095,6 +1165,7 @@ function buildResult(params: {
       values: params.targetValues,
     },
     reason,
+    reason_codes: reasonCodes,
     progression: {
       eligible: params.eligible,
       separate_win_count: params.eligible ? 1 : 0,
