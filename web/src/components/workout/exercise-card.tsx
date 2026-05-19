@@ -128,9 +128,10 @@ export const ExerciseCard = memo(function ExerciseCard({
               boxShadow: `inset 0 1px 0 oklch(${accent} / 0.15), 0 4px 20px -8px oklch(${accent} / 0.25)`,
             }}
           >
-            {/* Accent strip — picks up the decision colour at the very top edge. */}
+            {/* Accent strip — picks up the decision colour at the very top edge.
+                top-px (not top-0) so the rounded-2xl corners don't clip the hairline. */}
             <div
-              className="pointer-events-none absolute inset-x-0 top-0 h-px"
+              className="pointer-events-none absolute inset-x-0 top-px h-px"
               style={{ background: `linear-gradient(90deg, transparent, oklch(${accent} / 0.7), transparent)` }}
             />
 
@@ -156,7 +157,7 @@ export const ExerciseCard = memo(function ExerciseCard({
                 </div>
                 <button
                   onClick={handleDismiss}
-                  className="-mr-1.5 -mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground/40 transition-colors hover:bg-white/[0.06] hover:text-foreground"
+                  className="-mr-2 -mt-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground/40 transition-colors hover:bg-white/[0.06] hover:text-foreground"
                   aria-label="Hide suggestion"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -166,7 +167,7 @@ export const ExerciseCard = memo(function ExerciseCard({
               {/* Target — hero line. Display font + tabular nums for that scoreboard feel. */}
               <div className="mt-3.5">
                 <p
-                  className="font-display text-3xl font-bold leading-none tabular-nums tracking-tight"
+                  className="font-display text-3xl font-bold leading-tight tabular-nums tracking-tight"
                   style={{ textShadow: `0 0 24px oklch(${accent} / 0.25)` }}
                 >
                   {aiSuggestion.next_target.display}
