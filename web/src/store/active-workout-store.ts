@@ -44,7 +44,6 @@ interface ActiveWorkoutStore {
   completeSet: (exerciseIndex: number, setId: string) => void;
 
   // AI suggestion
-  acceptSuggestion:  (exerciseIndex: number) => void;
   dismissSuggestion: (exerciseIndex: number) => void;
 
   // Rest timer
@@ -224,42 +223,6 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
       );
       exercises[exerciseIndex] = { ...ex, sets };
       return { workout: { ...s.workout, exercises } };
-    });
-  },
-
-  acceptSuggestion(exerciseIndex) {
-    set((s) => {
-      if (!s.workout) return {};
-      const ex = s.workout.exercises[exerciseIndex];
-      if (!ex?.aiSuggestion) return {};
-
-      const target = ex.aiSuggestion.next_target?.values;
-      if (!target) return {};
-
-      const targetValues: SetValues = {};
-      if (target.weight !== undefined) targetValues['weight'] = target.weight;
-      if (target.added_weight !== undefined) targetValues['added_weight'] = target.added_weight;
-      if (target.reps !== undefined) targetValues['reps'] = target.reps;
-      if (target.laps !== undefined) targetValues['laps'] = target.laps;
-      if (target.duration !== undefined) targetValues['duration'] = target.duration;
-      if (target.distance !== undefined) targetValues['distance'] = target.distance;
-      if (target.height !== undefined) targetValues['height'] = target.height;
-
-      // Fill all uncompleted working/top sets with the target values
-      const PROGRESSION_TYPES = new Set(['working', 'top']);
-      const exercises = [...s.workout.exercises];
-      const sets = ex.sets.map((st) => {
-        if (!st.isCompleted && PROGRESSION_TYPES.has(st.setType)) {
-          return { ...st, values: { ...st.values, ...targetValues } };
-        }
-        return st;
-      });
-      exercises[exerciseIndex] = { ...ex, sets };
-
-      return {
-        workout:              { ...s.workout, exercises },
-        dismissedSuggestions: [...s.dismissedSuggestions, exerciseIndex],
-      };
     });
   },
 

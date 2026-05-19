@@ -41,7 +41,6 @@ export const ExerciseCard = memo(function ExerciseCard({
   const updateSet = useActiveWorkoutStore((store) => store.updateSet);
   const deleteSet = useActiveWorkoutStore((store) => store.deleteSet);
   const completeSet = useActiveWorkoutStore((store) => store.completeSet);
-  const acceptSuggestion = useActiveWorkoutStore((store) => store.acceptSuggestion);
   const dismissSuggestion = useActiveWorkoutStore((store) => store.dismissSuggestion);
   const completedCount = sets.filter((set) => set.isCompleted).length;
   const allComplete = sets.length > 0 && completedCount === sets.length;
@@ -73,7 +72,6 @@ export const ExerciseCard = memo(function ExerciseCard({
     const target = lastUncompleted ?? sets[sets.length - 1];
     if (target) deleteSet(exerciseIndex, target.id);
   }, [sets, deleteSet, exerciseIndex]);
-  const handleAccept = useCallback(() => acceptSuggestion(exerciseIndex), [acceptSuggestion, exerciseIndex]);
   const handleDismiss = useCallback(() => dismissSuggestion(exerciseIndex), [dismissSuggestion, exerciseIndex]);
 
   // AI target is shown in the suggestion card — don't duplicate in inputs
@@ -105,54 +103,89 @@ export const ExerciseCard = memo(function ExerciseCard({
         )}
       </div>
 
-      {/* AI Suggestion Banner */}
+      {/* AI Suggestion — passive coaching card. No accept/decline; the target is
+          also surfaced inline on each SetRow, so this card is purely informational. */}
       {aiSuggestion && !isSuggestionDismissed && aiSuggestion.next_target && (() => {
         const isProgress = aiSuggestion.decision === 'progress';
         const isDeload = aiSuggestion.decision === 'deload';
         const label = isProgress ? 'Level Up' : isDeload ? 'Recovery' : 'Keep Building';
-        const accentBg = isDeload
-          ? 'bg-[oklch(0.60_0.15_250/0.10)] border-[oklch(0.60_0.15_250/0.20)]'
+
+        // Single source of truth for the accent — derived strings keep all four
+        // surfaces (bg / border / text / divider / bubble) in lock-step.
+        const accent = isDeload
+          ? '0.70 0.15 250'   // cool blue — back off
           : isProgress
-            ? 'bg-[oklch(0.72_0.19_155/0.08)] border-[oklch(0.72_0.19_155/0.20)]'
-            : 'bg-[oklch(0.75_0.18_55/0.08)] border-[oklch(0.75_0.18_55/0.18)]';
-        const accentText = isDeload
-          ? 'text-[oklch(0.70_0.15_250)]'
-          : isProgress
-            ? 'text-[oklch(0.78_0.17_155)]'
-            : 'text-[oklch(0.80_0.16_55)]';
+            ? '0.78 0.17 155' // green — go
+            : '0.80 0.16 55'; // amber — keep grinding
         const Icon = isDeload ? TrendingDown : isProgress ? TrendingUp : ArrowRight;
 
         return (
-          <div className={`mt-2.5 rounded-2xl border px-3.5 py-3 ${accentBg}`}>
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Icon className={`h-4 w-4 shrink-0 ${accentText}`} />
-                <span className={`text-sm font-semibold ${accentText}`}>{label}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={handleAccept}
-                  className={`flex h-8 items-center gap-1 rounded-lg px-2.5 text-xs font-semibold transition-colors ${
-                    isDeload
-                      ? 'bg-[oklch(0.60_0.15_250/0.20)] text-[oklch(0.70_0.15_250)] hover:bg-[oklch(0.60_0.15_250/0.30)]'
-                      : isProgress
-                        ? 'bg-[oklch(0.72_0.19_155/0.18)] text-[oklch(0.78_0.17_155)] hover:bg-[oklch(0.72_0.19_155/0.28)]'
-                        : 'bg-primary/15 text-primary hover:bg-primary/25'
-                  }`}
-                >
-                  Apply
-                </button>
+          <div
+            className="relative mt-2.5 overflow-hidden rounded-2xl border backdrop-blur-2xl"
+            style={{
+              background: `linear-gradient(160deg, oklch(${accent} / 0.10) 0%, oklch(${accent} / 0.04) 70%, rgba(255,255,255,0.03) 100%)`,
+              borderColor: `oklch(${accent} / 0.22)`,
+              boxShadow: `inset 0 1px 0 oklch(${accent} / 0.15), 0 4px 20px -8px oklch(${accent} / 0.25)`,
+            }}
+          >
+            {/* Accent strip — picks up the decision colour at the very top edge. */}
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-px"
+              style={{ background: `linear-gradient(90deg, transparent, oklch(${accent} / 0.7), transparent)` }}
+            />
+
+            <div className="relative px-4 pt-3.5 pb-3.5">
+              {/* Header: icon bubble + label, dismiss in corner */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+                    style={{
+                      background: `oklch(${accent} / 0.18)`,
+                      boxShadow: `inset 0 1px 0 oklch(${accent} / 0.25)`,
+                    }}
+                  >
+                    <Icon className="h-3.5 w-3.5" style={{ color: `oklch(${accent})` }} />
+                  </div>
+                  <span
+                    className="text-xs font-bold uppercase"
+                    style={{ color: `oklch(${accent})`, letterSpacing: '0.12em' }}
+                  >
+                    {label}
+                  </span>
+                </div>
                 <button
                   onClick={handleDismiss}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.06]"
-                  aria-label="Dismiss suggestion"
+                  className="-mr-1.5 -mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground/40 transition-colors hover:bg-white/[0.06] hover:text-foreground"
+                  aria-label="Hide suggestion"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
+
+              {/* Target — hero line. Display font + tabular nums for that scoreboard feel. */}
+              <div className="mt-3.5">
+                <p
+                  className="font-display text-3xl font-bold leading-none tabular-nums tracking-tight"
+                  style={{ textShadow: `0 0 24px oklch(${accent} / 0.25)` }}
+                >
+                  {aiSuggestion.next_target.display}
+                </p>
+                {aiSuggestion.last_result && (
+                  <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">
+                    was <span className="font-medium text-foreground/70">{aiSuggestion.last_result.display}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Reason — full text, no clamp. Divider in the accent colour. */}
+              <p
+                className="mt-3.5 border-t pt-3 text-sm leading-relaxed text-muted-foreground"
+                style={{ borderColor: `oklch(${accent} / 0.15)` }}
+              >
+                {aiSuggestion.reason}
+              </p>
             </div>
-            <p className="mt-1.5 text-base font-bold">{aiSuggestion.next_target.display}</p>
-            <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">{aiSuggestion.reason}</p>
           </div>
         );
       })()}
