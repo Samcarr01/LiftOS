@@ -88,7 +88,8 @@ export function tierIconStyle(tier: Tier): React.CSSProperties {
   };
   switch (tier.animation) {
     case 'pulse':
-      return { ...base, animation: 'tier-pulse 1.8s ease-in-out 3', transformOrigin: 'center' };
+      // Continuous so the chip/ladder always shows life, not just at mount.
+      return { ...base, animation: 'tier-pulse 3.5s ease-in-out infinite', transformOrigin: 'center' };
     case 'breathe':
       return { ...base, animation: 'tier-breathe 3s ease-in-out infinite' };
     case 'glow-shift':
@@ -117,6 +118,32 @@ export function TierOverlayEffects({ tier }: { tier: Tier }) {
             animation: 'tier-glint 6s ease-in-out infinite',
           }}
         />
+      </div>
+    );
+  }
+  if (tier.animation === 'gradient-spark') {
+    // Mythic: occasional bright spark dots, sparser than holographic.
+    return (
+      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden>
+        {[
+          { x: 0.18, y: 0.30, delay: 0,   dur: 2.8 },
+          { x: 0.72, y: 0.62, delay: 1.4, dur: 3.2 },
+          { x: 0.42, y: 0.78, delay: 2.5, dur: 2.4 },
+        ].map((p, i) => (
+          <span
+            key={i}
+            className="absolute h-1 w-1 rounded-full"
+            style={{
+              left: `${p.x * 100}%`,
+              top:  `${p.y * 100}%`,
+              background: 'oklch(0.95 0.15 320)',
+              boxShadow: '0 0 8px 1px oklch(0.85 0.22 320 / 0.8)',
+              animation: `tier-spark-flash ${p.dur}s ease-in-out infinite`,
+              animationDelay: `${p.delay}s`,
+              opacity: 0,
+            }}
+          />
+        ))}
       </div>
     );
   }

@@ -263,28 +263,27 @@ function TierRow({
     <div
       className="action-card relative overflow-hidden rounded-2xl px-4 py-3.5"
       style={{
-        opacity: dimmed ? 0.55 : 1,
+        // Upcoming tiers are dimmed slightly so the eye still lands on the
+        // current one first, but their animation still plays so the
+        // escalation up the ladder is visible at a glance.
+        opacity: dimmed ? 0.7 : 1,
         ['--tier-accent' as string]: `oklch(${tier.color} / 0.4)`,
       }}
     >
-      {/* Background animation: muted for passed/upcoming, full for current */}
-      {state === 'current' && (
-        <div
-          className="pointer-events-none absolute inset-0 rounded-2xl"
-          style={tierBackgroundStyle(tier)}
-          aria-hidden
-        />
-      )}
-      {state === 'current' && <TierOverlayEffects tier={tier} />}
+      {/* All tiers animate (except Bronze which has animation 'none').
+          Showing the animation on locked/passed rows is the whole point of
+          this page — you can see what's ahead and what you've earned. */}
+      <div
+        className="pointer-events-none absolute inset-0 rounded-2xl"
+        style={tierBackgroundStyle(tier)}
+        aria-hidden
+      />
+      <TierOverlayEffects tier={tier} />
 
       <div className="relative flex items-center gap-3">
         <div
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
-          style={state === 'current' ? tierIconStyle(tier) : {
-            background:  `oklch(${tier.color} / 0.10)`,
-            color:       accent,
-            boxShadow:   `inset 0 1px 0 oklch(${tier.color} / 0.18)`,
-          }}
+          style={tierIconStyle(tier)}
         >
           <Icon className="h-6 w-6" strokeWidth={1.8} />
         </div>

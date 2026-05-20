@@ -94,16 +94,24 @@ export interface Tier {
   animation: TierAnimation;
 }
 
+/**
+ * Hues are deliberately spread across the wheel so no two adjacent tiers
+ * read as the same color. Bronze (warm), Iron (cool graphite), Steel
+ * (steel-blue), Obsidian (dark violet), Titan (champagne-gold pivot),
+ * Platinum (pearl), Diamond (ice cyan), Mythic (magenta), Cosmic (vivid
+ * purple). Animations escalate from none → continuous-presence → motion →
+ * color-play, with the last three layering on particles.
+ */
 export const TIERS: Tier[] = [
-  { id: 'bronze',   name: 'Bronze',   minLevel: 1,  icon: 'Medal',    color: '0.62 0.13 50',  animation: 'none' },
-  { id: 'iron',     name: 'Iron',     minLevel: 3,  icon: 'Hammer',   color: '0.65 0.02 250', animation: 'pulse' },
-  { id: 'steel',    name: 'Steel',    minLevel: 6,  icon: 'Shield',   color: '0.70 0.06 230', animation: 'breathe' },
-  { id: 'obsidian', name: 'Obsidian', minLevel: 10, icon: 'Mountain', color: '0.45 0.12 290', animation: 'glint' },
-  { id: 'titan',    name: 'Titan',    minLevel: 14, icon: 'Atom',     color: '0.78 0.05 240', animation: 'glow-shift' },
-  { id: 'platinum', name: 'Platinum', minLevel: 20, icon: 'Star',     color: '0.88 0.04 230', animation: 'shimmer' },
-  { id: 'diamond',  name: 'Diamond',  minLevel: 28, icon: 'Gem',      color: '0.85 0.12 220', animation: 'refract' },
-  { id: 'mythic',   name: 'Mythic',   minLevel: 37, icon: 'Sparkles', color: '0.68 0.22 320', animation: 'gradient-spark' },
-  { id: 'cosmic',   name: 'Cosmic',   minLevel: 49, icon: 'Crown',    color: '0.75 0.16 280', animation: 'holographic' },
+  { id: 'bronze',   name: 'Bronze',   minLevel: 1,  icon: 'Medal',    color: '0.58 0.13 45',  animation: 'none' },
+  { id: 'iron',     name: 'Iron',     minLevel: 3,  icon: 'Hammer',   color: '0.52 0.03 255', animation: 'pulse' },
+  { id: 'steel',    name: 'Steel',    minLevel: 6,  icon: 'Shield',   color: '0.66 0.09 220', animation: 'breathe' },
+  { id: 'obsidian', name: 'Obsidian', minLevel: 10, icon: 'Mountain', color: '0.45 0.16 290', animation: 'glint' },
+  { id: 'titan',    name: 'Titan',    minLevel: 14, icon: 'Atom',     color: '0.78 0.10 95',  animation: 'glow-shift' },
+  { id: 'platinum', name: 'Platinum', minLevel: 20, icon: 'Star',     color: '0.90 0.02 210', animation: 'shimmer' },
+  { id: 'diamond',  name: 'Diamond',  minLevel: 28, icon: 'Gem',      color: '0.85 0.14 195', animation: 'refract' },
+  { id: 'mythic',   name: 'Mythic',   minLevel: 37, icon: 'Sparkles', color: '0.68 0.25 330', animation: 'gradient-spark' },
+  { id: 'cosmic',   name: 'Cosmic',   minLevel: 49, icon: 'Crown',    color: '0.72 0.22 285', animation: 'holographic' },
 ];
 
 export function tierForLevel(level: number): Tier {
