@@ -7,6 +7,8 @@ import confetti from 'canvas-confetti';
 import { useCompletionStore, recoverCompletionResult } from '@/store/completion-store';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import type { CompletionPR, CompletionSummary } from '@/store/completion-store';
+import { useTierPromotion } from '@/hooks/use-tier-promotion';
+import { TierPromotionOverlay } from '@/components/home/tier-promotion-overlay';
 
 const PR_LABEL: Record<CompletionPR['record_type'], string> = {
   best_weight:          'New Weight PR',
@@ -79,6 +81,12 @@ export default function WorkoutCompletePage() {
   const clearResult = useCompletionStore((s) => s.clearResult);
   const router      = useRouter();
   const firedConfetti = useRef(false);
+
+  // Tier promotion: compute pre/post tier from session+PR history (RLS-scoped),
+  // and if the just-completed session pushed us into a new tier, render a
+  // full-screen reveal over this page. Dismissed on tap or auto-timeout.
+  const promotion = useTierPromotion(storeResult?.sessionId ?? null);
+  const [promotionDismissed, setPromotionDismissed] = useState(false);
 
   useEffect(() => {
     if (!storeResult) {
@@ -197,6 +205,15 @@ export default function WorkoutCompletePage() {
           Done
         </button>
       </div>
+
+      {/* Tier-up takeover — renders on top of everything when crossed */}
+      {promotion && !promotionDismissed && (
+        <TierPromotionOverlay
+          toTier={promotion.toTier}
+          newLevel={promotion.newLevel}
+          onDismiss={() => setPromotionDismissed(true)}
+        />
+      )}
     </div>
   );
 }
