@@ -24,6 +24,7 @@ import { useTutorialStore } from '@/store/tutorial-store';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { createClient } from '@/lib/supabase/client';
 import GettingStartedTutorial from '@/components/tutorial/getting-started-tutorial';
+import { StreakHeatmap } from '@/components/home/streak-heatmap';
 
 /* ── Helpers ────────────────────────────────────────────────── */
 
@@ -41,34 +42,6 @@ function formatToday(): string {
   });
 }
 
-function getThisWeekCount(sessions: { started_at: string }[]): number {
-  const now = new Date();
-  const dayOfWeek = now.getDay(); // 0 = Sun
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
-  monday.setHours(0, 0, 0, 0);
-  return sessions.filter((s) => new Date(s.started_at) >= monday).length;
-}
-
-function getWeekdayFlags(sessions: { started_at: string }[]): boolean[] {
-  const now = new Date();
-  const dayOfWeek = now.getDay(); // 0 = Sun
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
-  monday.setHours(0, 0, 0, 0);
-  const flags = [false, false, false, false, false, false, false];
-  for (const s of sessions) {
-    const d = new Date(s.started_at);
-    if (d >= monday) {
-      const idx = (d.getDay() + 6) % 7; // 0=Mon
-      flags[idx] = true;
-    }
-  }
-  return flags;
-}
-
-const WEEKLY_TARGET = 4;
-
 function getWeeklyBuckets(sessions: { started_at: string }[], weeks: number): number[] {
   const now = new Date();
   const dayOfWeek = now.getDay();
@@ -85,62 +58,6 @@ function getWeeklyBuckets(sessions: { started_at: string }[], weeks: number): nu
     if (bucketIdx >= 0 && bucketIdx < weeks) buckets[bucketIdx] += 1;
   }
   return buckets;
-}
-
-/* ── Week Ring ───────────────────────────────────────────────── */
-
-function WeekRing({ count, target, dayFlags }: { count: number; target: number; dayFlags: boolean[] }) {
-  const pct = Math.min(count / target, 1);
-  const size = 72;
-  const stroke = 6;
-  const r = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
-  const offset = circ * (1 - pct);
-  const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  const remaining = Math.max(target - count, 0);
-  const copy = count === 0
-    ? `Start your first session`
-    : count >= target
-      ? `Goal hit — keep the momentum`
-      : `${remaining} more to hit your goal`;
-
-  return (
-    <div className="action-card flex items-center gap-4 rounded-2xl px-4 py-4">
-      <div className="relative flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="oklch(1 0 0 / 0.08)" strokeWidth={stroke} />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill="none"
-            stroke="oklch(0.75 0.18 55)"
-            strokeWidth={stroke}
-            strokeLinecap="round"
-            strokeDasharray={circ}
-            strokeDashoffset={offset}
-            style={{ transition: 'stroke-dashoffset 600ms ease-out' }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-          <span className="font-display text-xl font-bold">{count}</span>
-          <span className="mt-0.5 text-xs text-muted-foreground">of {target}</span>
-        </div>
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold">This week</p>
-        <p className="mt-0.5 text-caption">{copy}</p>
-        <div className="mt-2.5 flex items-center gap-2">
-          {days.map((label, i) => (
-            <div key={i} className="flex flex-col items-center gap-1">
-              <div className={`h-1.5 w-1.5 rounded-full ${dayFlags[i] ? 'bg-primary' : 'bg-white/[0.10]'}`} />
-              <span className="text-xs text-muted-foreground/70">{label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 /* ── Activity Spark ──────────────────────────────────────────── */
@@ -367,7 +284,6 @@ export default function HomePage() {
   }
 
   const allTemplates = [...(data?.pinned ?? []), ...(data?.suggested ?? [])];
-  const thisWeekCount = data ? getThisWeekCount(data.recentSessions) : 0;
 
   return (
     <>
@@ -439,16 +355,12 @@ export default function HomePage() {
           </div>
         </button>
 
-        {/* ── Week Ring ───────────────────────────── */}
+        {/* ── Streak + Heatmap ────────────────────── */}
         {loading ? (
-          <Skeleton className="h-[104px] rounded-2xl" />
-        ) : (data?.recentSessions?.length ?? 0) > 0 ? (
+          <Skeleton className="h-[180px] rounded-2xl" />
+        ) : (data?.activityDates?.length ?? 0) > 0 ? (
           <div className="page-reveal delay-2">
-            <WeekRing
-              count={thisWeekCount}
-              target={WEEKLY_TARGET}
-              dayFlags={getWeekdayFlags(data!.recentSessions)}
-            />
+            <StreakHeatmap sessions={data!.activityDates} target={data!.weeklyTarget} />
           </div>
         ) : null}
 

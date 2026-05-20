@@ -31,6 +31,7 @@ export interface Database {
           onboarding_completed: boolean;
           avatar_url: string | null;
           prefill_sort_heaviest_first: boolean;
+          weekly_workout_target: number;
           created_at: string;
           updated_at: string;
         };
@@ -47,6 +48,7 @@ export interface Database {
           onboarding_completed?: boolean;
           avatar_url?: string | null;
           prefill_sort_heaviest_first?: boolean;
+          weekly_workout_target?: number;
         };
         Update: {
           id?: string;
@@ -61,6 +63,7 @@ export interface Database {
           onboarding_completed?: boolean;
           avatar_url?: string | null;
           prefill_sort_heaviest_first?: boolean;
+          weekly_workout_target?: number;
         };
         Relationships: [];
       };

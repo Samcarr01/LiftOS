@@ -17,22 +17,29 @@ import { summarizeSetResult, type TrackingSetLike } from '@/lib/workout/formatti
 import type { Json } from '@/types/database';
 
 export interface HomeData {
-  displayName:      string | null;
-  avatarUrl:        string | null;
-  suggested:        TemplateWithCount[];
-  pinned:           TemplateWithCount[];
-  recentSessions:   HistorySessionSummary[];
+  displayName:        string | null;
+  avatarUrl:          string | null;
+  weeklyTarget:       number;
+  suggested:          TemplateWithCount[];
+  pinned:             TemplateWithCount[];
+  recentSessions:     HistorySessionSummary[];
+  /** Last ~90 days of completed-session start dates, used by the streak heatmap. */
+  activityDates:      { started_at: string }[];
 }
 
 async function fetchHomeData(): Promise<HomeData> {
   const supabase = createClient();
 
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
   const [
     profileResult,
     templatesResult,
     sessionsResult,
+    activityResult,
   ] = await Promise.all([
-    supabase.from('users').select('display_name, avatar_url').single(),
+    supabase.from('users').select('display_name, avatar_url, weekly_workout_target').single(),
 
     supabase
       .from('workout_templates')
@@ -56,11 +63,26 @@ async function fetchHomeData(): Promise<HomeData> {
       .not('completed_at', 'is', null)
       .order('started_at', { ascending: false })
       .limit(10),
+
+    // Lightweight: just dates of completed sessions in the last 90 days, for
+    // the heatmap. Separate query so we don't bloat the joined preview above.
+    supabase
+      .from('workout_sessions')
+      .select('started_at')
+      .not('completed_at', 'is', null)
+      .gte('started_at', ninetyDaysAgo.toISOString())
+      .order('started_at', { ascending: false }),
   ]);
 
-  const profileRow = profileResult.data as { display_name: string | null; avatar_url: string | null } | null;
-  const displayName = profileRow?.display_name ?? null;
-  const avatarUrl   = profileRow?.avatar_url   ?? null;
+  const profileRow = profileResult.data as {
+    display_name: string | null;
+    avatar_url: string | null;
+    weekly_workout_target: number | null;
+  } | null;
+  const displayName  = profileRow?.display_name ?? null;
+  const avatarUrl    = profileRow?.avatar_url   ?? null;
+  const weeklyTarget = profileRow?.weekly_workout_target ?? 4;
+  const activityDates = (activityResult.data ?? []) as { started_at: string }[];
 
   // Map templates
   const rawTemplates = (templatesResult.data ?? []) as Array<{
@@ -138,7 +160,7 @@ async function fetchHomeData(): Promise<HomeData> {
     };
   });
 
-  return { displayName, avatarUrl, suggested, pinned, recentSessions };
+  return { displayName, avatarUrl, weeklyTarget, suggested, pinned, recentSessions, activityDates };
 }
 
 export function useHomeData() {

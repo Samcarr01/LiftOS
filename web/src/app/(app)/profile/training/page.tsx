@@ -42,6 +42,7 @@ export default function TrainingPreferencesPage() {
   const [repMin, setRepMin] = useState('');
   const [repMax, setRepMax] = useState('');
   const [heaviestFirst, setHeaviestFirst] = useState(false);
+  const [weeklyTarget, setWeeklyTarget] = useState(4);
   const [loaded, setLoaded] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -50,7 +51,7 @@ export default function TrainingPreferencesPage() {
     const supabase = createClient();
     void supabase
       .from('users')
-      .select('training_goals, experience_level, body_weight_kg, preferred_rep_range, prefill_sort_heaviest_first')
+      .select('training_goals, experience_level, body_weight_kg, preferred_rep_range, prefill_sort_heaviest_first, weekly_workout_target')
       .single()
       .then(({ data }) => {
         const row = data as {
@@ -59,6 +60,7 @@ export default function TrainingPreferencesPage() {
           body_weight_kg: number | null;
           preferred_rep_range: { min: number; max: number } | null;
           prefill_sort_heaviest_first: boolean | null;
+          weekly_workout_target: number | null;
         } | null;
         setGoals(row?.training_goals ?? []);
         setExperience((row?.experience_level as Experience) ?? 'intermediate');
@@ -70,6 +72,7 @@ export default function TrainingPreferencesPage() {
           setRepMax(String(row.preferred_rep_range.max));
         }
         setHeaviestFirst(row?.prefill_sort_heaviest_first ?? false);
+        setWeeklyTarget(row?.weekly_workout_target ?? 4);
         setLoaded(true);
       });
   }, [user, unit]);
@@ -100,6 +103,7 @@ export default function TrainingPreferencesPage() {
           body_weight_kg: bodyWeightKg,
           preferred_rep_range: preferredRepRange,
           prefill_sort_heaviest_first: heaviestFirst,
+          weekly_workout_target: weeklyTarget,
         })
         .eq('id', user.id)
         .then(({ error }) => {
@@ -111,7 +115,7 @@ export default function TrainingPreferencesPage() {
           }
         });
     },
-    [goals, experience, bodyWeight, repMin, repMax, heaviestFirst],
+    [goals, experience, bodyWeight, repMin, repMax, heaviestFirst, weeklyTarget],
     600,
   );
 
@@ -155,6 +159,32 @@ export default function TrainingPreferencesPage() {
                   {level}
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div className="list-row justify-between">
+            <span className="text-sm font-semibold">Weekly goal</span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setWeeklyTarget((v) => Math.max(1, v - 1))}
+                disabled={weeklyTarget <= 1}
+                aria-label="Decrease weekly goal"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-black/15 text-sm font-semibold text-muted-foreground hover:text-foreground disabled:opacity-40"
+              >
+                −
+              </button>
+              <span className="w-9 text-center font-display text-base font-bold tabular-nums">{weeklyTarget}</span>
+              <button
+                type="button"
+                onClick={() => setWeeklyTarget((v) => Math.min(7, v + 1))}
+                disabled={weeklyTarget >= 7}
+                aria-label="Increase weekly goal"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-black/15 text-sm font-semibold text-muted-foreground hover:text-foreground disabled:opacity-40"
+              >
+                +
+              </button>
+              <span className="ml-1 text-xs text-muted-foreground">sessions / wk</span>
             </div>
           </div>
 
