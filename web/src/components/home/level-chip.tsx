@@ -8,10 +8,8 @@ import {
   type XpInputSession, type XpInputPR,
 } from '@/lib/leveling/xp';
 import {
-  TIER_ICON_MAP,
-  tierBackgroundStyle,
-  tierIconStyle,
-  TierOverlayEffects,
+  TierIcon,
+  TierCardEffects,
 } from '@/lib/leveling/tier-visuals';
 
 interface LevelChipProps {
@@ -35,7 +33,6 @@ export function LevelChip({ sessions, prs, weeklyTarget }: LevelChipProps) {
     };
   }, [sessions, prs, weeklyTarget]);
 
-  const Icon   = TIER_ICON_MAP[tier.icon];
   const accent = `oklch(${tier.color})`;
 
   return (
@@ -46,21 +43,11 @@ export function LevelChip({ sessions, prs, weeklyTarget }: LevelChipProps) {
         ['--tier-accent' as string]: `oklch(${tier.color} / 0.4)`,
       }}
     >
-      {/* Background animation layer */}
-      <div
-        className="pointer-events-none absolute inset-0 rounded-2xl"
-        style={tierBackgroundStyle(tier)}
-        aria-hidden
-      />
-      <TierOverlayEffects tier={tier} />
+      {/* Card-wide effects (base tints, edge glows, sweep bands) */}
+      <TierCardEffects tier={tier} />
 
       <div className="relative flex items-center gap-3">
-        <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-          style={tierIconStyle(tier)}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
+        <TierIcon tier={tier} size={40} />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">

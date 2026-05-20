@@ -14,11 +14,9 @@ import {
   type Tier, type XpInputSession, type XpInputPR, type XpBreakdown,
 } from '@/lib/leveling/xp';
 import {
-  TIER_ICON_MAP,
   TIER_DESCRIPTIONS,
-  tierBackgroundStyle,
-  tierIconStyle,
-  TierOverlayEffects,
+  TierIcon,
+  TierCardEffects,
 } from '@/lib/leveling/tier-visuals';
 
 // ── Page ─────────────────────────────────────────────────────────────────────
@@ -117,7 +115,6 @@ function CurrentTierCard({ state }: {
     progressPct: number;
   };
 }) {
-  const Icon = TIER_ICON_MAP[state.tier.icon];
   const accent = `oklch(${state.tier.color})`;
 
   return (
@@ -125,20 +122,10 @@ function CurrentTierCard({ state }: {
       className="action-card relative overflow-hidden rounded-2xl px-5 py-5"
       style={{ ['--tier-accent' as string]: `oklch(${state.tier.color} / 0.4)` }}
     >
-      <div
-        className="pointer-events-none absolute inset-0 rounded-2xl"
-        style={tierBackgroundStyle(state.tier)}
-        aria-hidden
-      />
-      <TierOverlayEffects tier={state.tier} />
+      <TierCardEffects tier={state.tier} />
 
       <div className="relative flex items-center gap-4">
-        <div
-          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl"
-          style={tierIconStyle(state.tier)}
-        >
-          <Icon className="h-8 w-8" strokeWidth={1.8} />
-        </div>
+        <TierIcon tier={state.tier} size={64} />
         <div className="min-w-0 flex-1">
           <p className="text-overline" style={{ color: accent }}>Current Tier</p>
           <h2 className="mt-0.5 font-display text-2xl font-bold">{state.tier.name}</h2>
@@ -251,7 +238,6 @@ function TierRow({
   minXp:    number;
   state:    'passed' | 'current' | 'upcoming';
 }) {
-  const Icon = TIER_ICON_MAP[tier.icon];
   const accent = `oklch(${tier.color})`;
   const dimmed = state === 'upcoming';
   const description = TIER_DESCRIPTIONS[tier.id] ?? '';
@@ -270,23 +256,10 @@ function TierRow({
         ['--tier-accent' as string]: `oklch(${tier.color} / 0.4)`,
       }}
     >
-      {/* All tiers animate (except Bronze which has animation 'none').
-          Showing the animation on locked/passed rows is the whole point of
-          this page — you can see what's ahead and what you've earned. */}
-      <div
-        className="pointer-events-none absolute inset-0 rounded-2xl"
-        style={tierBackgroundStyle(tier)}
-        aria-hidden
-      />
-      <TierOverlayEffects tier={tier} />
+      <TierCardEffects tier={tier} />
 
       <div className="relative flex items-center gap-3">
-        <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
-          style={tierIconStyle(tier)}
-        >
-          <Icon className="h-6 w-6" strokeWidth={1.8} />
-        </div>
+        <TierIcon tier={tier} size={48} />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
