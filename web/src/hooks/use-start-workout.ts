@@ -85,6 +85,49 @@ function buildPrefilledSets(
   });
 }
 
+// Heaviest-set-first prefill ordering. Pure function over the snapshot — never
+// touches saved sessions or workout/exercise order. Warmups remain leading in
+// their original order; everything else is sorted by weight DESC, reps DESC.
+// set_index is reassigned positionally so buildPrefilledSets (which looks up by
+// set_index) consumes the new order with no further changes.
+function num(v: unknown): number {
+  if (typeof v === 'number') return v;
+  if (typeof v === 'string') {
+    const parsed = parseFloat(v);
+    return Number.isFinite(parsed) ? parsed : -Infinity;
+  }
+  return -Infinity;
+}
+
+function sortLastPerformanceForPrefill(
+  sets: LastPerformanceSet[] | null,
+  heaviestFirst: boolean,
+): LastPerformanceSet[] | null {
+  if (!sets || !heaviestFirst || sets.length < 2) return sets;
+
+  const sample = sets.find((s) => Object.keys(s.values).length > 0);
+  if (!sample) return sets;
+  const weightKey: 'weight' | 'added_weight' | null =
+    'weight' in sample.values ? 'weight'
+    : 'added_weight' in sample.values ? 'added_weight'
+    : null;
+  if (!weightKey) return sets;
+
+  const repsKey = 'reps' in sample.values ? 'reps' : null;
+
+  const warmups = sets.filter((s) => s.set_type === 'warmup');
+  const others = sets
+    .filter((s) => s.set_type !== 'warmup')
+    .sort((a, b) => {
+      const diff = num(b.values[weightKey]) - num(a.values[weightKey]);
+      if (diff !== 0) return diff;
+      if (repsKey) return num(b.values[repsKey]) - num(a.values[repsKey]);
+      return 0;
+    });
+
+  return [...warmups, ...others].map((s, i) => ({ ...s, set_index: i }));
+}
+
 export function useStartWorkout() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
@@ -139,9 +182,10 @@ export function useStartWorkout() {
       const readBranch: Promise<{
         lastPerformanceRows: { exercise_id: string; sets_data: unknown }[];
         suggestionRows:      { exercise_id: string; suggestion_data: unknown }[];
+        heaviestFirst:       boolean;
       }> = exerciseIds.length > 0
         ? (async () => {
-            const [lp, sg] = await Promise.all([
+            const [lp, sg, prefRow] = await Promise.all([
               supabase
                 .from('last_performance_snapshots')
                 .select('exercise_id, sets_data')
@@ -153,15 +197,22 @@ export function useStartWorkout() {
                 .eq('user_id', user.id)
                 .in('exercise_id', exerciseIds)
                 .gt('expires_at', new Date().toISOString()),
+              supabase
+                .from('users')
+                .select('prefill_sort_heaviest_first')
+                .eq('id', user.id)
+                .single(),
             ]);
             if (lp.error) throw lp.error;
             if (sg.error) throw sg.error;
             return {
               lastPerformanceRows: lp.data ?? [],
               suggestionRows:      sg.data ?? [],
+              heaviestFirst:       (prefRow.data as { prefill_sort_heaviest_first?: boolean } | null)
+                                     ?.prefill_sort_heaviest_first ?? false,
             };
           })()
-        : Promise.resolve({ lastPerformanceRows: [], suggestionRows: [] });
+        : Promise.resolve({ lastPerformanceRows: [], suggestionRows: [], heaviestFirst: false });
 
       const writeBranch = (async (): Promise<WorkoutSessionRow> => {
         const { data: session, error: sessionError } = await supabase
@@ -190,7 +241,7 @@ export function useStartWorkout() {
         return session;
       })();
 
-      const [{ lastPerformanceRows, suggestionRows }, session] = await Promise.all([readBranch, writeBranch]);
+      const [{ lastPerformanceRows, suggestionRows, heaviestFirst }, session] = await Promise.all([readBranch, writeBranch]);
 
       const sessionExerciseByOrder = new Map(
         sessionExercisesToInsert.map((exercise) => [exercise.order_index, exercise]),
@@ -215,8 +266,11 @@ export function useStartWorkout() {
       const response: StartWorkoutResponse = {
         session,
         exercises: templateExercises.map((templateExercise): StartWorkoutExercise => {
-          const lastPerformance =
+          const rawLast =
             lastPerformanceByExercise.get(templateExercise.exercise_id) ?? null;
+          // Sort once; reuse the same array for both the "was XX" hint mapping
+          // and prefilled-set construction so they stay in lockstep.
+          const lastPerformance = sortLastPerformanceForPrefill(rawLast, heaviestFirst);
 
           return {
             sessionExercise: sessionExerciseByOrder.get(templateExercise.order_index)!,

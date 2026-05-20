@@ -41,6 +41,7 @@ export default function TrainingPreferencesPage() {
   const [bodyWeight, setBodyWeight] = useState('');
   const [repMin, setRepMin] = useState('');
   const [repMax, setRepMax] = useState('');
+  const [heaviestFirst, setHeaviestFirst] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -49,7 +50,7 @@ export default function TrainingPreferencesPage() {
     const supabase = createClient();
     void supabase
       .from('users')
-      .select('training_goals, experience_level, body_weight_kg, preferred_rep_range')
+      .select('training_goals, experience_level, body_weight_kg, preferred_rep_range, prefill_sort_heaviest_first')
       .single()
       .then(({ data }) => {
         const row = data as {
@@ -57,6 +58,7 @@ export default function TrainingPreferencesPage() {
           experience_level: string;
           body_weight_kg: number | null;
           preferred_rep_range: { min: number; max: number } | null;
+          prefill_sort_heaviest_first: boolean | null;
         } | null;
         setGoals(row?.training_goals ?? []);
         setExperience((row?.experience_level as Experience) ?? 'intermediate');
@@ -67,6 +69,7 @@ export default function TrainingPreferencesPage() {
           setRepMin(String(row.preferred_rep_range.min));
           setRepMax(String(row.preferred_rep_range.max));
         }
+        setHeaviestFirst(row?.prefill_sort_heaviest_first ?? false);
         setLoaded(true);
       });
   }, [user, unit]);
@@ -96,6 +99,7 @@ export default function TrainingPreferencesPage() {
           experience_level: experience,
           body_weight_kg: bodyWeightKg,
           preferred_rep_range: preferredRepRange,
+          prefill_sort_heaviest_first: heaviestFirst,
         })
         .eq('id', user.id)
         .then(({ error }) => {
@@ -107,7 +111,7 @@ export default function TrainingPreferencesPage() {
           }
         });
     },
-    [goals, experience, bodyWeight, repMin, repMax],
+    [goals, experience, bodyWeight, repMin, repMax, heaviestFirst],
     600,
   );
 
@@ -176,6 +180,32 @@ export default function TrainingPreferencesPage() {
               />
               <span className="text-xs text-muted-foreground">reps</span>
             </div>
+          </div>
+
+          <div className="list-row items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold">Heaviest set first</div>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Reorder prefilled sets by weight, then reps. Only affects what shows when you start a new workout — never your saved history.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={heaviestFirst}
+              onClick={() => setHeaviestFirst((v) => !v)}
+              className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
+                heaviestFirst
+                  ? 'border-primary/40 bg-primary/30'
+                  : 'border-white/10 bg-black/30'
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                  heaviestFirst ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
           </div>
 
           <div className="list-row justify-between">

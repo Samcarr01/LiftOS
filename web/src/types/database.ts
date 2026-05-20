@@ -30,6 +30,7 @@ export interface Database {
           preferred_rep_range: { min: number; max: number } | null;
           onboarding_completed: boolean;
           avatar_url: string | null;
+          prefill_sort_heaviest_first: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -45,6 +46,7 @@ export interface Database {
           preferred_rep_range?: { min: number; max: number } | null;
           onboarding_completed?: boolean;
           avatar_url?: string | null;
+          prefill_sort_heaviest_first?: boolean;
         };
         Update: {
           id?: string;
@@ -58,6 +60,7 @@ export interface Database {
           preferred_rep_range?: { min: number; max: number } | null;
           onboarding_completed?: boolean;
           avatar_url?: string | null;
+          prefill_sort_heaviest_first?: boolean;
         };
         Relationships: [];
       };
