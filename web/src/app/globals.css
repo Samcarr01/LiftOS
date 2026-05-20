@@ -464,68 +464,110 @@
   }
 }
 
-/* ── Tier chip animations (LevelChip) ──────────────────────────────────────── */
+/* ── Tier chip animations ──────────────────────────────────────────────────────
+   All keyframes here are designed to loop seamlessly. The two patterns used:
+     (a) symmetric: 0% === 100% so there is no visible boundary
+     (b) opacity-gated sweeps: element is opacity 0 at both endpoints, so the
+         transform teleport at the loop boundary is invisible to the user
+   Pure transform + opacity where possible (GPU-accelerated, no paint thrash). */
 
-/* iron — quick attention pulse, plays a few times then stops */
+/* iron — symmetric scale pulse on the icon */
 @keyframes tier-pulse {
   0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.08); }
+  50%      { transform: scale(1.06); }
 }
 
-/* steel — slow continuous breathing */
+/* steel — symmetric opacity breathe */
 @keyframes tier-breathe {
-  0%, 100% { opacity: 0.9; }
+  0%, 100% { opacity: 0.78; }
   50%      { opacity: 1; }
 }
 
-/* obsidian — sharp diagonal glint every few seconds */
-@keyframes tier-glint {
-  0%, 70%, 100% { transform: translateX(-100%); opacity: 0; }
-  80%           { opacity: 1; }
-  90%           { transform: translateX(100%); opacity: 0; }
+/* generic — symmetric soft glow oscillation (used for halo/border rings) */
+@keyframes tier-soft-glow {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50%      { opacity: 0.85; transform: scale(1.08); }
 }
 
-/* titan — slow hue shift on a soft glow ring */
+/* obsidian/diamond/platinum — diagonal sweep across the card.
+   Element is positioned absolute with width ~40% of parent and uses a
+   transparent → bright → transparent gradient. Opacity drops to 0 in the
+   long tail so the snap from translateX(140%) back to translateX(-140%) is
+   invisible. The 60% dwell is what gives the "wait and flash" rhythm. */
+@keyframes tier-sweep-x {
+  0%        { transform: translate3d(-140%, 0, 0); opacity: 0; }
+  8%        { opacity: 1; }
+  40%       { transform: translate3d(140%, 0, 0);  opacity: 1; }
+  48%, 100% { transform: translate3d(140%, 0, 0);  opacity: 0; }
+}
+
+/* titan — symmetric hue shift on a colored overlay */
+@keyframes tier-hue-cycle {
+  0%, 100% { filter: hue-rotate(0deg); }
+  50%      { filter: hue-rotate(35deg); }
+}
+
+/* glow-shift — symmetric icon halo for Titan */
 @keyframes tier-glow-shift {
-  0%, 100% { filter: hue-rotate(0deg); box-shadow: 0 0 14px -4px var(--tier-accent); }
-  50%      { filter: hue-rotate(20deg); box-shadow: 0 0 22px -2px var(--tier-accent); }
+  0%, 100% { box-shadow: 0 0 14px -4px var(--tier-accent); }
+  50%      { box-shadow: 0 0 24px -2px var(--tier-accent); }
 }
 
-/* platinum — silky shimmer sweep */
-@keyframes tier-shimmer {
-  0%   { background-position: -150% 0; }
-  100% { background-position: 250% 0; }
-}
-
-/* diamond — rainbow refraction band */
-@keyframes tier-refract {
-  0%   { background-position: -100% 0; }
-  100% { background-position: 200% 0; }
-}
-
-/* mythic — gradient cycle + occasional sparks */
-@keyframes tier-gradient-cycle {
+/* symmetric background-position cycle for color shifts (gradient/holographic) */
+@keyframes tier-bg-cycle {
   0%, 100% { background-position: 0% 50%; }
   50%      { background-position: 100% 50%; }
 }
 
-/* cosmic — full holographic with floating particle dots */
-@keyframes tier-holographic {
-  0%, 100% { background-position: 0% 50%; filter: hue-rotate(0deg); }
+/* combined gradient + hue cycle for holographic */
+@keyframes tier-bg-hue-cycle {
+  0%, 100% { background-position: 0% 50%;   filter: hue-rotate(0deg); }
   50%      { background-position: 100% 50%; filter: hue-rotate(45deg); }
 }
 
-@keyframes tier-particles {
-  0%   { transform: translate(0, 0) scale(1);   opacity: 0.6; }
-  50%  { transform: translate(4px, -3px) scale(1.2); opacity: 1; }
-  100% { transform: translate(-2px, 3px) scale(1); opacity: 0.6; }
+/* seamless rotation (360deg === 0deg) — used for icon rings and conic borders */
+@keyframes tier-rotate {
+  to { transform: rotate(360deg); }
 }
 
-/* mythic — occasional spark flashes, mostly invisible then briefly bright */
+/* reverse rotation — for cosmic dual-ring counter-orbit */
+@keyframes tier-rotate-reverse {
+  to { transform: rotate(-360deg); }
+}
+
+/* orbiting particle — moves in a circle, position parented to a rotating wrapper.
+   The particle itself uses transform-origin to orbit. Seamless since 360 === 0. */
+@keyframes tier-orbit {
+  to { transform: rotate(360deg) translateX(var(--tier-orbit-radius, 24px)) rotate(-360deg); }
+}
+
+/* radial pulse — expanding ring that fades to invisible at start AND end,
+   so the loop boundary is hidden by opacity 0 */
+@keyframes tier-radial-pulse {
+  0%        { transform: scale(0.4); opacity: 0; }
+  10%       { opacity: 0.8; }
+  100%      { transform: scale(2.4); opacity: 0; }
+}
+
+/* spark flash — opacity 0 most of the cycle, brief bright burst, returns to 0 */
 @keyframes tier-spark-flash {
-  0%, 60%, 100% { opacity: 0;   transform: scale(0.8); }
-  70%           { opacity: 1;   transform: scale(1.4); }
-  80%           { opacity: 0.5; transform: scale(1.1); }
+  0%, 55%, 100% { opacity: 0; transform: scale(0.7); }
+  62%           { opacity: 1; transform: scale(1.4); }
+  72%           { opacity: 0.6; transform: scale(1.05); }
+  82%           { opacity: 0; transform: scale(0.9); }
+}
+
+/* sparkle drift — rises slowly and fades; opacity 0 at both endpoints */
+@keyframes tier-sparkle-drift {
+  0%, 100% { opacity: 0; transform: translateY(0) scale(0.6); }
+  20%      { opacity: 1; transform: translateY(-3px) scale(1); }
+  70%      { opacity: 0.7; transform: translateY(-10px) scale(1); }
+  90%      { opacity: 0; transform: translateY(-14px) scale(0.7); }
+}
+
+/* edge aurora — for mythic/cosmic, a conic gradient that rotates around */
+@keyframes tier-conic-rotate {
+  to { transform: rotate(360deg); }
 }
 
 /* Tier-promotion overlay — icon zoom-in on reveal */
