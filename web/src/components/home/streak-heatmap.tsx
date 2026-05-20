@@ -41,6 +41,9 @@ interface BuildResult {
   bestStreak: number;
   /** Current ISO-week session count. */
   thisWeekCount: number;
+  /** Monday of the leftmost column — labelled under the grid so empty
+   *  pre-app weeks aren't read as "missing data". */
+  windowStart: Date;
 }
 
 function buildHeatmapData(
@@ -101,7 +104,14 @@ function buildHeatmapData(
     }
   }
 
-  return { grid, currentStreak, bestStreak, thisWeekCount };
+  const windowStart = new Date(thisMonday);
+  windowStart.setDate(windowStart.getDate() - (WEEKS_SHOWN - 1) * 7);
+
+  return { grid, currentStreak, bestStreak, thisWeekCount, windowStart };
+}
+
+function formatShortDate(date: Date): string {
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 // ── Cell shading tiers ────────────────────────────────────────────────────────
@@ -117,7 +127,7 @@ function cellStyle(count: number): React.CSSProperties {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function StreakHeatmap({ sessions, target }: StreakHeatmapProps) {
-  const { grid, currentStreak, bestStreak, thisWeekCount } = useMemo(
+  const { grid, currentStreak, bestStreak, thisWeekCount, windowStart } = useMemo(
     () => buildHeatmapData(sessions, target),
     [sessions, target],
   );
@@ -196,6 +206,14 @@ export function StreakHeatmap({ sessions, target }: StreakHeatmapProps) {
           </div>
         );
       })()}
+
+      {/* Date axis — clarifies what the empty leftmost columns are.
+          Indented to align with the cell grid (the day-label column on the
+          left is narrow but variable; ml-4 ~= label column + gap). */}
+      <div className="ml-4 -mt-1 flex justify-between text-[10px] text-muted-foreground/50 tabular-nums">
+        <span>{formatShortDate(windowStart)}</span>
+        <span>now</span>
+      </div>
 
       {/* Footer */}
       <p className="text-xs text-muted-foreground tabular-nums">
