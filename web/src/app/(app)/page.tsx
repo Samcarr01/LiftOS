@@ -331,6 +331,21 @@ export default function HomePage() {
         {/* ── Resume in-progress workout ─────────── */}
         <ResumeWorkoutBanner />
 
+        {/* ── Level Chip (your identity in the app) ───────────────────────────
+            Lives above Start Workout because it represents who you are, not
+            what you do next. Tap to drill into the full tier ladder. */}
+        {loading ? (
+          <Skeleton className="h-[88px] rounded-2xl" />
+        ) : (data?.xpSessions?.length ?? 0) > 0 ? (
+          <div className="page-reveal">
+            <LevelChip
+              sessions={data!.xpSessions}
+              prs={data!.xpPRs}
+              weeklyTarget={data!.weeklyTarget}
+            />
+          </div>
+        ) : null}
+
         {/* ── Start Workout CTA ──────────────────── */}
         <button
           onClick={() => setSheetOpen(true)}
@@ -362,19 +377,6 @@ export default function HomePage() {
         ) : (data?.activityDates?.length ?? 0) > 0 ? (
           <div className="page-reveal delay-2">
             <StreakHeatmap sessions={data!.activityDates} target={data!.weeklyTarget} />
-          </div>
-        ) : null}
-
-        {/* ── Level Chip ──────────────────────────── */}
-        {loading ? (
-          <Skeleton className="h-[88px] rounded-2xl" />
-        ) : (data?.xpSessions?.length ?? 0) > 0 ? (
-          <div className="page-reveal delay-2">
-            <LevelChip
-              sessions={data!.xpSessions}
-              prs={data!.xpPRs}
-              weeklyTarget={data!.weeklyTarget}
-            />
           </div>
         ) : null}
 
