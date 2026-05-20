@@ -30,6 +30,7 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
   const updateSet = useActiveWorkoutStore((store) => store.updateSet);
   const deleteSet = useActiveWorkoutStore((store) => store.deleteSet);
   const completeSet = useActiveWorkoutStore((store) => store.completeSet);
+  const startRestTimer = useActiveWorkoutStore((store) => store.startRestTimer);
 
   // Figure out the max number of rounds (sets) across all exercises
   const maxRounds = exercises.length > 0
@@ -48,12 +49,29 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
     completeSet(exerciseIndex, setId);
     navigator.vibrate?.(50);
 
-    const completedSet = useActiveWorkoutStore
-      .getState()
-      .workout?.exercises[exerciseIndex]?.sets
-      .find((set) => set.id === setId);
+    // Read freshly post-update so the just-flipped set reflects its new state.
+    const freshWorkout = useActiveWorkoutStore.getState().workout;
+    const updatedExercise = freshWorkout?.exercises[exerciseIndex];
+    const completedSet = updatedExercise?.sets.find((set) => set.id === setId);
 
-    if (completedSet) void logSetEntry(completedSet);
+    if (completedSet) {
+      void logSetEntry(completedSet);
+
+      // For supersets, only rest after the full round (every paired exercise's
+      // set at this round index is done). Otherwise you'd be resting between
+      // the A and B halves of the round.
+      if (completedSet.isCompleted) {
+        const roundIndex = completedSet.setIndex;
+        const roundDone = exercises.every((ex) => {
+          const fresh = freshWorkout?.exercises[ex.exerciseIndex];
+          return fresh?.sets[roundIndex]?.isCompleted;
+        });
+        const restSeconds = updatedExercise?.sessionExercise.rest_seconds ?? 0;
+        if (roundDone && restSeconds > 0) {
+          startRestTimer(restSeconds);
+        }
+      }
+    }
   }
 
   function handleAddRound() {

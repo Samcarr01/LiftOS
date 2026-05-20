@@ -41,6 +41,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   const updateSet = useActiveWorkoutStore((store) => store.updateSet);
   const deleteSet = useActiveWorkoutStore((store) => store.deleteSet);
   const completeSet = useActiveWorkoutStore((store) => store.completeSet);
+  const startRestTimer = useActiveWorkoutStore((store) => store.startRestTimer);
   const dismissSuggestion = useActiveWorkoutStore((store) => store.dismissSuggestion);
   const completedCount = sets.filter((set) => set.isCompleted).length;
   const allComplete = sets.length > 0 && completedCount === sets.length;
@@ -49,13 +50,22 @@ export const ExerciseCard = memo(function ExerciseCard({
     completeSet(exerciseIndex, setId);
     navigator.vibrate?.(50);
 
-    const completedSet = useActiveWorkoutStore
+    const updatedExercise = useActiveWorkoutStore
       .getState()
-      .workout?.exercises[exerciseIndex]?.sets
-      .find((set) => set.id === setId);
+      .workout?.exercises[exerciseIndex];
+    const completedSet = updatedExercise?.sets.find((set) => set.id === setId);
 
-    if (completedSet) void logSetEntry(completedSet);
-  }, [completeSet, exerciseIndex]);
+    if (completedSet) {
+      void logSetEntry(completedSet);
+      // Auto-start the rest timer when a set flips to completed (not when
+      // uncompleted). rest_seconds = 0/null is the natural opt-out for
+      // circuits and cardio.
+      const restSeconds = updatedExercise?.sessionExercise.rest_seconds ?? 0;
+      if (completedSet.isCompleted && restSeconds > 0) {
+        startRestTimer(restSeconds);
+      }
+    }
+  }, [completeSet, exerciseIndex, startRestTimer]);
 
   const handleUpdate = useCallback((setId: string, patch: { values?: SetValues; setType?: SetEntry['setType'] }) => {
     updateSet(exerciseIndex, setId, {

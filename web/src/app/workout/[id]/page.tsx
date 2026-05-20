@@ -10,6 +10,7 @@ import { SupersetCard } from '@/components/workout/superset-card';
 import { FinishDialog } from '@/components/workout/finish-dialog';
 import { ExerciseSelector, type ExerciseSelectionOptions } from '@/components/exercise-selector';
 import { useActiveWorkoutStore, useWorkoutHydrated } from '@/store/active-workout-store';
+import { useScreenWakeLock } from '@/hooks/use-screen-wake-lock';
 import type { ActiveExerciseState, ExerciseWithSchema } from '@/types/app';
 import type { SessionExerciseRow } from '@/types/database';
 
@@ -57,6 +58,10 @@ export default function WorkoutPage() {
   const hydrated = useWorkoutHydrated();
   const [finishOpen, setFinishOpen] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+
+  // Keep the screen on while a session is loaded. Released automatically on
+  // unmount and when the tab is hidden; re-acquired when the tab comes back.
+  useScreenWakeLock(workout !== null);
 
   // Live elapsed timer
   const [elapsed, setElapsed] = useState('0:00');
