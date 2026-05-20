@@ -464,6 +464,63 @@
   }
 }
 
+/* ── Tier chip animations (LevelChip) ──────────────────────────────────────── */
+
+/* iron — quick attention pulse, plays a few times then stops */
+@keyframes tier-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+/* steel — slow continuous breathing */
+@keyframes tier-breathe {
+  0%, 100% { opacity: 0.9; }
+  50%      { opacity: 1; }
+}
+
+/* obsidian — sharp diagonal glint every few seconds */
+@keyframes tier-glint {
+  0%, 70%, 100% { transform: translateX(-100%); opacity: 0; }
+  80%           { opacity: 1; }
+  90%           { transform: translateX(100%); opacity: 0; }
+}
+
+/* titan — slow hue shift on a soft glow ring */
+@keyframes tier-glow-shift {
+  0%, 100% { filter: hue-rotate(0deg); box-shadow: 0 0 14px -4px var(--tier-accent); }
+  50%      { filter: hue-rotate(20deg); box-shadow: 0 0 22px -2px var(--tier-accent); }
+}
+
+/* platinum — silky shimmer sweep */
+@keyframes tier-shimmer {
+  0%   { background-position: -150% 0; }
+  100% { background-position: 250% 0; }
+}
+
+/* diamond — rainbow refraction band */
+@keyframes tier-refract {
+  0%   { background-position: -100% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* mythic — gradient cycle + occasional sparks */
+@keyframes tier-gradient-cycle {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+/* cosmic — full holographic with floating particle dots */
+@keyframes tier-holographic {
+  0%, 100% { background-position: 0% 50%; filter: hue-rotate(0deg); }
+  50%      { background-position: 100% 50%; filter: hue-rotate(45deg); }
+}
+
+@keyframes tier-particles {
+  0%   { transform: translate(0, 0) scale(1);   opacity: 0.6; }
+  50%  { transform: translate(4px, -3px) scale(1.2); opacity: 1; }
+  100% { transform: translate(-2px, 3px) scale(1); opacity: 0.6; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

@@ -15,6 +15,7 @@ import type { HistorySessionSummary } from '@/types/app';
 import { TrackingSchemaValidator } from '@/lib/validation';
 import { summarizeSetResult, type TrackingSetLike } from '@/lib/workout/formatting';
 import type { Json } from '@/types/database';
+import type { XpInputSession, XpInputPR } from '@/lib/leveling/xp';
 
 export interface HomeData {
   displayName:        string | null;
@@ -25,6 +26,10 @@ export interface HomeData {
   recentSessions:     HistorySessionSummary[];
   /** Last ~90 days of completed-session start dates, used by the streak heatmap. */
   activityDates:      { started_at: string }[];
+  /** All-time completed sessions, used by the level/XP computation. */
+  xpSessions:         XpInputSession[];
+  /** All-time PRs, used by the level/XP computation. */
+  xpPRs:              XpInputPR[];
 }
 
 async function fetchHomeData(): Promise<HomeData> {
@@ -38,6 +43,8 @@ async function fetchHomeData(): Promise<HomeData> {
     templatesResult,
     sessionsResult,
     activityResult,
+    xpSessionsResult,
+    xpPRsResult,
   ] = await Promise.all([
     supabase.from('users').select('display_name, avatar_url, weekly_workout_target').single(),
 
@@ -72,6 +79,19 @@ async function fetchHomeData(): Promise<HomeData> {
       .not('completed_at', 'is', null)
       .gte('started_at', ninetyDaysAgo.toISOString())
       .order('started_at', { ascending: false }),
+
+    // All-time XP inputs: every completed session + every PR's session link.
+    // Tiny rows; RLS scopes to the current user automatically so this works
+    // for every user without any per-user logic.
+    supabase
+      .from('workout_sessions')
+      .select('id, started_at, is_light_session')
+      .not('completed_at', 'is', null)
+      .order('started_at', { ascending: true }),
+
+    supabase
+      .from('personal_records')
+      .select('session_id'),
   ]);
 
   const profileRow = profileResult.data as {
@@ -83,6 +103,8 @@ async function fetchHomeData(): Promise<HomeData> {
   const avatarUrl    = profileRow?.avatar_url   ?? null;
   const weeklyTarget = profileRow?.weekly_workout_target ?? 4;
   const activityDates = (activityResult.data ?? []) as { started_at: string }[];
+  const xpSessions    = (xpSessionsResult.data ?? []) as XpInputSession[];
+  const xpPRs         = (xpPRsResult.data ?? []) as XpInputPR[];
 
   // Map templates
   const rawTemplates = (templatesResult.data ?? []) as Array<{
@@ -160,7 +182,7 @@ async function fetchHomeData(): Promise<HomeData> {
     };
   });
 
-  return { displayName, avatarUrl, weeklyTarget, suggested, pinned, recentSessions, activityDates };
+  return { displayName, avatarUrl, weeklyTarget, suggested, pinned, recentSessions, activityDates, xpSessions, xpPRs };
 }
 
 export function useHomeData() {
