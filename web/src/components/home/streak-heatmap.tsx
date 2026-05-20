@@ -151,36 +151,51 @@ export function StreakHeatmap({ sessions, target }: StreakHeatmapProps) {
         )}
       </div>
 
-      {/* Heatmap */}
-      <div className="flex gap-2">
-        {/* Day labels */}
-        <div className="flex flex-col gap-[3px] pt-px">
-          {DAY_LABELS.map((label, i) => (
-            <span
-              key={i}
-              className="flex h-3 w-3 items-center justify-center text-[10px] font-medium leading-none text-muted-foreground/60"
-            >
-              {label}
-            </span>
-          ))}
-        </div>
-
-        {/* Week columns */}
-        <div className="flex flex-1 gap-[3px]">
-          {grid.map((days, weekIdx) => (
-            <div key={weekIdx} className="flex flex-1 flex-col gap-[3px]">
-              {days.map((count, dayIdx) => (
-                <div
-                  key={dayIdx}
-                  className="aspect-square w-full rounded-[3px]"
-                  style={cellStyle(count)}
-                  aria-label={`${count} session${count === 1 ? '' : 's'}`}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Heatmap: single grid so the label column shares row sizing with the
+          cell columns. (Previously labels were a separate flex column with
+          fixed h-3, which fell out of alignment once cells got large on
+          mobile.) Cells set their own grid coords so aspect-square can drive
+          row height without fighting the layout. */}
+      {(() => {
+        const todayDow = (new Date().getDay() + 6) % 7; // 0=Mon ... 6=Sun
+        return (
+          <div
+            className="grid gap-[3px]"
+            style={{ gridTemplateColumns: `auto repeat(${WEEKS_SHOWN}, minmax(0, 1fr))` }}
+          >
+            {DAY_LABELS.map((label, i) => (
+              <span
+                key={`label-${i}`}
+                className="flex items-center justify-end pr-1 text-[11px] font-medium leading-none text-muted-foreground/60 tabular-nums"
+                style={{ gridColumn: 1, gridRow: i + 1 }}
+              >
+                {label}
+              </span>
+            ))}
+            {grid.flatMap((days, weekIdx) =>
+              days.map((count, dayIdx) => {
+                const isToday = weekIdx === WEEKS_SHOWN - 1 && dayIdx === todayDow;
+                return (
+                  <div
+                    key={`cell-${weekIdx}-${dayIdx}`}
+                    className="aspect-square w-full rounded-[3px]"
+                    style={{
+                      ...cellStyle(count),
+                      gridColumn: weekIdx + 2,
+                      gridRow: dayIdx + 1,
+                      maxWidth: 22,
+                      ...(isToday
+                        ? { boxShadow: 'inset 0 0 0 1.5px oklch(1 0 0 / 0.65)' }
+                        : {}),
+                    }}
+                    aria-label={`${count} session${count === 1 ? '' : 's'}`}
+                  />
+                );
+              }),
+            )}
+          </div>
+        );
+      })()}
 
       {/* Footer */}
       <p className="text-xs text-muted-foreground tabular-nums">
