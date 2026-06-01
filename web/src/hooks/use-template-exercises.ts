@@ -36,6 +36,7 @@ export interface UpdateTemplateExercisePatch {
   default_set_count?: number;
   rest_seconds?: number | null;
   superset_group_id?: string | null;
+  target_ranges?: Json | null;
   notes?: string | null;
 }
 
@@ -142,11 +143,12 @@ export function useTemplateExercises(templateId?: string): UseTemplateExercisesR
     setExercises((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
     const dbPatch: {
       default_set_count?: number; rest_seconds?: number | null;
-      superset_group_id?: string | null; notes?: string | null;
+      superset_group_id?: string | null; target_ranges?: Json | null; notes?: string | null;
     } = {};
     if (patch.default_set_count !== undefined) dbPatch.default_set_count = patch.default_set_count;
     if (patch.rest_seconds !== undefined)       dbPatch.rest_seconds = patch.rest_seconds;
     if (patch.superset_group_id !== undefined)  dbPatch.superset_group_id = patch.superset_group_id;
+    if (patch.target_ranges !== undefined)      dbPatch.target_ranges = patch.target_ranges;
     if (patch.notes !== undefined)              dbPatch.notes = patch.notes;
 
     const { error: dbErr } = await supabase

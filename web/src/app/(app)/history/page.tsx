@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, ChevronRight, Dumbbell, Loader2 } from 'lucide-react';
+import { Calendar, CalendarClock, ChevronRight, Loader2 } from 'lucide-react';
 import { useHistory } from '@/hooks/use-history';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatMonthGroup, formatShortDate } from '@/lib/format-date';
@@ -101,7 +101,7 @@ export default function HistoryPage() {
         {!loading && !error && sessions.length === 0 && (
           <div className="content-card flex flex-col items-center gap-3 py-10 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-              <Dumbbell className="h-6 w-6 text-primary" />
+              <CalendarClock className="h-6 w-6 text-primary" />
             </div>
             <p className="text-card-title">No workouts yet</p>
             <p className="text-sm text-muted-foreground">

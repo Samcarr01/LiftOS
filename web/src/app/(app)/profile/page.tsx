@@ -183,7 +183,9 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
+  const [nameBeforeEdit, setNameBeforeEdit] = useState('');
   const [savingName, setSavingName] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
   const [memberSince, setMemberSince] = useState<string | null>(null);
   const [workoutCount, setWorkoutCount] = useState<number | null>(null);
   const [setCount, setSetCount] = useState<number | null>(null);
@@ -312,6 +314,14 @@ export default function ProfilePage() {
               >
                 {savingName ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Save'}
               </button>
+              <button
+                onClick={() => { setDisplayName(nameBeforeEdit); setEditingName(false); }}
+                disabled={savingName}
+                aria-label="Cancel editing name"
+                className="flex h-9 items-center gap-1 rounded-lg border border-white/10 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground disabled:opacity-60"
+              >
+                Cancel
+              </button>
             </div>
           ) : (
             <div className="flex items-center gap-3">
@@ -329,7 +339,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-1.5">
                   <p className="truncate text-sm font-semibold">{displayName || 'Add your name'}</p>
                   <button
-                    onClick={() => setEditingName(true)}
+                    onClick={() => { setNameBeforeEdit(displayName); setEditingName(true); }}
                     aria-label="Edit display name"
                     className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground/50 hover:text-foreground"
                   >
@@ -349,22 +359,22 @@ export default function ProfilePage() {
 
         {/* ── Pending upload notice ─────────────────────── */}
         {pendingCount > 0 && (
-          <div className="flex items-center gap-3 rounded-xl border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.06)] px-3.5 py-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[oklch(0.75_0.16_60/0.15)] text-[oklch(0.82_0.15_60)]">
+          <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-muted-foreground">
               <RefreshCw className={`h-3.5 w-3.5 ${syncing ? 'animate-spin' : ''}`} />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium">
-                {pendingCount} change{pendingCount !== 1 ? 's' : ''} still uploading
+                {pendingCount} workout change{pendingCount !== 1 ? 's' : ''} waiting to sync
               </p>
-              <p className="text-xs text-muted-foreground">We&apos;ll keep trying in the background.</p>
+              <p className="text-xs text-muted-foreground">Saved on this device — syncing automatically.</p>
             </div>
             <button
               onClick={() => void handleRetrySync()}
               disabled={syncing}
               className="text-xs font-semibold text-primary disabled:opacity-60"
             >
-              Retry now
+              Sync now
             </button>
           </div>
         )}
@@ -407,11 +417,15 @@ export default function ProfilePage() {
               label="Change password"
               onClick={() => router.push('/profile/password')}
             />
-            <LinkRow
-              icon={<LogOut className="h-4 w-4" />}
-              label="Sign out"
-              onClick={() => void handleSignOut()}
-            />
+            <button
+              onClick={() => setSignOutOpen(true)}
+              className="list-row w-full text-[oklch(0.72_0.18_25)]"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.65_0.20_25/0.12)] text-[oklch(0.72_0.18_25)]">
+                <LogOut className="h-4 w-4" />
+              </div>
+              <span className="flex-1 text-left text-sm font-semibold">Sign out</span>
+            </button>
           </div>
         </section>
 
@@ -479,6 +493,34 @@ export default function ProfilePage() {
       </div>
 
       <DeleteAccountDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} />
+
+      <Dialog open={signOutOpen} onOpenChange={(value) => !value && setSignOutOpen(false)}>
+        <DialogContent className="sm:max-w-sm border-white/[0.07] bg-card text-foreground">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <LogOut className="h-5 w-5" />
+              Sign out?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            You&apos;ll need to sign in again to access your workouts.
+          </p>
+          <DialogFooter className="gap-2 sm:justify-start">
+            <button
+              onClick={() => setSignOutOpen(false)}
+              className="premium-button-secondary flex-1 justify-center"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => void handleSignOut()}
+              className="flex h-10 flex-1 items-center justify-center rounded-xl bg-[oklch(0.65_0.20_25)] px-4 text-sm font-semibold text-white"
+            >
+              Sign out
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

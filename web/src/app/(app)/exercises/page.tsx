@@ -233,7 +233,11 @@ export default function ExercisesPage() {
           <div className="flex items-center gap-2">
             <h1 className="page-header-title">Exercise Library</h1>
             {!isLoading && exercises.length > 0 && (
-              <span className="text-sm text-muted-foreground">{exercises.length} exercises</span>
+              <span className="text-sm text-muted-foreground">
+                {filteredExercises.length === exercises.length
+                  ? `${exercises.length} exercise${exercises.length === 1 ? '' : 's'}`
+                  : `${filteredExercises.length} of ${exercises.length} exercises`}
+              </span>
             )}
           </div>
           <ExerciseSelector
@@ -312,47 +316,29 @@ export default function ExercisesPage() {
                     )}
                   </div>
 
-                  {confirmDeleteId === exercise.id ? (
-                    <div className="flex shrink-0 items-center gap-2">
-                      <span className="text-sm text-destructive font-medium">Delete?</span>
-                      <button
-                        onClick={() => void handleDelete(exercise.id)}
-                        className="flex h-9 items-center gap-1 rounded-xl bg-destructive px-3 text-xs font-semibold text-white"
-                      >
-                        Yes
-                      </button>
-                      <button
-                        onClick={() => setConfirmDeleteId(null)}
-                        className="flex h-9 items-center gap-1 rounded-xl border border-white/10 px-3 text-xs font-semibold text-muted-foreground"
-                      >
-                        No
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex shrink-0 gap-1.5">
-                      <Link
-                        href={`/exercises/${exercise.id}`}
-                        aria-label="View exercise statistics"
-                        className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 text-muted-foreground active:bg-white/[0.08] hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                      >
-                        <BarChart3 className="h-4 w-4" />
-                      </Link>
-                      <button
-                        onClick={() => setEditingExercise(exercise)}
-                        aria-label="Edit exercise"
-                        className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 text-muted-foreground active:bg-white/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => setConfirmDeleteId(exercise.id)}
-                        aria-label="Delete exercise"
-                        className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 text-muted-foreground active:bg-white/[0.08] hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex shrink-0 gap-1.5">
+                    <Link
+                      href={`/exercises/${exercise.id}`}
+                      aria-label="View exercise statistics"
+                      className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-primary/10 text-primary active:bg-primary/20 hover:bg-primary/20 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                    </Link>
+                    <button
+                      onClick={() => setEditingExercise(exercise)}
+                      aria-label="Edit exercise"
+                      className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 text-foreground/70 active:bg-white/[0.08] hover:bg-white/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteId(exercise.id)}
+                      aria-label="Delete exercise"
+                      className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 text-foreground/70 active:bg-white/[0.08] hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -371,6 +357,34 @@ export default function ExercisesPage() {
             await updateExercise(id, data);
           }}
         />
+      )}
+
+      {/* Delete confirmation — modal, consistent with templates & history */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-white/[0.10] bg-[oklch(0.16_0.015_260)] p-5 space-y-4">
+            <h3 className="font-display text-lg font-bold">Delete exercise?</h3>
+            <p className="text-sm text-muted-foreground">
+              &ldquo;{exercises.find((e) => e.id === confirmDeleteId)?.name ?? 'This exercise'}&rdquo; will be
+              permanently deleted. This cannot be undone.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => void handleDelete(confirmDeleteId)}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-500/90 text-sm font-semibold text-white transition-all duration-150 hover:bg-red-500 active:scale-[0.98]"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Exercise
+              </button>
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="premium-button-secondary w-full justify-center"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

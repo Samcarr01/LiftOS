@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useCallback } from 'react';
-import { Check } from 'lucide-react';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NumericInput } from './numeric-input';
 import type { SetEntry, SetValues } from '@/types/app';
@@ -118,7 +118,10 @@ export const SetRow = memo(function SetRow({
           )}
         >
           <span className="text-xs font-semibold">{setNumber}</span>
-          <span className="text-xs font-semibold tracking-[0.08em]">{SET_TYPE_LABEL[set.setType]}</span>
+          <span className="flex items-center gap-0.5 text-xs font-semibold tracking-[0.08em]">
+            {SET_TYPE_LABEL[set.setType]}
+            <ChevronsUpDown className="h-2.5 w-2.5 opacity-70" aria-hidden />
+          </span>
         </button>
 
         <div className="min-w-[60px] shrink-0">

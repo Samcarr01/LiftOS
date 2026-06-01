@@ -38,7 +38,7 @@ const STEPS = [
   {
     kicker: 'STEP 3 OF 4',
     title: 'Start & Log Sets',
-    body: "Hit Start Workout and your sets are already prefilled from last session. Tap the checkmark to confirm each set — adjust weight or reps if needed.",
+    body: "Hit Start Workout and your sets are already auto-filled from last session. Tap the checkmark to confirm each set — adjust weight or reps if needed.",
     hint: 'Most sets take under 2 seconds to log.',
   },
   {

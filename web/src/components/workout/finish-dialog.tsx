@@ -186,7 +186,7 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">Light / off day</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Won&apos;t count toward progression or prefill
+                Won&apos;t count toward progression or auto-fill
               </p>
             </div>
           </button>

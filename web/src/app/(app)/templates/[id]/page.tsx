@@ -26,6 +26,7 @@ import { useTemplateExercises, type TemplateExerciseWithDetails } from '@/hooks/
 import { useTemplates } from '@/hooks/use-templates';
 import { useStartWorkout } from '@/hooks/use-start-workout';
 import type { ExerciseWithSchema } from '@/types/app';
+import type { Json } from '@/types/database';
 import {
   TRACKING_PRESETS,
   TRACKING_PRESET_LABELS,
@@ -37,6 +38,22 @@ import { cn } from '@/lib/utils';
 
 const ALL_MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Quads', 'Hamstrings', 'Glutes', 'Core', 'Calves', 'Cardio', 'Forearms'];
 const PRESET_KEYS = Object.keys(TRACKING_PRESETS) as TrackingPresetKey[];
+
+/** One-line summary of a template exercise's config (sets · reps · rest). */
+function configSummary(item: TemplateExerciseWithDetails): string {
+  const parts = [`${item.default_set_count} set${item.default_set_count === 1 ? '' : 's'}`];
+  const ranges = (item.target_ranges as Record<string, { min?: number; max?: number }> | null) ?? null;
+  const reps = ranges?.reps;
+  if (reps?.min != null && reps?.max != null) parts.push(`${reps.min}–${reps.max} reps`);
+  else if (reps?.min != null) parts.push(`${reps.min}+ reps`);
+  else if (reps?.max != null) parts.push(`≤${reps.max} reps`);
+  if (item.rest_seconds && item.rest_seconds > 0) {
+    parts.push(item.rest_seconds >= 60 && item.rest_seconds % 60 === 0
+      ? `${item.rest_seconds / 60} min rest`
+      : `${item.rest_seconds}s rest`);
+  }
+  return parts.join(' · ');
+}
 
 function detectPresetKey(exercise: ExerciseWithSchema): TrackingPresetKey | null {
   const fieldKeys = exercise.tracking_schema.fields.map((f) => f.key).sort().join(',');
@@ -86,7 +103,7 @@ const SortableExerciseRow = memo(function SortableExerciseRow({
       <button
         {...attributes}
         {...listeners}
-        className="flex h-9 w-7 cursor-grab items-center justify-center rounded-2xl text-muted-foreground/50 active:cursor-grabbing touch-none hover:bg-white/[0.08]"
+        className="flex h-9 w-7 cursor-grab items-center justify-center rounded-2xl text-foreground/55 active:cursor-grabbing touch-none hover:bg-white/[0.08] hover:text-foreground"
       >
         <GripVertical className="h-4 w-4" />
       </button>
@@ -95,12 +112,12 @@ const SortableExerciseRow = memo(function SortableExerciseRow({
       <button className="flex flex-1 min-w-0 cursor-pointer flex-col items-start gap-0.5 focus-visible:outline-none" onClick={onConfig}>
         <span className="truncate text-card-title">{item.exercise.name}</span>
         <div className="mt-1 flex items-center gap-2">
-          <div className="flex gap-1">
-            {item.exercise.muscle_groups.slice(0, 2).map((m) => (
+          <div className="flex flex-wrap gap-1">
+            {item.exercise.muscle_groups.map((m) => (
               <MuscleGroupBadge key={m} muscle={m} />
             ))}
           </div>
-          <span className="text-overline">{item.default_set_count} sets</span>
+          <span className="text-overline">{configSummary(item)}</span>
         </div>
       </button>
 
@@ -127,6 +144,9 @@ function SupersetLinkButton({
     <button
       onClick={onToggle}
       aria-label={linked ? 'Unlink superset' : 'Link as superset'}
+      title={linked
+        ? 'Unlink — these exercises will no longer be paired'
+        : 'Superset: perform these two exercises back-to-back with no rest in between'}
       className={cn(
         'mx-auto flex h-9 cursor-pointer items-center gap-1.5 rounded-full border px-4 text-xs font-semibold transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
         linked
@@ -151,9 +171,12 @@ function ExerciseConfigSheet({
   item: TemplateExerciseWithDetails | null;
   open: boolean;
   onClose: () => void;
-  onSave: (templatePatch: { default_set_count?: number }, exercisePatch: { name?: string; muscle_groups?: string[]; tracking_schema?: { fields: { key: string; label: string; type: 'number' | 'text'; optional: boolean; unit?: string }[] }; notes?: string | null } | null) => void;
+  onSave: (templatePatch: { default_set_count?: number; rest_seconds?: number | null; target_ranges?: Record<string, { min?: number; max?: number }> | null }, exercisePatch: { name?: string; muscle_groups?: string[]; tracking_schema?: { fields: { key: string; label: string; type: 'number' | 'text'; optional: boolean; unit?: string }[] }; notes?: string | null } | null) => void;
 }) {
   const [sets, setSets] = useState(item?.default_set_count ?? 3);
+  const [restSeconds, setRestSeconds] = useState<number>(item?.rest_seconds ?? 90);
+  const [repsMin, setRepsMin] = useState('');
+  const [repsMax, setRepsMax] = useState('');
   const [name, setName] = useState(item?.exercise.name ?? '');
   const [muscles, setMuscles] = useState<string[]>(item?.exercise.muscle_groups ?? []);
   const [preset, setPreset] = useState<TrackingPresetKey>(
@@ -162,9 +185,16 @@ function ExerciseConfigSheet({
   const [exerciseNotes, setExerciseNotes] = useState(item?.exercise.notes ?? '');
   const [saving, setSaving] = useState(false);
 
+  const tracksReps = item?.exercise.tracking_schema.fields.some((f) => f.key === 'reps') ?? false;
+
   useEffect(() => {
     if (item) {
       setSets(item.default_set_count);
+      setRestSeconds(item.rest_seconds ?? 90);
+      const ranges = (item.target_ranges as Record<string, { min?: number; max?: number }> | null) ?? null;
+      const reps = ranges?.reps;
+      setRepsMin(reps?.min != null ? String(reps.min) : '');
+      setRepsMax(reps?.max != null ? String(reps.max) : '');
       setName(item.exercise.name);
       setMuscles(item.exercise.muscle_groups);
       setPreset(detectPresetKey(item.exercise) ?? 'WEIGHT_REPS');
@@ -188,8 +218,20 @@ function ExerciseConfigSheet({
         || (exerciseNotes.trim() || null) !== (item.exercise.notes ?? null)
       );
 
+      // Build target reps range (only for rep-tracked exercises). Empty inputs
+      // clear the range so the AI suggestion engine falls back to its default.
+      let targetRanges: Record<string, { min?: number; max?: number }> | null = null;
+      if (tracksReps) {
+        const min = parseInt(repsMin, 10);
+        const max = parseInt(repsMax, 10);
+        const reps: { min?: number; max?: number } = {};
+        if (!isNaN(min) && min > 0) reps.min = min;
+        if (!isNaN(max) && max > 0) reps.max = max;
+        if (reps.min != null || reps.max != null) targetRanges = { reps };
+      }
+
       onSave(
-        { default_set_count: sets },
+        { default_set_count: sets, rest_seconds: restSeconds, target_ranges: targetRanges },
         exerciseChanged ? {
           name: name.trim(),
           muscle_groups: muscles,
@@ -303,6 +345,66 @@ function ExerciseConfigSheet({
               </button>
             </div>
           </div>
+
+          {/* Rest between sets */}
+          <div className="space-y-2.5">
+            <label className="text-sm font-semibold">Rest between sets</label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: 'Off', value: 0 },
+                { label: '60s', value: 60 },
+                { label: '90s', value: 90 },
+                { label: '2 min', value: 120 },
+                { label: '3 min', value: 180 },
+              ].map((opt) => {
+                const selected = restSeconds === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setRestSeconds(opt.value)}
+                    className={cn(
+                      'rounded-xl px-3.5 py-2 text-sm font-medium transition-all duration-150',
+                      selected
+                        ? 'bg-primary text-primary-foreground shadow-[0_0_12px_-3px_oklch(0.75_0.18_55/0.4)]'
+                        : 'border border-white/[0.08] bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] hover:text-foreground',
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">Auto-starts a countdown when you complete a set.</p>
+          </div>
+
+          {/* Target reps — only for rep-tracked exercises */}
+          {tracksReps && (
+            <div className="space-y-2.5">
+              <label className="text-sm font-semibold">
+                Target reps <span className="font-normal text-muted-foreground">(optional)</span>
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  inputMode="numeric"
+                  value={repsMin}
+                  onChange={(e) => { if (e.target.value === '' || /^\d+$/.test(e.target.value)) setRepsMin(e.target.value); }}
+                  placeholder="Min"
+                  className="h-11 w-16 rounded-xl border border-white/10 bg-white/[0.06] px-2 text-center text-base font-medium text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50"
+                />
+                <span className="text-xs text-muted-foreground">to</span>
+                <input
+                  inputMode="numeric"
+                  value={repsMax}
+                  onChange={(e) => { if (e.target.value === '' || /^\d+$/.test(e.target.value)) setRepsMax(e.target.value); }}
+                  placeholder="Max"
+                  className="h-11 w-16 rounded-xl border border-white/10 bg-white/[0.06] px-2 text-center text-base font-medium text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50"
+                />
+                <span className="text-xs text-muted-foreground">reps</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Guides your next-time targets for this workout.</p>
+            </div>
+          )}
 
           {/* Exercise notes */}
           <div className="space-y-2">
@@ -475,13 +577,16 @@ export default function TemplateEditorPage() {
   }
 
   async function handleConfigSave(
-    templatePatch: { default_set_count?: number; notes?: string | null },
+    templatePatch: { default_set_count?: number; rest_seconds?: number | null; target_ranges?: Record<string, { min?: number; max?: number }> | null; notes?: string | null },
     exercisePatch: { name?: string; muscle_groups?: string[]; tracking_schema?: { fields: { key: string; label: string; type: 'number' | 'text'; optional: boolean; unit?: string }[] }; notes?: string | null } | null,
   ) {
     if (!configItem) return;
     try {
-      // Update template_exercises row (set count, template notes)
-      await updateExercise(configItem.id, templatePatch);
+      // Update template_exercises row (set count, rest, target reps, notes)
+      await updateExercise(configItem.id, {
+        ...templatePatch,
+        target_ranges: templatePatch.target_ranges as Json | undefined,
+      });
 
       // Update exercises row if exercise-level fields changed
       if (exercisePatch) {
@@ -572,6 +677,7 @@ export default function TemplateEditorPage() {
                             <div className="mb-1 flex items-center gap-2 px-1">
                               <Link2 className="h-3 w-3 text-primary" />
                               <span className="text-xs font-semibold text-primary">Superset</span>
+                              <span className="text-xs text-muted-foreground">· back-to-back, no rest</span>
                             </div>
                           )}
                           <SortableExerciseRow
@@ -610,7 +716,7 @@ export default function TemplateEditorPage() {
         {/* Add exercise */}
         <ExerciseSelector
           onSelect={handleAddExercise}
-          defaultMode="create"
+          defaultMode="browse"
           trigger={
             <button className="list-row w-full">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-primary">

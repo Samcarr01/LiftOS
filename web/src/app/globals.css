@@ -341,7 +341,16 @@
     background: rgba(255, 255, 255, 0.05);
   }
 
-  /* ── Typography system ──────────────────────────── */
+  /* ── Typography system ──────────────────────────────────────────────────
+     Capitalisation hierarchy (apply via these classes, don't hardcode case):
+       • Primary nav destinations (Home, Templates, Profile, Exercises,
+         History, Progress) → `page-header-title` / `text-page-title` (UPPERCASE).
+       • Sub-pages (Training, Levels, Help, Change password) → Title Case via
+         `font-display text-2xl font-bold` (no forced case).
+       • In-page section headers → `section-title` (Sentence/Title case, no
+         forced transform).
+       • Small eyebrow labels → `text-overline` (UPPERCASE, intentional).
+     ──────────────────────────────────────────────────────────────────────── */
 
   .text-page-title {
     @apply font-display text-3xl font-bold uppercase tracking-tight;

@@ -11,12 +11,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ChevronRight,
+  ClipboardList,
   Copy,
-  Dumbbell,
   FolderPlus,
   Library,
   Loader2,
   MoreHorizontal,
+  Pencil,
   Pin,
   PinOff,
   Play,
@@ -123,25 +124,27 @@ function CreateTemplateRow({
 
 function TemplateRow({
   template,
-  isConfirmingDelete,
-  isDeleting,
+  isRenaming,
   onRequestDelete,
-  onConfirmDelete,
-  onCancelDelete,
+  onRequestRename,
+  onRename,
+  onCancelRename,
   onDuplicate,
   onTogglePin,
 }: {
   template: TemplateWithCount;
-  isConfirmingDelete: boolean;
-  isDeleting: boolean;
+  isRenaming: boolean;
   onRequestDelete: () => void;
-  onConfirmDelete: () => void;
-  onCancelDelete: () => void;
+  onRequestRename: () => void;
+  onRename: (name: string) => Promise<void>;
+  onCancelRename: () => void;
   onDuplicate: () => void;
   onTogglePin: () => void;
 }) {
   const { startWorkout } = useStartWorkout();
   const [starting, setStarting] = useState(false);
+  const [renameValue, setRenameValue] = useState(template.name);
+  const [savingRename, setSavingRename] = useState(false);
 
   async function handleStart(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -153,23 +156,42 @@ function TemplateRow({
     }
   }
 
-  if (isConfirmingDelete) {
+  async function handleRenameSave() {
+    const trimmed = renameValue.trim();
+    if (!trimmed || trimmed === template.name) { onCancelRename(); return; }
+    setSavingRename(true);
+    try {
+      await onRename(trimmed);
+    } finally {
+      setSavingRename(false);
+    }
+  }
+
+  if (isRenaming) {
     return (
-      <div className="list-row flex-col gap-2">
-        <p className="text-sm font-semibold">Delete &ldquo;{template.name}&rdquo;?</p>
-        <p className="text-caption">This cannot be undone.</p>
-        <div className="flex gap-2 mt-1">
+      <div className="list-row flex-col items-stretch gap-2">
+        <input
+          autoFocus
+          value={renameValue}
+          onChange={(event) => setRenameValue(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') void handleRenameSave();
+            if (event.key === 'Escape') onCancelRename();
+          }}
+          className="h-10 w-full rounded-2xl border border-white/10 bg-white/[0.06] px-3 text-sm text-foreground outline-none focus:border-primary/50"
+        />
+        <div className="flex gap-2">
           <button
-            onClick={onConfirmDelete}
-            disabled={isDeleting}
-            className="flex h-9 items-center gap-1.5 rounded-2xl bg-destructive px-3 text-xs font-semibold text-destructive-foreground disabled:opacity-60"
+            onClick={() => void handleRenameSave()}
+            disabled={savingRename || !renameValue.trim()}
+            className="premium-button px-3 py-2 text-xs disabled:opacity-60"
           >
-            {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-            Delete
+            {savingRename && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            Save
           </button>
           <button
-            onClick={onCancelDelete}
-            disabled={isDeleting}
+            onClick={onCancelRename}
+            disabled={savingRename}
             className="premium-button-secondary px-3 py-2 text-xs"
           >
             Cancel
@@ -215,6 +237,10 @@ function TemplateRow({
             {template.is_pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
             {template.is_pinned ? 'Unpin' : 'Pin'}
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={onRequestRename} className="gap-2">
+            <Pencil className="h-4 w-4" />
+            Rename
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={onDuplicate} className="gap-2">
             <Copy className="h-4 w-4" />
             Duplicate
@@ -239,10 +265,12 @@ export default function TemplatesPage() {
     deleteTemplate,
     duplicateTemplate,
     togglePin,
+    updateTemplateName,
   } = useTemplates();
   const [autoOpenCreate, setAutoOpenCreate] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -291,6 +319,15 @@ export default function TemplatesPage() {
     }
   }
 
+  async function handleRename(id: string, name: string) {
+    try {
+      await updateTemplateName(id, name);
+      setRenamingId(null);
+    } catch {
+      toast.error('Failed to rename workout');
+    }
+  }
+
   return (
     <div className="page-shell">
       <div className="page-content py-5 md:py-7 space-y-5">
@@ -324,11 +361,11 @@ export default function TemplatesPage() {
                     <TemplateRow
                       key={template.id}
                       template={template}
-                      isConfirmingDelete={confirmDeleteId === template.id}
-                      isDeleting={deleting}
+                      isRenaming={renamingId === template.id}
                       onRequestDelete={() => setConfirmDeleteId(template.id)}
-                      onConfirmDelete={() => void handleDelete(template.id)}
-                      onCancelDelete={() => setConfirmDeleteId(null)}
+                      onRequestRename={() => setRenamingId(template.id)}
+                      onRename={(name) => handleRename(template.id, name)}
+                      onCancelRename={() => setRenamingId(null)}
                       onDuplicate={() => void handleDuplicate(template.id)}
                       onTogglePin={() => void handleTogglePin(template.id)}
                     />
@@ -343,7 +380,7 @@ export default function TemplatesPage() {
               {templates.length === 0 ? (
                 <div className="content-card py-10 text-center">
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[oklch(0.75_0.18_55/0.15)]">
-                    <Dumbbell className="h-6 w-6 text-primary" />
+                    <ClipboardList className="h-6 w-6 text-primary" />
                   </div>
                   <p className="mt-2 text-card-title">No workouts yet</p>
                   <p className="mt-1 text-sm text-muted-foreground">Tap + New above to create your first workout.</p>
@@ -355,11 +392,11 @@ export default function TemplatesPage() {
                     <TemplateRow
                       key={template.id}
                       template={template}
-                      isConfirmingDelete={confirmDeleteId === template.id}
-                      isDeleting={deleting}
+                      isRenaming={renamingId === template.id}
                       onRequestDelete={() => setConfirmDeleteId(template.id)}
-                      onConfirmDelete={() => void handleDelete(template.id)}
-                      onCancelDelete={() => setConfirmDeleteId(null)}
+                      onRequestRename={() => setRenamingId(template.id)}
+                      onRename={(name) => handleRename(template.id, name)}
+                      onCancelRename={() => setRenamingId(null)}
                       onDuplicate={() => void handleDuplicate(template.id)}
                       onTogglePin={() => void handleTogglePin(template.id)}
                     />
@@ -380,6 +417,36 @@ export default function TemplatesPage() {
           </div>
         )}
       </div>
+
+      {/* Delete confirmation — modal, matching the workout-history pattern */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-white/[0.10] bg-[oklch(0.16_0.015_260)] p-5 space-y-4">
+            <h3 className="font-display text-lg font-bold">Delete workout?</h3>
+            <p className="text-sm text-muted-foreground">
+              &ldquo;{templates.find((t) => t.id === confirmDeleteId)?.name ?? 'This workout'}&rdquo; and its
+              exercises will be permanently deleted. This cannot be undone.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => void handleDelete(confirmDeleteId)}
+                disabled={deleting}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-500/90 text-sm font-semibold text-white transition-all duration-150 hover:bg-red-500 active:scale-[0.98] disabled:opacity-60"
+              >
+                {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                Delete Workout
+              </button>
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                disabled={deleting}
+                className="premium-button-secondary w-full justify-center disabled:opacity-60"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Trophy, Award, CheckCircle2 } from 'lucide-react';
+import { Trophy, Award, CheckCircle2, Share2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { toast } from 'sonner';
 import { useCompletionStore, recoverCompletionResult } from '@/store/completion-store';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import type { CompletionPR, CompletionSummary } from '@/store/completion-store';
@@ -20,7 +21,7 @@ const PR_LABEL: Record<CompletionPR['record_type'], string> = {
 const PR_VALUE_LABEL: Record<CompletionPR['record_type'], string> = {
   best_weight:         'kg',
   best_reps_at_weight: 'reps',
-  best_e1rm:           'kg e1RM',
+  best_e1rm:           'kg est. 1RM',
   best_volume:         'kg volume',
 };
 
@@ -133,6 +134,34 @@ export default function WorkoutCompletePage() {
     router.replace('/');
   }
 
+  function buildShareText(): string {
+    const lines = ['💪 Workout complete — LiftOS'];
+    lines.push(
+      `⏱ ${formatDuration(summary.duration_seconds)} · ${summary.total_sets} set${summary.total_sets === 1 ? '' : 's'} · ${Math.round(summary.total_volume_kg).toLocaleString()} kg`,
+    );
+    if (newPrs.length > 0) {
+      lines.push('', '🏆 New PRs:');
+      for (const pr of newPrs) {
+        lines.push(`• ${pr.exercise_name} — ${pr.record_value} ${PR_VALUE_LABEL[pr.record_type]}`);
+      }
+    }
+    return lines.join('\n');
+  }
+
+  async function handleShare() {
+    const text = buildShareText();
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share({ title: 'LiftOS workout', text });
+      } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        toast.success('Summary copied to clipboard');
+      }
+    } catch {
+      // User dismissed the share sheet — nothing to do.
+    }
+  }
+
   return (
     <div className="relative flex min-h-[100dvh] flex-col items-center bg-background px-4 pb-8 pt-8">
       <div className="pointer-events-none absolute inset-0" style={{ background: hasPrs ? 'radial-gradient(circle at 50% 15%, oklch(0.80 0.16 85 / 0.06), transparent 50%)' : 'radial-gradient(circle at 50% 15%, oklch(0.75 0.18 55 / 0.05), transparent 50%)' }} />
@@ -162,7 +191,7 @@ export default function WorkoutCompletePage() {
       {/* Stats strip */}
       <div className="mt-8 grid w-full max-w-sm grid-cols-3 gap-4">
         <StatCard label="Duration" staticValue={formatDuration(summary.duration_seconds)} />
-        <StatCard label="Sets" value={summary.total_sets} />
+        <StatCard label={summary.total_sets === 1 ? 'Set' : 'Sets'} value={summary.total_sets} />
         <StatCard label="Volume" value={Math.round(summary.total_volume_kg)} suffix="kg" delta={volumeDelta} />
       </div>
 
@@ -195,8 +224,15 @@ export default function WorkoutCompletePage() {
         </div>
       )}
 
-      {/* Done button */}
-      <div className="mt-auto w-full max-w-sm pt-10">
+      {/* Actions */}
+      <div className="mt-auto w-full max-w-sm space-y-2.5 pt-10">
+        <button
+          onClick={() => void handleShare()}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.12] bg-white/[0.06] text-sm font-semibold text-foreground backdrop-blur-xl transition-all duration-150 hover:bg-white/[0.10] active:scale-[0.98]"
+        >
+          <Share2 className="h-4 w-4" />
+          Share
+        </button>
         <button
           onClick={handleDone}
           className="flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold text-primary-foreground shadow-[0_8px_24px_-8px_oklch(0.75_0.18_55/0.35)] transition-all duration-150 hover:brightness-110 hover:shadow-[0_12px_30px_-8px_oklch(0.75_0.18_55/0.45)] active:scale-[0.98] active:brightness-95"
@@ -246,7 +282,7 @@ function StatCard({
       <span className="font-display text-2xl font-bold tabular-nums">
         {staticValue !== undefined
           ? staticValue
-          : <><AnimatedNumber value={value ?? 0} />{suffix}</>}
+          : <><AnimatedNumber value={value ?? 0} />{suffix ? ` ${suffix}` : ''}</>}
       </span>
       {hasDelta && (
         <span className={`mt-0.5 text-xs font-semibold ${deltaColor}`}>

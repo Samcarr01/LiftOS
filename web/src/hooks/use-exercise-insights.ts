@@ -12,6 +12,7 @@ export interface ExerciseMetadata {
   name: string;
   muscle_groups: string[];
   tracking_schema: TrackingSchema;
+  notes: string | null;
 }
 
 export interface ExercisePR {
@@ -62,7 +63,7 @@ export function useExerciseInsights(exerciseId: string) {
       // 1. Exercise metadata
       const { data: exerciseRow, error: exErr } = await supabase
         .from('exercises')
-        .select('id, name, muscle_groups, tracking_schema')
+        .select('id, name, muscle_groups, tracking_schema, notes')
         .eq('id', exerciseId)
         .single();
 
@@ -82,6 +83,7 @@ export function useExerciseInsights(exerciseId: string) {
         name: exerciseRow.name,
         muscle_groups: exerciseRow.muscle_groups as string[],
         tracking_schema: schemaParsed.data,
+        notes: (exerciseRow as { notes: string | null }).notes ?? null,
       };
 
       // 2-5. Fetch remaining data in parallel (no dependency on each other)

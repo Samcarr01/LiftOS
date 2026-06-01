@@ -168,8 +168,8 @@ export function ExerciseSelector({
               onClick={() => setMode(mode === 'create' ? 'browse' : 'create')}
               className="ml-auto flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/20"
             >
-              <Plus className="h-3.5 w-3.5" />
-              {mode === 'create' ? 'Browse Exercises' : 'Create Your Own'}
+              {mode === 'create' ? <Search className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+              {mode === 'create' ? 'Pick Existing' : 'Create Your Own'}
             </button>
           </div>
         </SheetHeader>
@@ -190,14 +190,6 @@ export function ExerciseSelector({
               </button>
             </div>
 
-            <div className="px-4 pt-4">
-              <SetCountPicker
-                value={defaultSetCount}
-                onChange={setDefaultSetCount}
-                description={`The next exercise you add to this workout will start with ${defaultSetCount} set${defaultSetCount !== 1 ? 's' : ''}.`}
-              />
-            </div>
-
             {/* Search */}
             <div className="px-4 py-3">
               <div className="relative">
@@ -212,24 +204,28 @@ export function ExerciseSelector({
             </div>
 
             {/* Muscle filter chips */}
-            <div className="flex gap-1.5 overflow-x-auto px-4 pb-3 no-scrollbar">
-              <button
-                onClick={() => setMuscleFilter(null)}
-                className={cn('shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors',
-                  muscleFilter === null ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80')}
-              >
-                All
-              </button>
-              {ALL_MUSCLES.map((m) => (
+            <div className="relative">
+              <div className="flex gap-1.5 overflow-x-auto px-4 pb-3 no-scrollbar">
                 <button
-                  key={m}
-                  onClick={() => setMuscleFilter(muscleFilter === m ? null : m)}
+                  onClick={() => setMuscleFilter(null)}
                   className={cn('shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors',
-                    muscleFilter === m ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80')}
+                    muscleFilter === null ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80')}
                 >
-                  {m}
+                  All
                 </button>
-              ))}
+                {ALL_MUSCLES.map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMuscleFilter(muscleFilter === m ? null : m)}
+                    className={cn('shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                      muscleFilter === m ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80')}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+              {/* Right-edge fade hints there are more chips to scroll to */}
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent" />
             </div>
 
             {/* Exercise list */}

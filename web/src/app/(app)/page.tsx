@@ -32,7 +32,10 @@ import { LevelChip } from '@/components/home/level-chip';
 function greeting(name: string | null): string {
   const hour = new Date().getHours();
   const time = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-  return name ? `Good ${time}, ${name.split(' ')[0]}` : `Good ${time}`;
+  if (!name) return `Good ${time}`;
+  const first = name.split(' ')[0];
+  const titled = first.charAt(0).toUpperCase() + first.slice(1);
+  return `Good ${time}, ${titled}`;
 }
 
 function formatToday(): string {
@@ -309,7 +312,7 @@ export default function HomePage() {
               </>
             ) : (
               <>
-                <h1 className="page-header-title">{greeting(data?.displayName ?? null)}</h1>
+                <h1 className="page-header-title normal-case">{greeting(data?.displayName ?? null)}</h1>
                 <p className="mt-0.5 text-caption">{formatToday()}</p>
               </>
             )}

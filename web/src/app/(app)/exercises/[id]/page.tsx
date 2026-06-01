@@ -13,7 +13,9 @@ import {
   Calendar,
   ChevronDown,
   ChevronUp,
+  Info,
   Minus,
+  Play,
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
@@ -134,6 +136,34 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
             </div>
           </div>
         </div>
+
+        {/* Form cues / notes */}
+        {exercise.notes && (
+          <div className="content-card flex items-start gap-3">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-semibold">Notes</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">{exercise.notes}</p>
+            </div>
+          </div>
+        )}
+
+        {/* No-data hero — a fresh exercise has nothing else to show yet */}
+        {totalSessions === 0 && (
+          <div className="content-card flex flex-col items-center gap-3 py-10 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <BarChart3 className="h-6 w-6" />
+            </div>
+            <p className="text-card-title">No data yet</p>
+            <p className="max-w-xs text-sm text-muted-foreground">
+              Complete a workout with {exercise.name} to see your stats, personal records, and progress trends here.
+            </p>
+            <button onClick={() => router.push('/')} className="premium-button mt-1">
+              <Play className="h-4 w-4" />
+              Start a workout
+            </button>
+          </div>
+        )}
 
         {/* Quick Stats */}
         {summary && (
@@ -267,6 +297,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
         )}
 
         {/* Charts */}
+        {totalSessions > 0 && (
         <div className="content-card">
           <button
             onClick={() => setShowCharts((v) => !v)}
@@ -304,7 +335,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
                 ) : progressLoading ? (
                   <Skeleton className="h-48 w-full rounded-xl" />
                 ) : points.length === 0 ? (
-                  <ChartEmptyState message="No chart data yet." />
+                  <ChartEmptyState message={`Log a few sessions of ${exercise.name} to see your progress here.`} />
                 ) : (
                   <div className="space-y-4">
                     <div>
@@ -325,6 +356,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
             </div>
           )}
         </div>
+        )}
 
         {/* Recent Sessions */}
         {recentSessions.length > 0 && (

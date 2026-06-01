@@ -32,7 +32,7 @@ const PR_LABEL: Record<string, string> = {
 function formatPrValue(recordType: string, recordValue: number): string {
   if (recordType === 'best_weight') return `${recordValue}kg`;
   if (recordType === 'best_reps_at_weight') return `${recordValue} reps`;
-  if (recordType === 'best_e1rm') return `${recordValue}kg e1RM`;
+  if (recordType === 'best_e1rm') return `${recordValue}kg est. 1RM`;
   if (recordType === 'best_volume') return `${recordValue}kg total`;
   return String(recordValue);
 }
@@ -58,7 +58,7 @@ function SetLine({
         </p>
       </div>
       {!set.is_completed && (
-        <span className="rounded-full border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-2 py-0.5 text-xs font-medium text-[oklch(0.82_0.15_60)]">Open</span>
+        <span className="rounded-full border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-2 py-0.5 text-xs font-medium text-[oklch(0.82_0.15_60)]">Not logged</span>
       )}
     </div>
   );
@@ -239,7 +239,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
               </div>
               <div className="stat-card">
                 <p className="text-stat">{detail.total_sets}</p>
-                <p className="text-caption">Sets</p>
+                <p className="text-caption">{detail.total_sets === 1 ? 'Set' : 'Sets'}</p>
               </div>
               <div className="stat-card">
                 <p className="text-stat">

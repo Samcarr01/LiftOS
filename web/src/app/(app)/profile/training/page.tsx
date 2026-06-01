@@ -153,7 +153,9 @@ export default function TrainingPreferencesPage() {
                   key={level}
                   onClick={() => setExperience(level)}
                   className={`h-7 rounded-md px-2.5 text-xs font-semibold capitalize transition-colors ${
-                    experience === level ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                    experience === level
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground/70 hover:bg-white/[0.06] hover:text-foreground'
                   }`}
                 >
                   {level}
@@ -216,7 +218,7 @@ export default function TrainingPreferencesPage() {
             <div className="min-w-0 flex-1">
               <div className="text-sm font-semibold">Heaviest set first</div>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Reorder prefilled sets by weight, then reps. Only affects what shows when you start a new workout — never your saved history.
+                Reorder auto-filled sets by weight, then reps. Only affects what shows when you start a new workout — never your saved history.
               </p>
             </div>
             <button

@@ -34,6 +34,7 @@ export function LevelChip({ sessions, prs, weeklyTarget }: LevelChipProps) {
   }, [sessions, prs, weeklyTarget]);
 
   const accent = `oklch(${tier.color})`;
+  const remaining = Math.max(0, nextLevelAt - intoLevel);
 
   return (
     <Link
@@ -57,9 +58,9 @@ export function LevelChip({ sessions, prs, weeklyTarget }: LevelChipProps) {
             >
               {tier.name}
             </span>
-            <span className="text-xs text-muted-foreground tabular-nums">L{level}</span>
-            <span className="ml-auto text-xs text-muted-foreground/70 tabular-nums">
-              {intoLevel}/{nextLevelAt} XP
+            <span className="text-xs text-muted-foreground tabular-nums">Level {level}</span>
+            <span className="ml-auto text-xs font-medium tabular-nums" style={{ color: accent }}>
+              {remaining.toLocaleString()} XP to go
             </span>
           </div>
 
@@ -81,10 +82,9 @@ export function LevelChip({ sessions, prs, weeklyTarget }: LevelChipProps) {
         />
       </div>
 
-      <div className="relative mt-2 flex justify-end">
-        <span className="text-[10px] text-muted-foreground/40 tabular-nums">
-          {total.toLocaleString()} XP total
-        </span>
+      <div className="relative mt-2 flex justify-between text-[10px] text-muted-foreground/50 tabular-nums">
+        <span>Level {level} → {level + 1}</span>
+        <span>{total.toLocaleString()} XP total</span>
       </div>
     </Link>
   );

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { User, Session } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
+import { mapAuthError } from '@/lib/auth/errors';
 
 interface AuthState {
   user: User | null;
@@ -31,13 +32,13 @@ export const useAuthStore = create<AuthState & AuthActions>()((set) => ({
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
-    return { error: error?.message ?? null };
+    return { error: mapAuthError(error) };
   },
 
   signInWithEmail: async (email, password) => {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
+    return { error: mapAuthError(error) };
   },
 
   signUp: async (email, password) => {
@@ -49,7 +50,7 @@ export const useAuthStore = create<AuthState & AuthActions>()((set) => ({
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
-    return { error: error?.message ?? null };
+    return { error: mapAuthError(error) };
   },
 
   signOut: async () => {
@@ -63,7 +64,7 @@ export const useAuthStore = create<AuthState & AuthActions>()((set) => ({
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback`,
     });
-    return { error: error?.message ?? null };
+    return { error: mapAuthError(error) };
   },
 
   initialize: () => {

@@ -235,16 +235,16 @@ export const ExerciseCard = memo(function ExerciseCard({
         <button
           type="button"
           onClick={handleAddSet}
-          className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-2xl border border-white/10 text-sm font-semibold text-muted-foreground hover:text-foreground"
+          className="flex h-10 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl border border-white/10 text-sm font-semibold text-muted-foreground hover:text-foreground"
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="h-3.5 w-3.5 shrink-0" />
           Add Set
         </button>
 
         <button
           type="button"
           onClick={() => setNotesOpen((value) => !value)}
-          className="flex h-10 items-center justify-center gap-1.5 rounded-2xl border border-white/10 px-3 text-sm font-semibold text-muted-foreground hover:text-foreground"
+          className="flex h-10 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl border border-white/10 px-3 text-sm font-semibold text-muted-foreground hover:text-foreground"
         >
           {notesOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           Notes

@@ -146,7 +146,7 @@ export default function HelpPage() {
               <p>
                 Tap <span className="font-medium text-foreground">Start Workout</span> from
                 Home or the Templates tab. Pick a template and your workout opens with sets
-                prefilled from last time.
+                auto-filled from last time.
               </p>
             </div>
             <div>
