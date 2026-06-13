@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Check, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Check, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { BackButton } from '@/components/ui/back-button';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
@@ -50,16 +50,10 @@ export default function ChangePasswordPage() {
   return (
     <div className="page-shell">
       <div className="page-content py-5 md:py-7 space-y-5">
-        <Link
-          href="/profile"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Profile
-        </Link>
+        <BackButton href="/profile" label="Back to profile" />
 
         <div>
-          <h1 className="font-display text-2xl font-bold">Change password</h1>
+          <h1 className="font-display text-2xl font-bold">Change Password</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             You&apos;ll need your current password to confirm it&apos;s you.
           </p>

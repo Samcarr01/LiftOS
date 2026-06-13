@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { BarChart3, Check, Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { BarChart3, Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import { ExerciseSelector } from '@/components/exercise-selector';
+import { ExerciseForm, type ExerciseFormValues } from '@/components/exercise/exercise-form';
 import { useExercises } from '@/hooks/use-exercises';
 import {
   describeTrackingSchema,
@@ -16,13 +17,10 @@ import {
 } from '@/lib/workout/formatting';
 import {
   TRACKING_PRESETS,
-  TRACKING_PRESET_LABELS,
   type TrackingPresetKey,
 } from '@/types/tracking';
 import type { ExerciseWithSchema } from '@/types/app';
-import { cn } from '@/lib/utils';
 
-const ALL_MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Quads', 'Hamstrings', 'Glutes', 'Core', 'Calves', 'Cardio', 'Forearms'];
 const PRESET_KEYS = Object.keys(TRACKING_PRESETS) as TrackingPresetKey[];
 
 function detectPresetKey(exercise: ExerciseWithSchema): TrackingPresetKey | null {
@@ -45,140 +43,38 @@ function EditExerciseSheet({
   onClose: () => void;
   onSave: (id: string, data: { name?: string; muscle_groups?: string[]; tracking_schema?: { fields: { key: string; label: string; type: 'number' | 'text'; optional: boolean; unit?: string }[] }; notes?: string | null }) => Promise<void>;
 }) {
-  const [name, setName] = useState(exercise.name);
-  const [muscles, setMuscles] = useState<string[]>(exercise.muscle_groups);
-  const [preset, setPreset] = useState<TrackingPresetKey>(detectPresetKey(exercise) ?? 'WEIGHT_REPS');
-  const [notes, setNotes] = useState(exercise.notes ?? '');
-  const [saving, setSaving] = useState(false);
-
-  function toggleMuscle(m: string) {
-    setMuscles((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]);
-  }
-
-  async function handleSave() {
-    if (!name.trim()) { toast.error('Name is required'); return; }
-    setSaving(true);
+  async function handleSubmit(values: ExerciseFormValues) {
     try {
       await onSave(exercise.id, {
-        name: name.trim(),
-        muscle_groups: muscles,
-        tracking_schema: TRACKING_PRESETS[preset],
-        notes: notes.trim() || null,
+        name: values.name,
+        muscle_groups: values.muscleGroups,
+        tracking_schema: TRACKING_PRESETS[values.preset],
+        notes: values.notes || null,
       });
       toast.success('Exercise updated');
       onClose();
     } catch (err) {
       toast.error((err as { message?: string }).message ?? 'Failed to update');
-    } finally {
-      setSaving(false);
     }
   }
 
   return (
-    <Sheet open={open} onOpenChange={(nextOpen) => !nextOpen && !saving && onClose()}>
+    <Sheet open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <SheetContent side="bottom" className="flex !h-[100dvh] flex-col p-0">
         <SheetHeader className="border-b border-border px-4 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))]">
           <SheetTitle>Edit Exercise</SheetTitle>
         </SheetHeader>
 
-        <div className="flex flex-1 flex-col overflow-y-auto px-5 pb-8 pt-4 gap-6">
-          {/* Name */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold">Exercise name</label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="h-12 rounded-xl border-white/10 bg-white/[0.06] px-4 text-base"
-              autoFocus
-            />
-          </div>
-
-          {/* Muscle groups */}
-          <div className="space-y-2.5">
-            <label className="text-sm font-semibold">
-              Muscle groups
-              {muscles.length > 0 && (
-                <span className="ml-2 text-xs font-normal text-muted-foreground">
-                  {muscles.length} selected
-                </span>
-              )}
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {ALL_MUSCLES.map((m) => {
-                const selected = muscles.includes(m);
-                return (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => toggleMuscle(m)}
-                    className={cn(
-                      'flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition-all duration-150',
-                      selected
-                        ? 'bg-primary text-primary-foreground shadow-[0_0_12px_-3px_oklch(0.75_0.18_55/0.4)]'
-                        : 'border border-white/[0.08] bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] hover:text-foreground',
-                    )}
-                  >
-                    {selected && <Check className="h-3.5 w-3.5" />}
-                    {m}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Tracking type */}
-          <div className="space-y-2.5">
-            <label className="text-sm font-semibold">What do you track?</label>
-            <div className="grid grid-cols-2 gap-2.5">
-              {PRESET_KEYS.map((key) => {
-                const selected = preset === key;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setPreset(key)}
-                    className={cn(
-                      'relative flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left text-sm font-medium transition-all duration-150',
-                      selected
-                        ? 'border-primary/40 bg-primary/10 text-primary shadow-[0_0_16px_-4px_oklch(0.75_0.18_55/0.3)]'
-                        : 'border-white/[0.08] bg-white/[0.04] text-foreground hover:border-white/[0.14] hover:bg-white/[0.07]',
-                    )}
-                  >
-                    {selected && (
-                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary">
-                        <Check className="h-3 w-3 text-primary-foreground" />
-                      </div>
-                    )}
-                    <span>{TRACKING_PRESET_LABELS[key]}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold">Notes <span className="font-normal text-muted-foreground">(optional)</span></label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Form cues, equipment notes…"
-              rows={2}
-              className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus-visible:outline-none"
-            />
-          </div>
-
-          {/* Save button */}
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving || !name.trim()}
-            className="premium-button mt-auto justify-center disabled:opacity-50"
-          >
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Save Changes
-          </button>
-        </div>
+        <ExerciseForm
+          initialName={exercise.name}
+          initialMuscleGroups={exercise.muscle_groups}
+          initialPreset={detectPresetKey(exercise) ?? 'WEIGHT_REPS'}
+          initialNotes={exercise.notes ?? ''}
+          allowLegacyTracking
+          submitLabel="Save Changes"
+          onSubmit={handleSubmit}
+          autoFocus
+        />
       </SheetContent>
     </Sheet>
   );

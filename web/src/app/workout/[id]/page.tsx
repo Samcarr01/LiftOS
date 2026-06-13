@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, Loader2, Plus, Sparkles, Timer } from 'lucide-react';
+import { Loader2, Plus, Sparkles, Timer } from 'lucide-react';
+import { BackButton } from '@/components/ui/back-button';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { ExerciseCard } from '@/components/workout/exercise-card';
@@ -119,13 +120,7 @@ export default function WorkoutPage() {
       <div className="page-content py-4 md:py-6">
         <header className="sticky top-0 z-30 -mx-4 border-b border-white/[0.06] bg-white/[0.10] px-4 py-3 backdrop-blur-2xl">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowLeaveDialog(true)}
-              aria-label="Leave workout"
-              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
+            <BackButton onClick={() => setShowLeaveDialog(true)} label="Leave workout" />
 
             <div className="min-w-0 flex-1">
               <h1 className="truncate font-display text-base font-bold">{templateName}</h1>

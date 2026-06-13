@@ -16,7 +16,6 @@ import {
   FolderPlus,
   Library,
   Loader2,
-  MoreHorizontal,
   Pencil,
   Pin,
   PinOff,
@@ -26,15 +25,46 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStartWorkout } from '@/hooks/use-start-workout';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useTemplates, type TemplateWithCount } from '@/hooks/use-templates';
 import { formatDistanceToNow } from '@/lib/format-date';
+
+/**
+ * Opens an action menu on long-press (touch) or right-click (pointer), while
+ * leaving a normal tap free to navigate. `consumed()` reports whether the last
+ * interaction was a long-press so the click handler can skip navigation.
+ */
+function useLongPress(onLongPress: () => void, ms = 450) {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const triggered = useRef(false);
+
+  function start() {
+    triggered.current = false;
+    timer.current = setTimeout(() => {
+      triggered.current = true;
+      onLongPress();
+    }, ms);
+  }
+  function clear() {
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+  }
+
+  return {
+    handlers: {
+      onTouchStart: start,
+      onTouchEnd: clear,
+      onTouchMove: clear,
+      onContextMenu: (event: MouseEvent) => {
+        event.preventDefault();
+        triggered.current = true;
+        onLongPress();
+      },
+    },
+    consumed: () => triggered.current,
+  };
+}
 
 function CreateTemplateRow({
   onCreate,
@@ -125,26 +155,22 @@ function CreateTemplateRow({
 function TemplateRow({
   template,
   isRenaming,
-  onRequestDelete,
-  onRequestRename,
   onRename,
   onCancelRename,
-  onDuplicate,
-  onTogglePin,
+  onOpenActions,
 }: {
   template: TemplateWithCount;
   isRenaming: boolean;
-  onRequestDelete: () => void;
-  onRequestRename: () => void;
   onRename: (name: string) => Promise<void>;
   onCancelRename: () => void;
-  onDuplicate: () => void;
-  onTogglePin: () => void;
+  onOpenActions: () => void;
 }) {
+  const router = useRouter();
   const { startWorkout } = useStartWorkout();
   const [starting, setStarting] = useState(false);
   const [renameValue, setRenameValue] = useState(template.name);
   const [savingRename, setSavingRename] = useState(false);
+  const longPress = useLongPress(onOpenActions);
 
   async function handleStart(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -169,7 +195,7 @@ function TemplateRow({
 
   if (isRenaming) {
     return (
-      <div className="list-row flex-col items-stretch gap-2">
+      <div className="list-row flex-col items-stretch gap-2 bg-white/[0.07]">
         <input
           autoFocus
           value={renameValue}
@@ -202,8 +228,16 @@ function TemplateRow({
   }
 
   return (
-    <div className="list-row items-center gap-3">
-      <Link href={`/templates/${template.id}`} className="min-w-0 flex-1">
+    <div className="list-row items-center gap-3 bg-white/[0.07]">
+      {/* Long-press / right-click the card to open actions; tap opens the editor. */}
+      <button
+        {...longPress.handlers}
+        onClick={() => {
+          if (longPress.consumed()) return;
+          router.push(`/templates/${template.id}`);
+        }}
+        className="min-w-0 flex-1 text-left"
+      >
         <div className="flex items-center gap-2">
           <p className="truncate text-card-title">{template.name}</p>
           {template.is_pinned && (
@@ -216,7 +250,7 @@ function TemplateRow({
             ? ` · ${formatDistanceToNow(template.last_used_at)}`
             : ''}
         </p>
-      </Link>
+      </button>
 
       <button
         onClick={handleStart}
@@ -227,31 +261,6 @@ function TemplateRow({
         {starting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
         Start
       </button>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger aria-label="More options" className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-white/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-          <MoreHorizontal className="h-4 w-4" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem onClick={onTogglePin} className="gap-2">
-            {template.is_pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
-            {template.is_pinned ? 'Unpin' : 'Pin'}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={onRequestRename} className="gap-2">
-            <Pencil className="h-4 w-4" />
-            Rename
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={onDuplicate} className="gap-2">
-            <Copy className="h-4 w-4" />
-            Duplicate
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onRequestDelete} className="gap-2 text-destructive focus:text-destructive">
-            <Trash2 className="h-4 w-4" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
     </div>
   );
 }
@@ -271,6 +280,7 @@ export default function TemplatesPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [actionsFor, setActionsFor] = useState<TemplateWithCount | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -333,7 +343,7 @@ export default function TemplatesPage() {
       <div className="page-content py-5 md:py-7 space-y-5">
         {/* Header */}
         <div className="page-header">
-          <h1 className="page-header-title">Templates</h1>
+          <h1 className="page-header-title">Workouts</h1>
           <button
             onClick={() => setAutoOpenCreate(true)}
             className="flex h-9 cursor-pointer items-center gap-1.5 rounded-2xl bg-primary px-4 text-xs font-semibold text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
@@ -351,23 +361,20 @@ export default function TemplatesPage() {
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-6">
             {/* Pinned */}
             {pinned.length > 0 && (
               <section>
-                <h2 className="section-title mb-2">Pinned</h2>
+                <h2 className="mb-2.5 font-display text-xl font-bold">Pinned</h2>
                 <div className="space-y-2">
                   {pinned.map((template) => (
                     <TemplateRow
                       key={template.id}
                       template={template}
                       isRenaming={renamingId === template.id}
-                      onRequestDelete={() => setConfirmDeleteId(template.id)}
-                      onRequestRename={() => setRenamingId(template.id)}
                       onRename={(name) => handleRename(template.id, name)}
                       onCancelRename={() => setRenamingId(null)}
-                      onDuplicate={() => void handleDuplicate(template.id)}
-                      onTogglePin={() => void handleTogglePin(template.id)}
+                      onOpenActions={() => setActionsFor(template)}
                     />
                   ))}
                 </div>
@@ -376,7 +383,7 @@ export default function TemplatesPage() {
 
             {/* All Workouts */}
             <section>
-              <h2 className="section-title mb-2">{pinned.length > 0 ? 'All Templates' : 'Saved Templates'}</h2>
+              <h2 className="mb-2.5 font-display text-xl font-bold">{pinned.length > 0 ? 'All Workouts' : 'Saved Workouts'}</h2>
               {templates.length === 0 ? (
                 <div className="content-card py-10 text-center">
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[oklch(0.75_0.18_55/0.15)]">
@@ -393,15 +400,15 @@ export default function TemplatesPage() {
                       key={template.id}
                       template={template}
                       isRenaming={renamingId === template.id}
-                      onRequestDelete={() => setConfirmDeleteId(template.id)}
-                      onRequestRename={() => setRenamingId(template.id)}
                       onRename={(name) => handleRename(template.id, name)}
                       onCancelRename={() => setRenamingId(null)}
-                      onDuplicate={() => void handleDuplicate(template.id)}
-                      onTogglePin={() => void handleTogglePin(template.id)}
+                      onOpenActions={() => setActionsFor(template)}
                     />
                   ))}
                 </div>
+              )}
+              {templates.length > 0 && (
+                <p className="mt-2.5 px-1 text-xs text-muted-foreground">Long-press a workout for more options.</p>
               )}
             </section>
 
@@ -417,6 +424,51 @@ export default function TemplatesPage() {
           </div>
         )}
       </div>
+
+      {/* Actions sheet — opened via long-press / right-click */}
+      {actionsFor && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+          onClick={() => setActionsFor(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-white/[0.10] bg-[oklch(0.16_0.015_260)] p-2"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className="truncate px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {actionsFor.name}
+            </p>
+            <button
+              onClick={() => { void handleTogglePin(actionsFor.id); setActionsFor(null); }}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-white/[0.06]"
+            >
+              {actionsFor.is_pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+              {actionsFor.is_pinned ? 'Unpin' : 'Pin'}
+            </button>
+            <button
+              onClick={() => { setRenamingId(actionsFor.id); setActionsFor(null); }}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-white/[0.06]"
+            >
+              <Pencil className="h-4 w-4" />
+              Rename
+            </button>
+            <button
+              onClick={() => { void handleDuplicate(actionsFor.id); setActionsFor(null); }}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-white/[0.06]"
+            >
+              <Copy className="h-4 w-4" />
+              Duplicate
+            </button>
+            <button
+              onClick={() => { setConfirmDeleteId(actionsFor.id); setActionsFor(null); }}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Delete confirmation — modal, matching the workout-history pattern */}
       {confirmDeleteId && (

@@ -186,7 +186,7 @@
   }
 
   .page-header-title {
-    @apply font-display text-3xl font-bold uppercase tracking-tight text-foreground;
+    @apply font-display text-3xl font-bold tracking-tight text-foreground;
   }
 
   /* ── Glass cards & surfaces ────────────────────────── */
@@ -343,9 +343,9 @@
 
   /* ── Typography system ──────────────────────────────────────────────────
      Capitalisation hierarchy (apply via these classes, don't hardcode case):
-       • Primary nav destinations (Home, Templates, Profile, Exercises,
-         History, Progress) → `page-header-title` / `text-page-title` (UPPERCASE).
-       • Sub-pages (Training, Levels, Help, Change password) → Title Case via
+       • Primary nav destinations (Home, Workouts, Profile, Exercises,
+         History, Progress) → `page-header-title` / `text-page-title` (Title Case).
+       • Sub-pages (Training, Levels, Help, Change Password) → Title Case via
          `font-display text-2xl font-bold` (no forced case).
        • In-page section headers → `section-title` (Sentence/Title case, no
          forced transform).
@@ -353,7 +353,7 @@
      ──────────────────────────────────────────────────────────────────────── */
 
   .text-page-title {
-    @apply font-display text-3xl font-bold uppercase tracking-tight;
+    @apply font-display text-3xl font-bold tracking-tight;
   }
 
   .text-section-heading {

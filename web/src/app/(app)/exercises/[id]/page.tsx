@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
-  ArrowLeft,
   ArrowUpRight,
   Award,
   BarChart3,
@@ -20,6 +19,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { BackButton } from '@/components/ui/back-button';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import { ChartEmptyState } from '@/components/progress/chart-empty-state';
 import { useExerciseInsights } from '@/hooks/use-exercise-insights';
@@ -101,9 +101,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
       <div className="page-shell">
         <div className="page-content space-y-5 py-5 md:py-7">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.back()} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4" />
-            </button>
+            <BackButton />
             <h1 className="font-display text-lg font-bold">Exercise</h1>
           </div>
           <p className="text-sm text-destructive">{error ?? 'Not found'}</p>
@@ -120,13 +118,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
       <div className="page-content space-y-5 py-5 md:py-7">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            aria-label="Go back"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-xl text-muted-foreground hover:bg-white/10 hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
+          <BackButton />
           <div className="min-w-0 flex-1">
             <h1 className="truncate font-display text-lg font-bold">{exercise.name}</h1>
             <div className="mt-1 flex flex-wrap gap-1">

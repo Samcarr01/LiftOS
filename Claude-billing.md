@@ -1,162 +1,172 @@
-# Claude-billing – Freemium Monetisation & Subscription Gating
+# Claude-billing – Subscription Monetisation
 
-This module defines the free vs Pro tier gating, payment integration, and upgrade flows.
+This module defines the subscription model, payment integration, and access control.
 
-## Tier Structure
+## Model: Single Tier, No Free Tier
 
-### Free Tier (Default)
-- Unlimited workout templates
-- Unlimited custom exercises
+There is no permanent free tier. Every user gets full access to everything.
+New users get a **14-day free trial** (no credit card required) then must subscribe to continue.
+
+### What Every Subscriber Gets (Everything)
+- Unlimited workout templates + custom exercises
 - Active workout with prefill + last session comparison
 - Workout history (full)
-- Basic progress graphs (top set line chart)
-- Basic PR tracking
+- Progress graphs: top set, e1RM trends, volume trends
+- PR tracking
 - Offline-first set logging
-- Rule-based progression suggestions (simple: repeat or +1 rep / +2.5kg)
-
-### Pro Tier (Subscription)
-Everything in Free, plus:
-- **AI progression targets** (Claude Haiku powered)
-- **Plateau detection + deload suggestions**
-- **Weekly AI summary with insights**
-- **Advanced analytics:** muscle group volume breakdown, estimated 1RM trends, volume trends
-- **Data export** (JSON / CSV)
-- Multi-device sync priority (queue processed first)
+- AI progression targets + plateau detection + deload suggestions
+- Weekly AI summary with insights
+- Muscle group volume breakdown
+- Data export (JSON / CSV)
+- XP / levelling system
 
 ---
 
-## Pricing (Suggested Starting Points)
-- **Monthly:** £4.99 / $5.99
-- **Annual:** £39.99 / $49.99 (save ~33%)
-- **Free trial:** 7-day Pro trial on signup
+## Pricing
+- **Monthly:** £10 / month
+- **Annual:** £79.99 / year (~£6.66/month, saves ~33%)
+- **Free trial:** 14 days, no credit card required
+- **Annual plan is the default CTA** (higher LTV)
 
-#### Constraints
-- **Annual plan is the default CTA (higher LTV)**
-- *Pricing subject to A/B testing post-launch*
+---
+
+## Founder Account (Always Free)
+- **samcarr1232@gmail.com** is permanently exempt from all subscription checks.
+- Implementation: `users.subscription_tier = 'founder'` set via migration on signup trigger.
+- Both client and server treat `'founder'` the same as `'pro'` for all feature checks.
+- Webhook handlers must never downgrade a `'founder'` tier account.
+
+```typescript
+// Entitlement helper — use this everywhere
+export function hasAccess(tier: string): boolean {
+  return tier === 'pro' || tier === 'founder';
+}
+```
 
 ---
 
 ## Payment Integration
 
-### iOS
-- **RevenueCat** (wraps StoreKit 2)
-- Handles receipts, entitlements, and subscription management
+### Web (PWA) — Stripe
+- Stripe Checkout for web subscriptions
+- Stripe Customer Portal for self-serve cancellation / plan change
+- Stripe webhook → Supabase Edge Function → update `users.subscription_tier`
+- Store `stripe_customer_id` on `users` table
 
-### Android
+### iOS (future, when App Store submission happens)
+- **RevenueCat** (wraps StoreKit 2) — Apple mandates IAP for in-app subscriptions
+- RevenueCat webhook → Supabase sync
+
+### Android (future)
 - **RevenueCat** (wraps Google Play Billing)
-- Same SDK, cross-platform entitlement management
 
-### Why RevenueCat
-- Single SDK for iOS + Android
-- Server-side receipt validation
-- Webhook support for Supabase sync
-- Analytics dashboard
-- Handles edge cases: grace periods, billing retries, family sharing
+### Why Stripe first
+- PWA is the launch platform — Stripe works immediately, no App Store needed
+- Lower fees than RevenueCat on web (no additional % on top of Stripe)
+- Stripe Customer Portal handles cancellation / upgrades without custom UI
 
 ---
 
 ## Entitlement Flow
 
-### Check Entitlement
+### Trial
 ```
-1. App launch → RevenueCat SDK checks subscription status
-2. Store entitlement in local state (zustand)
-3. Gate Pro features based on local entitlement
-4. Sync entitlement to Supabase users.subscription_tier via webhook
-```
-
-### Upgrade Flow
-```
-1. User taps upgrade CTA (paywall screen)
-2. RevenueCat presents native purchase sheet
-3. On successful purchase → entitlement activated
-4. Update local state immediately
-5. Webhook fires → update users.subscription_tier = 'pro' in Supabase
-6. Edge Functions check subscription_tier before running AI features
+1. User signs up → trial_ends_at = NOW() + 14 days stored on users table
+2. All features unlocked during trial
+3. On trial expiry → subscription_tier = 'expired', redirect to /subscribe
+4. Founder account (samcarr1232@gmail.com) → subscription_tier = 'founder', never expires
 ```
 
-### Downgrade / Cancellation
+### Upgrade Flow (Stripe / Web)
 ```
-1. RevenueCat webhook fires on subscription expiry
-2. Update users.subscription_tier = 'free' in Supabase
-3. On next app launch, local entitlement reflects free tier
-4. Pro features gracefully degrade (data preserved, features locked)
+1. User hits /subscribe → Stripe Checkout session created via Edge Function
+2. User completes payment on Stripe-hosted page
+3. Stripe webhook fires → stripe-webhook Edge Function
+4. Update users.subscription_tier = 'pro', store stripe_customer_id
+5. Redirect to app — full access restored
+```
+
+### Cancellation / Expiry
+```
+1. Stripe webhook fires on subscription cancellation or failed payment
+2. Edge Function: if tier !== 'founder' → set subscription_tier = 'expired'
+3. User sees paywall on next app load (data fully preserved)
+4. Grace period: 3 days after failed payment before locking
 ```
 
 #### Constraints
-- **Never delete user data on downgrade**
-- **Show "Pro" badge/label on gated features so users know what they're missing**
-- **Server-side entitlement check on Edge Functions (never trust client-only)**
-- *Grace period: 3 days after failed renewal before downgrade*
+- **Never delete user data on expiry**
+- **Never downgrade a 'founder' tier account — webhook must check before updating**
+- **Server-side tier check on all AI Edge Functions**
+- **Client check is UX only; server check is security**
 
 ---
 
-## Paywall Screen
+## Subscribe / Paywall Screen (/subscribe)
 
 ### Layout
-- Feature comparison (Free vs Pro)
-- Testimonial or social proof (post-launch)
-- Price options: Monthly / Annual (annual pre-selected)
-- "Start 7-Day Free Trial" primary CTA
-- Restore purchases link
+- Headline: "Your trial has ended" (or "Upgrade to keep going")
+- Single plan toggle: Monthly (£10) / Annual (£79.99) — annual pre-selected
+- Feature list (everything unlocked, no comparison needed — single tier)
+- "Start for £10/month" or "Get Annual — Save 33%" CTA → Stripe Checkout
+- "Cancel anytime" reassurance line
 - Terms + privacy links
 
-### Trigger Points (When to Show)
-- User taps a Pro-gated feature (AI suggestion, weekly summary, advanced graph)
-- Profile screen upgrade button
-- End of free trial reminder
-- *Never interrupt a workout to show paywall*
+### Trigger Points
+- Trial expires → auto-redirect on next app load
+- Manual: /subscribe route always accessible
+- *Never interrupt an active workout*
 
 #### Constraints
-- **Paywall must comply with App Store Review Guidelines 3.1.1 and 3.1.2**
-- **Restore Purchases button must be visible**
-- **No dark patterns: clear pricing, easy cancellation info**
-- *A/B test paywall design post-launch*
+- **No dark patterns: price and cancellation terms visible before checkout**
+- **Annual is pre-selected (higher LTV)**
 
 ---
 
-## Feature Gating Implementation
+## Access Check Implementation
 
-### Client-Side (UI)
+### Entitlement helper (use everywhere)
 ```typescript
-function isProFeature(feature: string): boolean {
-  const proFeatures = [
-    'ai_suggestions',
-    'plateau_detection',
-    'weekly_ai_summary',
-    'advanced_analytics',
-    'data_export',
-  ];
-  return proFeatures.includes(feature);
+// src/lib/access.ts
+export function hasAccess(tier: string | null): boolean {
+  return tier === 'pro' || tier === 'founder';
 }
 
-function canAccess(feature: string, tier: 'free' | 'pro'): boolean {
-  if (!isProFeature(feature)) return true;
-  return tier === 'pro';
+export function isInTrial(trialEndsAt: string | null): boolean {
+  if (!trialEndsAt) return false;
+  return new Date(trialEndsAt) > new Date();
+}
+
+export function canUseApp(tier: string | null, trialEndsAt: string | null): boolean {
+  return hasAccess(tier) || isInTrial(trialEndsAt);
 }
 ```
 
 ### Server-Side (Edge Functions)
 ```typescript
-// At the top of any Pro-only Edge Function
 const { data: user } = await supabase
   .from('users')
-  .select('subscription_tier')
+  .select('subscription_tier, trial_ends_at')
   .eq('id', userId)
   .single();
 
-if (user.subscription_tier !== 'pro') {
+const allowed =
+  user.subscription_tier === 'pro' ||
+  user.subscription_tier === 'founder' ||
+  (user.trial_ends_at && new Date(user.trial_ends_at) > new Date());
+
+if (!allowed) {
   return new Response(
-    JSON.stringify({ error: 'Pro subscription required' }),
+    JSON.stringify({ error: 'Subscription required' }),
     { status: 403 }
   );
 }
 ```
 
 #### Constraints
-- **Both client AND server must check entitlement**
-- **Client check is for UX (show/hide); server check is for security**
-- **Free users attempting Pro API calls get 403, not 500**
+- **Both client AND server check access**
+- **Founder tier is never downgraded by webhooks**
+- **Expired trial users get 403, not 500**
 
 ---
 

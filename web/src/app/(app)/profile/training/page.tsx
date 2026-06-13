@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
+import { BackButton } from '@/components/ui/back-button';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
@@ -44,7 +44,6 @@ export default function TrainingPreferencesPage() {
   const [heaviestFirst, setHeaviestFirst] = useState(false);
   const [weeklyTarget, setWeeklyTarget] = useState(4);
   const [loaded, setLoaded] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -108,8 +107,7 @@ export default function TrainingPreferencesPage() {
         .eq('id', user.id)
         .then(({ error }) => {
           if (!error) {
-            setSaved(true);
-            setTimeout(() => setSaved(false), 1500);
+            toast.success('Saved', { duration: 2000 });
           } else {
             toast.error('Failed to save');
           }
@@ -122,25 +120,13 @@ export default function TrainingPreferencesPage() {
   return (
     <div className="page-shell">
       <div className="page-content py-5 md:py-7 space-y-5">
-        <Link
-          href="/profile"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Profile
-        </Link>
+        <BackButton href="/profile" label="Back to profile" />
 
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-display text-2xl font-bold">Training</h1>
             <p className="mt-1 text-sm text-muted-foreground">Your goals and defaults. Saves automatically.</p>
           </div>
-          {saved && (
-            <span className="flex items-center gap-1 text-xs text-[oklch(0.72_0.19_155)]">
-              <Check className="h-3.5 w-3.5" />
-              Saved
-            </span>
-          )}
           {!loaded && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         </div>
 

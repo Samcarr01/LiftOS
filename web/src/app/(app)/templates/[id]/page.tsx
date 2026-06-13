@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect, memo, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import {
   DndContext, closestCenter, PointerSensor, TouchSensor,
   KeyboardSensor, useSensor, useSensors, type DragEndEvent,
@@ -12,11 +12,12 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  GripVertical, Trash2, ChevronLeft, Plus, Loader2, Settings2,
+  GripVertical, Trash2, Plus, Loader2, Settings2,
   Play, Link2, Unlink2, Check,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
+import { BackButton } from '@/components/ui/back-button';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import {
   ExerciseSelector,
@@ -438,7 +439,6 @@ function ExerciseConfigSheet({
 
 export default function TemplateEditorPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const supabase = createClient();
   const { startWorkout } = useStartWorkout();
   const { updateTemplateName } = useTemplates();
@@ -625,13 +625,7 @@ export default function TemplateEditorPage() {
       <div className="page-content py-5 md:py-7 space-y-5">
         {/* Compact header */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            aria-label="Go back"
-            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:bg-white/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
+          <BackButton />
           <input
             value={templateName}
             onChange={(e) => handleNameChange(e.target.value)}

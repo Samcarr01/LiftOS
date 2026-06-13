@@ -367,7 +367,7 @@ export default function HomePage() {
                   {data.suggested[0].name} · {data.suggested[0].exercise_count} exercise{data.suggested[0].exercise_count !== 1 ? 's' : ''}
                 </p>
               ) : !loading ? (
-                <p className="mt-0.5 text-sm text-white/80">Choose a template to begin</p>
+                <p className="mt-0.5 text-sm text-white/80">Choose a workout to begin</p>
               ) : null}
             </div>
             <ChevronRight className="h-5 w-5 opacity-50 transition-transform duration-150 group-hover:translate-x-0.5" />
@@ -460,7 +460,7 @@ export default function HomePage() {
         ) : allTemplates.length > 0 ? (
           <section className="page-reveal delay-3">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="section-title">Your templates</h2>
+              <h2 className="section-title">Your workouts</h2>
               <Link href="/templates" className="text-xs font-semibold text-primary hover:underline">View all</Link>
             </div>
             <div className="space-y-2.5">
@@ -493,7 +493,7 @@ export default function HomePage() {
                 className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] px-4 py-3.5 text-sm font-semibold text-muted-foreground transition-all duration-150 hover:border-white/[0.2] hover:bg-white/[0.03] hover:text-foreground active:scale-[0.995]"
               >
                 <Plus className="h-4 w-4" />
-                Create new template
+                Create new workout
               </button>
             </div>
           </section>
@@ -506,7 +506,7 @@ export default function HomePage() {
               <div>
                 <p className="font-display text-base font-semibold">Create your first workout</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Build a template and start logging your training.
+                  Build a workout and start logging your training.
                 </p>
               </div>
               <button

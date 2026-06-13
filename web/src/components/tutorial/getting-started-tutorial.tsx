@@ -25,15 +25,15 @@ interface Props {
 const STEPS = [
   {
     kicker: 'STEP 1 OF 4',
-    title: 'Create a Workout Template',
-    body: "Start by creating a workout template — your reusable blueprint for a training session. Name it something like 'Push Day' or 'Full Body A'.",
-    hint: 'Head to the Templates tab and tap + New.',
+    title: 'Create a Workout',
+    body: "Start by creating a workout — your reusable blueprint for a training session. Name it something like 'Push Day' or 'Full Body A'.",
+    hint: 'Head to the Workouts tab and tap + New.',
   },
   {
     kicker: 'STEP 2 OF 4',
     title: 'Add Your Exercises',
     body: 'Search the exercise library or create your own. Drag to reorder, link exercises into supersets, and set your target number of sets.',
-    hint: 'You can always edit templates later.',
+    hint: 'You can always edit workouts later.',
   },
   {
     kicker: 'STEP 3 OF 4',
@@ -59,7 +59,7 @@ function StepIllustration({ step }: { step: number }) {
         <div className="flex w-full max-w-[260px] flex-col gap-1.5">
           <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-primary/40 bg-primary/8 px-3 py-2.5">
             <Plus className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold text-primary">New Template</span>
+            <span className="text-sm font-semibold text-primary">New Workout</span>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
             <span className="text-sm text-muted-foreground">Push Day</span>

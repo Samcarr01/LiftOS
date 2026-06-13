@@ -1,9 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import {
-  ArrowLeft,
   BookOpen,
   ChevronDown,
   Dumbbell,
@@ -13,6 +11,7 @@ import {
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
+import { BackButton } from '@/components/ui/back-button';
 import { cn } from '@/lib/utils';
 import GettingStartedTutorial from '@/components/tutorial/getting-started-tutorial';
 
@@ -96,13 +95,7 @@ export default function HelpPage() {
       <div className="page-content space-y-5 py-6 md:py-8">
 
         {/* Back link */}
-        <Link
-          href="/profile"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Profile
-        </Link>
+        <BackButton href="/profile" label="Back to profile" />
 
         <div>
           <h1 className="font-display text-2xl font-bold">Help & Getting Started</h1>
@@ -134,10 +127,10 @@ export default function HelpPage() {
         >
           <div className="space-y-4">
             <div>
-              <p className="font-semibold text-foreground">Templates</p>
+              <p className="font-semibold text-foreground">Workouts</p>
               <p>
-                Templates are your reusable workout blueprints. Create one, add exercises,
-                then start it any time. Your template stays the same — only your logged
+                Workouts are your reusable blueprints. Create one, add exercises,
+                then start it any time. The workout stays the same — only your logged
                 sets change each session.
               </p>
             </div>
@@ -145,7 +138,7 @@ export default function HelpPage() {
               <p className="font-semibold text-foreground">Starting a workout</p>
               <p>
                 Tap <span className="font-medium text-foreground">Start Workout</span> from
-                Home or the Templates tab. Pick a template and your workout opens with sets
+                Home or the Workouts tab. Pick a workout and it opens with sets
                 auto-filled from last time.
               </p>
             </div>
@@ -195,25 +188,25 @@ export default function HelpPage() {
 
         <Section
           icon={<BookOpen className="h-4 w-4 text-[oklch(0.80_0.16_55)]" />}
-          title="Creating & Editing Templates"
+          title="Creating & Editing Workouts"
         >
           <div className="space-y-3">
             <p>
-              Go to the <span className="font-medium text-foreground">Templates</span> tab and
-              tap <span className="font-medium text-foreground">+ New</span> to create a template.
+              Go to the <span className="font-medium text-foreground">Workouts</span> tab and
+              tap <span className="font-medium text-foreground">+ New</span> to create a workout.
               Give it a name, then add exercises.
             </p>
             <p>
-              In the template editor, you can:
+              In the workout editor, you can:
             </p>
             <ul className="list-disc space-y-1 pl-5">
               <li>Search the exercise library or create custom exercises</li>
               <li>Drag to reorder exercises</li>
               <li>Tap the gear icon to configure sets, tracking type, and notes</li>
-              <li>Duplicate or delete templates from the editor</li>
+              <li>Duplicate or delete workouts from the editor</li>
             </ul>
             <p>
-              Templates auto-save as you edit. Pin your favourites to keep them at the top.
+              Workouts auto-save as you edit. Pin your favourites to keep them at the top.
             </p>
           </div>
         </Section>
@@ -224,7 +217,7 @@ export default function HelpPage() {
         >
           <div className="space-y-3">
             <p>
-              In the template editor, tap the <span className="font-medium text-foreground">link icon</span> between
+              In the workout editor, tap the <span className="font-medium text-foreground">link icon</span> between
               two adjacent exercises to group them into a superset.
             </p>
             <p>
@@ -255,8 +248,8 @@ export default function HelpPage() {
               a="Go to Profile and toggle between kg and lb. All weights update instantly."
             />
             <FAQ
-              q="Can I delete a workout template?"
-              a="Open the template editor and use the delete option in the menu. This won't delete your past sessions — those are kept in your Log."
+              q="Can I delete a workout?"
+              a="Long-press a workout in the Workouts list and choose Delete. This won't delete your past sessions — those are kept in your Log."
             />
             <FAQ
               q="What does the AI actually do?"

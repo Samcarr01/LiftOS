@@ -2,10 +2,8 @@
 
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   Activity,
-  ArrowLeft,
   Award,
   Check,
   ChevronDown,
@@ -18,6 +16,7 @@ import {
   TrendingUp,
   Wand2,
 } from 'lucide-react';
+import { BackButton } from '@/components/ui/back-button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTrainingSummary } from '@/hooks/use-weekly-summaries';
 import type { WeeklySummaryData } from '@/types/app';
@@ -204,7 +203,6 @@ function LegacyInsights({ ai }: { ai: AIAnalysis }) {
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 export default function TrainingSummaryPage() {
-  const router = useRouter();
   const {
     summary,
     loading,
@@ -247,13 +245,7 @@ export default function TrainingSummaryPage() {
       <div className="page-content space-y-4 py-5 md:py-7">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            aria-label="Go back"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-xl text-muted-foreground hover:bg-white/10 hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
+          <BackButton />
           <div>
             <h1 className="font-display text-lg font-bold">Coaching Report</h1>
             <p className="text-sm text-muted-foreground">Last 30 Days · {periodLabel}</p>

@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import {
-  ArrowLeft, Check, Lock, Loader2,
+  Check, Lock, Loader2,
   Dumbbell, Trophy, Target, Award,
 } from 'lucide-react';
+import { BackButton } from '@/components/ui/back-button';
 import { createClient } from '@/lib/supabase/client';
 import {
   computeXp, levelFromXp, tierForLevel, xpForLevel,
@@ -70,13 +70,7 @@ export default function LevelsPage() {
     <div className="page-shell">
       <div className="page-content py-5 md:py-7 space-y-6">
         {/* Back */}
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Home
-        </Link>
+        <BackButton href="/" label="Back to home" />
 
         {/* Header */}
         <div>
