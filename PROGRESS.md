@@ -1066,3 +1066,21 @@ redirects. (`/log` redirect + `/profile/password` already existed.)
 **Note:** Dev-server + PWA service-worker caching made already-visited routes render stale in the
 test browser even after a full `.next` wipe; brand-new routes (e.g. `/exercises/new`) rendered the
 new code correctly, and source + production build are verified correct.
+
+---
+
+## Progress hub redesign + nav fix — ✅ COMPLETE — 14 Jun 2026
+
+- **Bottom-nav fix:** removed the active indicator bar — in the compact 5-tab nav it overlapped the
+  tab labels. Active tab now reads via the orange icon + label alone.
+- **Unified Progress page** (`/progress`) behind a segmented control:
+  - New `components/progress/overview-tab.tsx` — the AI coaching report + 30-day stats/charts
+    (extracted from the old `/progress/weekly` page).
+  - New `components/progress/exercises-tab.tsx` — the per-exercise picker + charts + PRs
+    (extracted from the old `/progress` body).
+  - `progress/page.tsx` rewritten as the tabbed host (Overview default · Exercises).
+  - `progress/weekly/page.tsx` → redirect to `/progress` (old links survive).
+- **Home decluttered:** removed the "Coaching Report" and "Exercise Charts" link cards (plus the
+  now-unused `ActivitySpark`/`getWeeklyBuckets` helpers); both destinations now live under Progress.
+
+**Build:** ✅ `npm run build` — 30 routes, 0 TS errors, 0 ESLint errors.
