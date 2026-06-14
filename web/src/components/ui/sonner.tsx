@@ -13,7 +13,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       icons={{
         success: (
-          <CircleCheckIcon className="size-4" />
+          // Orange check, never green — the app has a single accent colour.
+          <CircleCheckIcon className="size-4 text-primary-bright" />
         ),
         info: (
           <InfoIcon className="size-4" />

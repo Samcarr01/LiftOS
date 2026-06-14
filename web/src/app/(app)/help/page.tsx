@@ -35,7 +35,9 @@ function Section({
         onClick={() => setOpen(!open)}
         className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
       >
-        {icon}
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          {icon}
+        </span>
         <span className="flex-1 text-sm font-semibold">{title}</span>
         <ChevronDown
           className={cn(
@@ -121,7 +123,7 @@ export default function HelpPage() {
         {/* ── Sections ──────────────────────────────── */}
 
         <Section
-          icon={<Dumbbell className="h-4 w-4 text-primary" />}
+          icon={<Dumbbell className="h-4 w-4" />}
           title="How Workouts Work"
           defaultOpen
         >
@@ -160,7 +162,7 @@ export default function HelpPage() {
         </Section>
 
         <Section
-          icon={<TrendingUp className="h-4 w-4 text-[oklch(0.72_0.19_155)]" />}
+          icon={<TrendingUp className="h-4 w-4" />}
           title="Progressive Overload & AI Suggestions"
         >
           <div className="space-y-3">
@@ -187,7 +189,7 @@ export default function HelpPage() {
         </Section>
 
         <Section
-          icon={<BookOpen className="h-4 w-4 text-[oklch(0.80_0.16_55)]" />}
+          icon={<BookOpen className="h-4 w-4" />}
           title="Creating & Editing Workouts"
         >
           <div className="space-y-3">
@@ -212,7 +214,7 @@ export default function HelpPage() {
         </Section>
 
         <Section
-          icon={<Link2 className="h-4 w-4 text-[oklch(0.72_0.15_250)]" />}
+          icon={<Link2 className="h-4 w-4" />}
           title="Supersets"
         >
           <div className="space-y-3">
@@ -231,7 +233,7 @@ export default function HelpPage() {
         </Section>
 
         <Section
-          icon={<HelpCircle className="h-4 w-4 text-muted-foreground" />}
+          icon={<HelpCircle className="h-4 w-4" />}
           title="FAQ"
         >
           <div className="space-y-2">

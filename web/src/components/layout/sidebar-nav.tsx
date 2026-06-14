@@ -2,15 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Dumbbell, ClockArrowUp, User, Zap } from 'lucide-react';
+import { Home, Dumbbell, TrendingUp, ClockArrowUp, User, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { isNavItemActive, NAV_ITEMS } from './nav-items';
 
-const NAV_ITEMS = [
-  { href: '/',           label: 'Home',      icon: Home },
-  { href: '/templates',  label: 'Workouts',  icon: Dumbbell },
-  { href: '/history',    label: 'Log',       icon: ClockArrowUp },
-  { href: '/profile',    label: 'Profile',   icon: User },
-] as const;
+const ICONS = { Home, Dumbbell, TrendingUp, ClockArrowUp, User } as const;
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -25,14 +21,9 @@ export function SidebarNav() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 px-3 pt-2">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const isActive = href === '/'
-            ? pathname === '/'
-            : href === '/templates'
-              ? pathname.startsWith('/templates') || pathname.startsWith('/exercises')
-              : href === '/history'
-                ? pathname.startsWith('/history')
-                : pathname.startsWith(href);
+        {NAV_ITEMS.map(({ href, label, icon }) => {
+          const Icon = ICONS[icon];
+          const isActive = isNavItemActive(href, pathname);
           return (
             <Link
               key={href}

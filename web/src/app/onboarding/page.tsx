@@ -3,16 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft,
   ArrowRight,
-  Check,
   Dumbbell,
   Flame,
   Heart,
   Loader2,
   Scale,
   Sparkles,
-  Swords,
   Target,
   Timer,
   Trophy,
@@ -21,17 +18,19 @@ import {
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { BackButton } from '@/components/ui/back-button';
+import { SelectableRow } from '@/components/ui/selectable-row';
 import { useUnitStore } from '@/store/unit-store';
 
 type Step = 'welcome' | 'goals' | 'experience' | 'reps' | 'body' | 'units' | 'summary';
 
 const GOALS = [
-  { id: 'strength', label: 'Build Strength', description: 'Lift heavier, get stronger', icon: Trophy, color: 'text-[oklch(0.80_0.16_55)]' },
-  { id: 'muscle', label: 'Build Muscle', description: 'Grow size and definition', icon: Dumbbell, color: 'text-[oklch(0.78_0.17_155)]' },
-  { id: 'fat_loss', label: 'Lose Fat', description: 'Burn calories and lean out', icon: Flame, color: 'text-[oklch(0.75_0.18_25)]' },
-  { id: 'endurance', label: 'Improve Endurance', description: 'Go longer, recover faster', icon: Timer, color: 'text-[oklch(0.72_0.15_250)]' },
-  { id: 'athletic', label: 'Athletic Performance', description: 'Power, speed, and agility', icon: Swords, color: 'text-[oklch(0.78_0.15_310)]' },
-  { id: 'health', label: 'General Health', description: 'Stay fit and feel good', icon: Heart, color: 'text-[oklch(0.75_0.15_150)]' },
+  { id: 'strength', label: 'Build Strength', description: 'Lift heavier, get stronger', icon: Zap },
+  { id: 'muscle', label: 'Build Muscle', description: 'Grow size and definition', icon: Dumbbell },
+  { id: 'fat_loss', label: 'Lose Fat', description: 'Burn calories and lean out', icon: Flame },
+  { id: 'endurance', label: 'Improve Endurance', description: 'Go longer, recover faster', icon: Timer },
+  { id: 'athletic', label: 'Athletic Performance', description: 'Power, speed, and agility', icon: Trophy },
+  { id: 'health', label: 'General Health', description: 'Stay fit and feel good', icon: Heart },
 ] as const;
 
 const EXPERIENCE_LEVELS = [
@@ -177,7 +176,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center px-5 py-8">
+    <div className="flex min-h-dvh flex-col items-center justify-center px-5 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="w-full max-w-md">
 
         {/* Progress bar (hidden on welcome and summary) */}
@@ -227,6 +226,7 @@ export default function OnboardingPage() {
         {/* ── Goals ────────────────────────────────────────────────── */}
         {currentStep === 'goals' && (
           <div className="space-y-5">
+            <BackButton onClick={prevStep} label="Back" />
             <div>
               <h1 className="font-display text-2xl font-bold">What are your goals?</h1>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -234,62 +234,34 @@ export default function OnboardingPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              {GOALS.map((goal) => {
-                const selected = selectedGoals.includes(goal.id);
-                const Icon = goal.icon;
-                return (
-                  <button
-                    key={goal.id}
-                    type="button"
-                    onClick={() => toggleGoal(goal.id)}
-                    className={cn(
-                      'flex cursor-pointer flex-col items-center gap-2 rounded-2xl border px-3 py-4 text-center transition-all duration-150',
-                      selected
-                        ? 'border-primary/40 bg-primary/10 scale-[1.02]'
-                        : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.07]',
-                    )}
-                  >
-                    <div className={cn(
-                      'flex h-11 w-11 items-center justify-center rounded-xl transition-colors',
-                      selected ? 'bg-primary/20' : 'bg-white/8',
-                    )}>
-                      <Icon className={cn('h-5 w-5', selected ? goal.color : 'text-muted-foreground')} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">{goal.label}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{goal.description}</p>
-                    </div>
-                    {selected && (
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                        <Check className="h-3 w-3" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
+            <div className="space-y-2.5">
+              {GOALS.map((goal) => (
+                <SelectableRow
+                  key={goal.id}
+                  icon={goal.icon}
+                  title={goal.label}
+                  subtitle={goal.description}
+                  selected={selectedGoals.includes(goal.id)}
+                  onSelect={() => toggleGoal(goal.id)}
+                />
+              ))}
             </div>
 
-            <div className="flex gap-3 pt-1">
-              <button onClick={prevStep} className="premium-button-secondary flex-1 justify-center">
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </button>
-              <button
-                onClick={nextStep}
-                disabled={selectedGoals.length === 0}
-                className="premium-button flex-1 justify-center disabled:opacity-40"
-              >
-                Continue
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
+            <button
+              onClick={nextStep}
+              disabled={selectedGoals.length === 0}
+              className="premium-button w-full justify-center disabled:opacity-40"
+            >
+              Continue
+              <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
         )}
 
         {/* ── Experience ───────────────────────────────────────────── */}
         {currentStep === 'experience' && (
           <div className="space-y-5">
+            <BackButton onClick={prevStep} label="Back" />
             <div>
               <h1 className="font-display text-2xl font-bold">How experienced are you?</h1>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -298,63 +270,33 @@ export default function OnboardingPage() {
             </div>
 
             <div className="space-y-2.5">
-              {EXPERIENCE_LEVELS.map((level) => {
-                const selected = experienceLevel === level.id;
-                return (
-                  <button
-                    key={level.id}
-                    type="button"
-                    onClick={() => setExperienceLevel(level.id)}
-                    className={cn(
-                      'flex w-full cursor-pointer items-start gap-3.5 rounded-2xl border px-4 py-3.5 text-left transition-all duration-150',
-                      selected
-                        ? 'border-primary/40 bg-primary/10'
-                        : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.07]',
-                    )}
-                  >
-                    <div className={cn(
-                      'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors',
-                      selected ? 'bg-primary/20 text-primary' : 'bg-white/8 text-muted-foreground',
-                    )}>
-                      <Target className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">{level.label}</p>
-                      <p className="text-sm text-muted-foreground">{level.description}</p>
-                      {selected && (
-                        <p className="mt-1.5 text-xs text-primary/80">{level.detail}</p>
-                      )}
-                    </div>
-                    {selected && (
-                      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                        <Check className="h-3.5 w-3.5" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
+              {EXPERIENCE_LEVELS.map((level) => (
+                <SelectableRow
+                  key={level.id}
+                  icon={Target}
+                  title={level.label}
+                  subtitle={experienceLevel === level.id ? level.detail : level.description}
+                  selected={experienceLevel === level.id}
+                  onSelect={() => setExperienceLevel(level.id)}
+                />
+              ))}
             </div>
 
-            <div className="flex gap-3 pt-1">
-              <button onClick={prevStep} className="premium-button-secondary flex-1 justify-center">
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </button>
-              <button
-                onClick={nextStep}
-                disabled={!experienceLevel}
-                className="premium-button flex-1 justify-center disabled:opacity-40"
-              >
-                Continue
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
+            <button
+              onClick={nextStep}
+              disabled={!experienceLevel}
+              className="premium-button w-full justify-center disabled:opacity-40"
+            >
+              Continue
+              <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
         )}
 
         {/* ── Rep Range ────────────────────────────────────────────── */}
         {currentStep === 'reps' && (
           <div className="space-y-5">
+            <BackButton onClick={prevStep} label="Back" />
             <div>
               <h1 className="font-display text-2xl font-bold">Preferred rep range?</h1>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -363,39 +305,23 @@ export default function OnboardingPage() {
             </div>
 
             <div className="space-y-2.5">
-              {REP_PRESETS.map((preset) => {
-                const selected = selectedRepPreset === preset.id;
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => selectRepPreset(preset.id)}
-                    className={cn(
-                      'flex w-full cursor-pointer items-center gap-3.5 rounded-2xl border px-4 py-3.5 text-left transition-all duration-150',
-                      selected
-                        ? 'border-primary/40 bg-primary/10'
-                        : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.07]',
-                    )}
-                  >
-                    <div className={cn(
-                      'flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl font-display transition-colors',
-                      selected ? 'bg-primary/20 text-primary' : 'bg-white/8 text-muted-foreground',
+              {REP_PRESETS.map((preset) => (
+                <SelectableRow
+                  key={preset.id}
+                  iconNode={
+                    <span className={cn(
+                      'text-sm font-bold leading-none font-display',
+                      selectedRepPreset === preset.id ? 'text-primary-bright' : 'text-muted-foreground',
                     )}>
-                      <span className="text-base font-bold leading-none">{preset.range}</span>
-                      <span className="text-xs font-medium">reps</span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">{preset.label}</p>
-                      <p className="text-sm text-muted-foreground">{preset.description}</p>
-                    </div>
-                    {selected && (
-                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                        <Check className="h-3.5 w-3.5" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
+                      {preset.range}
+                    </span>
+                  }
+                  title={preset.label}
+                  subtitle={preset.description}
+                  selected={selectedRepPreset === preset.id}
+                  onSelect={() => selectRepPreset(preset.id)}
+                />
+              ))}
             </div>
 
             {/* Custom range */}
@@ -429,26 +355,21 @@ export default function OnboardingPage() {
               <span className="text-sm text-muted-foreground">reps</span>
             </div>
 
-            <div className="flex gap-3 pt-1">
-              <button onClick={prevStep} className="premium-button-secondary flex-1 justify-center">
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </button>
-              <button
-                onClick={nextStep}
-                disabled={repMin <= 0 || repMax <= 0 || repMax < repMin}
-                className="premium-button flex-1 justify-center disabled:opacity-40"
-              >
-                Continue
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
+            <button
+              onClick={nextStep}
+              disabled={repMin <= 0 || repMax <= 0 || repMax < repMin}
+              className="premium-button w-full justify-center disabled:opacity-40"
+            >
+              Continue
+              <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
         )}
 
         {/* ── Body Weight ──────────────────────────────────────────── */}
         {currentStep === 'body' && (
           <div className="space-y-5">
+            <BackButton onClick={prevStep} label="Back" />
             <div>
               <h1 className="font-display text-2xl font-bold">What&apos;s your body weight?</h1>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -489,22 +410,17 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-1">
-              <button onClick={prevStep} className="premium-button-secondary flex-1 justify-center">
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </button>
-              <button onClick={nextStep} className="premium-button flex-1 justify-center">
-                {bodyWeight.trim() ? 'Continue' : 'Skip'}
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
+            <button onClick={nextStep} className="premium-button w-full justify-center">
+              {bodyWeight.trim() ? 'Continue' : 'Skip'}
+              <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
         )}
 
         {/* ── Units ────────────────────────────────────────────────── */}
         {currentStep === 'units' && (
           <div className="space-y-5">
+            <BackButton onClick={prevStep} label="Back" />
             <div>
               <h1 className="font-display text-2xl font-bold">Preferred units?</h1>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -516,50 +432,29 @@ export default function OnboardingPage() {
               {([
                 { id: 'kg' as const, label: 'Kilograms (kg)', description: 'Metric — 2.5kg increments' },
                 { id: 'lb' as const, label: 'Pounds (lb)', description: 'Imperial — 5lb increments' },
-              ]).map((option) => {
-                const selected = unitPreference === option.id;
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => setUnitPreference(option.id)}
-                    className={cn(
-                      'flex w-full cursor-pointer items-center gap-3.5 rounded-2xl border px-4 py-3.5 text-left transition-all duration-150',
-                      selected
-                        ? 'border-primary/40 bg-primary/10'
-                        : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.07]',
-                    )}
-                  >
-                    <div className={cn(
-                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-display text-lg font-bold transition-colors',
-                      selected ? 'bg-primary/20 text-primary' : 'bg-white/8 text-muted-foreground',
+              ]).map((option) => (
+                <SelectableRow
+                  key={option.id}
+                  iconNode={
+                    <span className={cn(
+                      'font-display text-lg font-bold',
+                      unitPreference === option.id ? 'text-primary-bright' : 'text-muted-foreground',
                     )}>
                       {option.id}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">{option.label}</p>
-                      <p className="text-sm text-muted-foreground">{option.description}</p>
-                    </div>
-                    {selected && (
-                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                        <Check className="h-3.5 w-3.5" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
+                    </span>
+                  }
+                  title={option.label}
+                  subtitle={option.description}
+                  selected={unitPreference === option.id}
+                  onSelect={() => setUnitPreference(option.id)}
+                />
+              ))}
             </div>
 
-            <div className="flex gap-3 pt-1">
-              <button onClick={prevStep} className="premium-button-secondary flex-1 justify-center">
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </button>
-              <button onClick={nextStep} className="premium-button flex-1 justify-center">
-                Continue
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
+            <button onClick={nextStep} className="premium-button w-full justify-center">
+              Continue
+              <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
         )}
 

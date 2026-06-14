@@ -517,6 +517,9 @@ export default function HomePage() {
                 Create Workout
               </button>
             </div>
+            <p className="mx-auto mt-6 max-w-xs text-center text-sm leading-relaxed text-muted-foreground/50">
+              Every strong lifter started with set one. Build your first workout and LiftOS will prefill it from last time, every time.
+            </p>
           </section>
         )}
 

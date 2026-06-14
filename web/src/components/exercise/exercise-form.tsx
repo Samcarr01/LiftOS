@@ -98,7 +98,7 @@ export function ExerciseForm({
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto px-5 pb-8 pt-4 gap-6">
+    <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-5 pt-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
       {/* Name */}
       <div className="space-y-2">
         <label className="text-sm font-semibold">Exercise name</label>
@@ -130,9 +130,9 @@ export function ExerciseForm({
                 type="button"
                 onClick={() => toggleMuscle(m)}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition-all duration-150',
+                  'flex min-h-[44px] min-w-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition-all duration-150',
                   selected
-                    ? 'bg-primary text-primary-foreground shadow-[0_0_12px_-3px_oklch(0.75_0.18_55/0.4)]'
+                    ? 'border border-primary bg-primary/15 text-primary-bright shadow-[0_0_12px_-3px_oklch(0.75_0.18_55/0.4)]'
                     : 'border border-white/[0.08] bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] hover:text-foreground',
                 )}
               >

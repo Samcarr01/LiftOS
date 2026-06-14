@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, Loader2 } from 'lucide-react';
+import { Dumbbell, Flame, Heart, Loader2, Timer, Trophy, Zap } from 'lucide-react';
 import { BackButton } from '@/components/ui/back-button';
+import { SelectableRow } from '@/components/ui/selectable-row';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
@@ -10,13 +11,15 @@ import { useUnitStore } from '@/store/unit-store';
 
 type Experience = 'beginner' | 'intermediate' | 'advanced';
 
+// Same goal set + icons as onboarding, so editing goals here matches the
+// screen the user first saw.
 const GOALS = [
-  { id: 'strength', label: 'Strength' },
-  { id: 'muscle', label: 'Muscle' },
-  { id: 'fat_loss', label: 'Fat Loss' },
-  { id: 'endurance', label: 'Endurance' },
-  { id: 'athletic', label: 'Athletic' },
-  { id: 'health', label: 'Health' },
+  { id: 'strength', label: 'Strength', icon: Zap },
+  { id: 'muscle', label: 'Muscle', icon: Dumbbell },
+  { id: 'fat_loss', label: 'Fat Loss', icon: Flame },
+  { id: 'endurance', label: 'Endurance', icon: Timer },
+  { id: 'athletic', label: 'Athletic', icon: Trophy },
+  { id: 'health', label: 'Health', icon: Heart },
 ] as const;
 
 function useDebouncedEffect(fn: () => void, deps: unknown[], delay: number) {
@@ -244,30 +247,22 @@ export default function TrainingPreferencesPage() {
             </div>
           </div>
 
-          <div className="list-row flex-col items-stretch gap-2">
+          <div className="space-y-2.5 pt-1">
             <span className="text-sm font-semibold">Goals</span>
-            <div className="flex flex-wrap gap-1.5">
-              {GOALS.map((goal) => {
-                const selected = goals.includes(goal.id);
-                return (
-                  <button
-                    key={goal.id}
-                    onClick={() =>
-                      setGoals((prev) =>
-                        prev.includes(goal.id) ? prev.filter((g) => g !== goal.id) : [...prev, goal.id],
-                      )
-                    }
-                    className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors ${
-                      selected
-                        ? 'border-primary/40 bg-primary/15 text-primary'
-                        : 'border-white/10 text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {selected && <Check className="h-3 w-3" />}
-                    {goal.label}
-                  </button>
-                );
-              })}
+            <div className="space-y-2.5">
+              {GOALS.map((goal) => (
+                <SelectableRow
+                  key={goal.id}
+                  icon={goal.icon}
+                  title={goal.label}
+                  selected={goals.includes(goal.id)}
+                  onSelect={() =>
+                    setGoals((prev) =>
+                      prev.includes(goal.id) ? prev.filter((g) => g !== goal.id) : [...prev, goal.id],
+                    )
+                  }
+                />
+              ))}
             </div>
           </div>
         </div>

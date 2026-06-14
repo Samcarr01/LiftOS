@@ -3,7 +3,7 @@
 import { use } from 'react';
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -97,6 +97,9 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
   }
 
   if (error || !data) {
+    // Static /exercises/new wins over this dynamic segment, but guard anyway so
+    // a stale link to the literal "new" id lands on the create page, not an error.
+    if (id === 'new') redirect('/exercises/new');
     return (
       <div className="page-shell">
         <div className="page-content space-y-5 py-5 md:py-7">
@@ -152,7 +155,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
             </p>
             <button onClick={() => router.push('/')} className="premium-button mt-1">
               <Play className="h-4 w-4" />
-              Start a workout
+              Start Workout
             </button>
           </div>
         )}

@@ -9,7 +9,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="relative flex min-h-[100dvh]">
       <SyncManagerBoot />
       <SidebarNav />
-      <main className="relative flex flex-1 flex-col pb-24 md:pb-0">
+      <main className="relative flex flex-1 flex-col pt-[env(safe-area-inset-top)] pb-24 md:pb-0 md:pt-0">
         {children}
       </main>
       <PwaInstallBanner />

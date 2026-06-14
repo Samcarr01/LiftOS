@@ -1008,3 +1008,61 @@
 ### Production URL: [set after Vercel deploy — update this line]
 
 ### Next: When ready to monetise → BUILD-PROMPTS-MONETISE.md
+
+---
+
+## Mobile UI Consistency Pass (iPhone 16 Pro) — ✅ COMPLETE — 14 Jun 2026
+
+Addressed UI-AUDIT.md + UI-AUDIT-PRO.md findings. Mobile-first (402×874, OLED, Dynamic Island).
+Colours/typography expressed through the existing token system (per the centralise-tokens
+guardrail) rather than raw zinc/orange utilities.
+
+**Device setup:**
+- `layout.tsx` — body font Inter → **Barlow** (kept Barlow Condensed for display); added
+  `viewportFit: 'cover'` (required for `env(safe-area-*)`); theme-color → `#000000`.
+- `globals.css` — `--font-sans` → Barlow; `--background`/`--surface-0`/`--sidebar` → **true black**
+  `oklch(0 0 0)`; added `--primary-bright` (oklch 0.82 — WCAG-AA orange for small text) +
+  `.text-primary-bright`; added `.pt-safe`/`.pb-safe`/`.mb-safe` safe-area utilities.
+- `(app)/layout.tsx` — `<main>` gets `pt-[env(safe-area-inset-top)]` (md:pt-0) to clear the
+  Dynamic Island. (No 390px breakpoint existed — Tailwind v4, no config.)
+
+**Navigation (5 tabs):**
+- New `components/layout/nav-items.ts` — single source of truth (`NAV_ITEMS` + `isNavItemActive`)
+  shared by bottom-nav and sidebar. Added **Progress** (TrendingUp) tab → Home · Workouts ·
+  Progress · Log · Profile. Bottom nav: 44px targets, 22px icons, 11px labels, `text-primary-bright`
+  active label.
+
+**Exercise create/edit → full pages:**
+- New `exercises/new/page.tsx` and `exercises/[id]/edit/page.tsx` (shared `ExerciseForm`,
+  BackButton, pb-safe). Edit keeps legacy "Height + Reps"; Create does not.
+- `exercises/page.tsx` — "+ New" and edit pencil now `router.push` to the pages; removed the
+  bottom-sheet edit flow. `exercises/[id]` redirects the literal `new` id.
+- `exercise-form.tsx` — selected muscle pill now orange border+tint+check; 44px touch targets.
+
+**Broken routes:** new `/workouts` → `/templates` and `/profile/change-password` → `/profile/password`
+redirects. (`/log` redirect + `/profile/password` already existed.)
+
+**Onboarding + Training:**
+- New `components/ui/selectable-row.tsx` — one row-card control used by onboarding
+  (Goals/Experience/Reps/Units) and Training goals. Goals step converted from 2-col grid to rows.
+  Bespoke "← Back" pills replaced with shared `BackButton`; single full-width Continue. Progress bar
+  clears the notch (`pt-safe`).
+- Training goals: small pills → SelectableRows (same UI as onboarding, with icons).
+
+**Capitalisation + polish:**
+- "Start a workout" → "Start Workout"; "Start your first workout" → Title Case.
+- `MuscleGroupBadge` Title-cases labels (seeded lowercase now renders consistently).
+- Levels: removed ALL-CAPS on tier names / "You are here" / "Current Tier"; bumped sub-12px text to 12px.
+- Help: all accordion icons unified to orange in a `bg-primary/10` container.
+- Toast: dropped `richColors` (kills the lone green toast); success check tinted orange.
+- Profile "Sync now": text link → ghost button.
+- Home + History empty states: added motivational subtext to fill the OLED dead zone.
+
+**Files added:** `nav-items.ts`, `selectable-row.tsx`, `exercises/new/`, `exercises/[id]/edit/`,
+`workouts/`, `profile/change-password/`.
+
+**Build:** ✅ `npm run build` — 30 routes, 0 TS errors, 0 ESLint errors. `npx tsc --noEmit` clean.
+
+**Note:** Dev-server + PWA service-worker caching made already-visited routes render stale in the
+test browser even after a full `.next` wipe; brand-new routes (e.g. `/exercises/new`) rendered the
+new code correctly, and source + production build are verified correct.

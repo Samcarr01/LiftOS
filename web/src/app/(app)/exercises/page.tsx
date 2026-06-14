@@ -2,94 +2,26 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { BarChart3, Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
-import { ExerciseSelector } from '@/components/exercise-selector';
-import { ExerciseForm, type ExerciseFormValues } from '@/components/exercise/exercise-form';
 import { useExercises } from '@/hooks/use-exercises';
 import {
   describeTrackingSchema,
   groupExercisesByName,
   normalizeExerciseName,
 } from '@/lib/workout/formatting';
-import {
-  TRACKING_PRESETS,
-  type TrackingPresetKey,
-} from '@/types/tracking';
-import type { ExerciseWithSchema } from '@/types/app';
-
-const PRESET_KEYS = Object.keys(TRACKING_PRESETS) as TrackingPresetKey[];
-
-function detectPresetKey(exercise: ExerciseWithSchema): TrackingPresetKey | null {
-  const fieldKeys = exercise.tracking_schema.fields.map((f) => f.key).sort().join(',');
-  for (const key of PRESET_KEYS) {
-    const presetKeys = TRACKING_PRESETS[key].fields.map((f) => f.key).sort().join(',');
-    if (fieldKeys === presetKeys) return key;
-  }
-  return null;
-}
-
-function EditExerciseSheet({
-  exercise,
-  open,
-  onClose,
-  onSave,
-}: {
-  exercise: ExerciseWithSchema;
-  open: boolean;
-  onClose: () => void;
-  onSave: (id: string, data: { name?: string; muscle_groups?: string[]; tracking_schema?: { fields: { key: string; label: string; type: 'number' | 'text'; optional: boolean; unit?: string }[] }; notes?: string | null }) => Promise<void>;
-}) {
-  async function handleSubmit(values: ExerciseFormValues) {
-    try {
-      await onSave(exercise.id, {
-        name: values.name,
-        muscle_groups: values.muscleGroups,
-        tracking_schema: TRACKING_PRESETS[values.preset],
-        notes: values.notes || null,
-      });
-      toast.success('Exercise updated');
-      onClose();
-    } catch (err) {
-      toast.error((err as { message?: string }).message ?? 'Failed to update');
-    }
-  }
-
-  return (
-    <Sheet open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <SheetContent side="bottom" className="flex !h-[100dvh] flex-col p-0">
-        <SheetHeader className="border-b border-border px-4 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))]">
-          <SheetTitle>Edit Exercise</SheetTitle>
-        </SheetHeader>
-
-        <ExerciseForm
-          initialName={exercise.name}
-          initialMuscleGroups={exercise.muscle_groups}
-          initialPreset={detectPresetKey(exercise) ?? 'WEIGHT_REPS'}
-          initialNotes={exercise.notes ?? ''}
-          allowLegacyTracking
-          submitLabel="Save Changes"
-          onSubmit={handleSubmit}
-          autoFocus
-        />
-      </SheetContent>
-    </Sheet>
-  );
-}
 
 export default function ExercisesPage() {
+  const router = useRouter();
   const {
     exercises,
     isLoading,
-    fetchExercises,
-    updateExercise,
     deleteExercise,
   } = useExercises();
   const [search, setSearch] = useState('');
-  const [editingExercise, setEditingExercise] = useState<ExerciseWithSchema | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const duplicateGroups = useMemo(
@@ -136,16 +68,13 @@ export default function ExercisesPage() {
               </span>
             )}
           </div>
-          <ExerciseSelector
-            onSelect={() => void fetchExercises()}
-            defaultMode="create"
-            trigger={
-              <button className="flex h-9 cursor-pointer items-center gap-1.5 rounded-2xl bg-primary px-3 text-xs font-semibold text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-                <Plus className="h-3.5 w-3.5" />
-                New
-              </button>
-            }
-          />
+          <button
+            onClick={() => router.push('/exercises/new')}
+            className="flex h-9 cursor-pointer items-center gap-1.5 rounded-2xl bg-primary px-3 text-xs font-semibold text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New
+          </button>
         </div>
 
         {/* Search */}
@@ -221,7 +150,7 @@ export default function ExercisesPage() {
                       <BarChart3 className="h-4 w-4" />
                     </Link>
                     <button
-                      onClick={() => setEditingExercise(exercise)}
+                      onClick={() => router.push(`/exercises/${exercise.id}/edit`)}
                       aria-label="Edit exercise"
                       className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 text-foreground/70 active:bg-white/[0.08] hover:bg-white/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     >
@@ -241,19 +170,6 @@ export default function ExercisesPage() {
           </div>
         )}
       </div>
-
-      {/* Edit sheet */}
-      {editingExercise && (
-        <EditExerciseSheet
-          key={editingExercise.id}
-          exercise={editingExercise}
-          open={!!editingExercise}
-          onClose={() => setEditingExercise(null)}
-          onSave={async (id, data) => {
-            await updateExercise(id, data);
-          }}
-        />
-      )}
 
       {/* Delete confirmation — modal, consistent with templates & history */}
       {confirmDeleteId && (

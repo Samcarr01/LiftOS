@@ -372,7 +372,7 @@ export default function ProfilePage() {
             <button
               onClick={() => void handleRetrySync()}
               disabled={syncing}
-              className="text-xs font-semibold text-primary disabled:opacity-60"
+              className="shrink-0 rounded-full border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary-bright transition-colors active:bg-primary/10 disabled:opacity-60"
             >
               Sync now
             </button>

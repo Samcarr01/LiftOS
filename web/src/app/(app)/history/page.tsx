@@ -107,7 +107,10 @@ export default function HistoryPage() {
             <p className="text-sm text-muted-foreground">
               Finish a workout and it will show up here.
             </p>
-            <a href="/" className="premium-button mt-1">Start your first workout</a>
+            <a href="/" className="premium-button mt-1">Start Your First Workout</a>
+            <p className="mx-auto mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground/50">
+              Your training log lives here. Every session you finish builds the history the AI uses to set your next targets.
+            </p>
           </div>
         )}
 

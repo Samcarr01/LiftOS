@@ -121,7 +121,7 @@ function CurrentTierCard({ state }: {
       <div className="relative flex items-center gap-4">
         <TierIcon tier={state.tier} size={64} />
         <div className="min-w-0 flex-1">
-          <p className="text-overline" style={{ color: accent }}>Current Tier</p>
+          <p className="text-xs font-semibold tracking-wide" style={{ color: accent }}>Current Tier</p>
           <h2 className="mt-0.5 font-display text-2xl font-bold">{state.tier.name}</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">Level {state.level}</p>
         </div>
@@ -258,14 +258,14 @@ function TierRow({
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
             <span
-              className="font-display text-base font-bold uppercase tracking-[0.10em]"
+              className="font-display text-base font-bold tracking-tight"
               style={{ color: accent }}
             >
               {tier.name}
             </span>
             <span className="text-xs text-muted-foreground tabular-nums">{levelRange}</span>
             {state === 'current' && (
-              <span className="ml-auto text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: accent }}>
+              <span className="ml-auto text-xs font-semibold tracking-wide" style={{ color: accent }}>
                 You are here
               </span>
             )}
@@ -278,7 +278,7 @@ function TierRow({
           </div>
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
           {state === 'upcoming' && (
-            <p className="mt-1 text-[11px] text-muted-foreground/60 tabular-nums">
+            <p className="mt-1 text-xs text-muted-foreground/60 tabular-nums">
               Unlocks at {minXp.toLocaleString()} XP
             </p>
           )}

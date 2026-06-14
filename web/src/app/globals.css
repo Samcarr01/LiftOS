@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-barlow);
   --font-display: var(--font-barlow-condensed);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -89,8 +89,8 @@
   /* Deep dark base with frosted glass surfaces,              */
   /* orange energy primary, green success accent.             */
 
-  /* Core palette */
-  --background: oklch(0.10 0.015 260);
+  /* Core palette — true black base for OLED (pixels off = free contrast + battery) */
+  --background: oklch(0 0 0);
   --foreground: oklch(0.96 0.005 0);
   --card: oklch(0.14 0.015 260);
   --card-foreground: oklch(0.96 0.005 0);
@@ -121,18 +121,21 @@
   --state-destructive-fg: oklch(0.68 0.20 25);
 
   /* Surface system — glass elevation */
-  --surface-0: oklch(0.10 0.015 260);
+  --surface-0: oklch(0 0 0);
   --surface-1: oklch(0.14 0.015 260);
   --surface-2: oklch(0.18 0.015 260);
 
   --ring: oklch(0.75 0.18 55);
+  /* Brighter orange for SMALL text only — ~5.2:1 on true black (WCAG AA).
+     --primary stays the filled-button/large-text orange. */
+  --primary-bright: oklch(0.82 0.15 55);
   --chart-1: oklch(0.75 0.18 55);
   --chart-2: oklch(0.72 0.19 155);
   --chart-3: oklch(0.80 0.16 85);
   --chart-4: oklch(0.60 0.22 25);
   --chart-5: oklch(0.70 0.16 310);
   --radius: 1rem;
-  --sidebar: oklch(0.10 0.015 260);
+  --sidebar: oklch(0 0 0);
   --sidebar-foreground: oklch(0.96 0.005 0);
   --sidebar-primary: oklch(0.75 0.18 55);
   --sidebar-primary-foreground: oklch(0.98 0 0);
@@ -430,11 +433,32 @@
   /* ── Display font ───────────────────────────────── */
 
   .font-display {
-    font-family: var(--font-barlow-condensed), var(--font-inter), sans-serif;
+    font-family: var(--font-barlow-condensed), var(--font-barlow), sans-serif;
   }
 }
 
 @layer utilities {
+  /* Small orange text that meets WCAG AA on true black (use instead of text-primary
+     for labels, counts, links < 18px). */
+  .text-primary-bright {
+    color: var(--primary-bright);
+  }
+
+  /* iPhone safe areas (Dynamic Island top, home indicator bottom).
+     Require viewport-fit=cover (set in layout viewport). */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+  .min-h-safe-top {
+    min-height: env(safe-area-inset-top);
+  }
+
   .animate-bounce-once {
     animation: bounce-once 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }

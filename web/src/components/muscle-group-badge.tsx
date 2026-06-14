@@ -16,11 +16,22 @@ const MUSCLE_COLORS: Record<string, string> = {
   Forearms:   'bg-amber-500/15 text-amber-300',
 };
 
+/** Title-case a muscle label so seeded lowercase data ("back") and form data
+ *  ("Back") render consistently. */
+function toTitleCase(value: string): string {
+  return value
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
 export function MuscleGroupBadge({ muscle, className }: { muscle: string; className?: string }) {
-  const color = MUSCLE_COLORS[muscle] ?? 'bg-slate-500/15 text-slate-300';
+  const label = toTitleCase(muscle);
+  const color = MUSCLE_COLORS[label] ?? 'bg-slate-500/15 text-slate-300';
   return (
     <span className={cn('inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium', color, className)}>
-      {muscle}
+      {label}
     </span>
   );
 }

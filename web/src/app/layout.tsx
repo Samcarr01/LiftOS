@@ -1,14 +1,16 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Barlow_Condensed, Geist_Mono } from 'next/font/google';
+import { Barlow, Barlow_Condensed, Geist_Mono } from 'next/font/google';
 import { AuthGate } from '@/components/layout/auth-gate';
 import { OfflineProvider } from '@/components/layout/offline-indicator';
 import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 
-const inter = Inter({
-  variable: '--font-inter',
+// Body — Barlow. Canonical athletic/gym pairing with Barlow Condensed headings.
+const barlow = Barlow({
+  variable: '--font-barlow',
   subsets: ['latin'],
   display: 'swap',
+  weight: ['300', '400', '500', '600', '700'],
 });
 
 const geistMono = Geist_Mono({
@@ -77,9 +79,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  // Required for env(safe-area-inset-*) to resolve on iPhone (Dynamic Island + home indicator).
+  viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: dark)',  color: '#1a1a2e' },
-    { media: '(prefers-color-scheme: light)', color: '#1a1a2e' },
+    { media: '(prefers-color-scheme: dark)',  color: '#000000' },
+    { media: '(prefers-color-scheme: light)', color: '#000000' },
   ],
 };
 
@@ -102,12 +106,12 @@ export default function RootLayout({
         {/* Splash screens — iOS 15+ uses the manifest theme_color; older devices */}
         <meta name="msapplication-TileColor" content="#1a1a2e" />
       </head>
-      <body className={`${inter.variable} ${barlowCondensed.variable} ${geistMono.variable} min-h-[100dvh] antialiased`}>
+      <body className={`${barlow.variable} ${barlowCondensed.variable} ${geistMono.variable} min-h-[100dvh] antialiased`}>
         <OfflineProvider />
         <AuthGate>
           {children}
         </AuthGate>
-        <Toaster richColors position="top-center" />
+        <Toaster position="top-center" />
       </body>
     </html>
   );
