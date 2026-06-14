@@ -248,9 +248,12 @@ function ExerciseConfigSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && !saving && onClose()}>
-      <SheetContent side="bottom" className="flex !h-[100dvh] flex-col p-0">
+      <SheetContent side="bottom" showCloseButton={false} className="flex !h-[100dvh] flex-col p-0">
         <SheetHeader className="border-b border-border px-4 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))]">
-          <SheetTitle>Edit Exercise</SheetTitle>
+          <div className="flex items-center gap-3">
+            <BackButton onClick={() => { if (!saving) onClose(); }} label="Back to workout" />
+            <SheetTitle className="font-display text-xl font-bold">Edit Exercise</SheetTitle>
+          </div>
         </SheetHeader>
 
         <div className="flex flex-1 flex-col overflow-y-auto px-5 pb-8 pt-4 gap-6">

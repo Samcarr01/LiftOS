@@ -98,14 +98,21 @@ export function ExerciseSelector({
       {/* Wrap trigger in a click handler since @base-ui SheetTrigger doesn't support asChild */}
       <span onClick={() => setOpen(true)} className="contents">{trigger}</span>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="flex !h-[100dvh] flex-col p-0">
+        <SheetContent side="bottom" showCloseButton={false} className="flex !h-[100dvh] flex-col p-0">
           <SheetHeader className="border-b border-border px-4 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))]">
             <div className="flex items-center gap-3">
-              {/* When create was opened from browse, offer a way back. */}
-              {mode === 'create' && defaultMode !== 'create' && (
-                <BackButton onClick={() => setMode('browse')} label="Back to your exercises" />
-              )}
-              <SheetTitle>{mode === 'create' ? 'New Exercise' : 'Your Exercises'}</SheetTitle>
+              {/* Standard back-nav: create-from-browse steps back to the list;
+                  otherwise it closes the picker and returns to where it opened. */}
+              <BackButton
+                onClick={() => {
+                  if (mode === 'create' && defaultMode !== 'create') setMode('browse');
+                  else setOpen(false);
+                }}
+                label={mode === 'create' && defaultMode !== 'create' ? 'Back to your exercises' : 'Close'}
+              />
+              <SheetTitle className="font-display text-xl font-bold">
+                {mode === 'create' ? 'New Exercise' : 'Your Exercises'}
+              </SheetTitle>
               {mode === 'browse' && (
                 <button
                   onClick={() => setMode('create')}
