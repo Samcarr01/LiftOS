@@ -32,9 +32,6 @@ export function BottomNav() {
             >
               <Icon className="h-[22px] w-[22px]" />
               <span className={cn('text-[11px] leading-none', isActive ? 'font-semibold' : 'font-medium')}>{label}</span>
-              {isActive && (
-                <span className="absolute bottom-0.5 h-1 w-5 rounded-full bg-primary" />
-              )}
             </Link>
           );
         })}
