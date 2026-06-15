@@ -118,7 +118,7 @@ export default function WorkoutPage() {
   return (
     <div className="page-shell">
       <div className="page-content py-4 md:py-6">
-        <header className="sticky top-0 z-30 -mx-4 border-b border-white/[0.06] bg-white/[0.10] px-4 py-3 backdrop-blur-2xl">
+        <header className="sticky top-0 z-30 -mx-4 -mt-4 border-b border-white/[0.06] bg-white/[0.10] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-2xl md:-mt-6">
           <div className="flex items-center gap-3">
             <BackButton onClick={() => setShowLeaveDialog(true)} label="Leave workout" />
 
