@@ -411,36 +411,50 @@ function IconBackEffects({ tier, size }: { tier: Tier; size: number }) {
     }
 
     case 'nebula': {
-      // Drifting cloud of color — slow rotating deep indigo with soft glow
+      // Drifting cloud of colour — multi-layered soft radial gradients
+      // that shift hue slowly, no hard rings or orbits
       return (
         <>
-          <Centered size={size * 2.2}>
+          <Centered size={size * 2.4}>
             <div
               className="h-full w-full rounded-full"
               style={{
-                background: `radial-gradient(circle,
-                  oklch(${tier.color} / 0.50) 0%,
-                  oklch(0.60 0.24 240 / 0.20) 30%,
-                  oklch(0.50 0.20 280 / 0.10) 60%,
-                  transparent 85%)`,
-                animation: 'tier-soft-glow 5s ease-in-out infinite',
+                background: `radial-gradient(circle at 35% 40%,
+                  oklch(0.68 0.22 260 / 0.50) 0%,
+                  oklch(0.60 0.20 240 / 0.25) 25%,
+                  oklch(0.55 0.18 280 / 0.12) 50%,
+                  transparent 75%
+                )`,
+                animation: 'tier-soft-glow 6s ease-in-out infinite',
+                filter: 'blur(3px)',
+              }}
+            />
+          </Centered>
+          <Centered size={size * 1.8}>
+            <div
+              className="h-full w-full rounded-full"
+              style={{
+                background: `radial-gradient(circle at 65% 60%,
+                  oklch(0.65 0.20 240 / 0.40) 0%,
+                  oklch(0.58 0.18 280 / 0.20) 30%,
+                  transparent 60%
+                )`,
+                animation: 'tier-soft-glow 8s ease-in-out infinite',
+                animationDelay: '-2s',
                 filter: 'blur(2px)',
               }}
             />
           </Centered>
-          <Centered size={size * 1.5}>
+          <Centered size={size * 1.3}>
             <div
-              className="absolute inset-0 rounded-full"
+              className="h-full w-full rounded-full"
               style={{
-                background: `conic-gradient(from 0deg,
-                  oklch(${tier.color} / 0.6),
-                  oklch(0.60 0.24 240 / 0.3),
-                  oklch(0.50 0.20 280 / 0.4),
-                  oklch(${tier.color} / 0.6))`,
-                opacity: 0.5,
-                animation: 'tier-rotate 20s linear infinite',
-                mask: 'radial-gradient(closest-side, transparent 70%, black 72%, black 90%, transparent 92%)',
-                WebkitMask: 'radial-gradient(closest-side, transparent 70%, black 72%, black 90%, transparent 92%)',
+                background: `radial-gradient(circle at 50% 50%,
+                  oklch(0.72 0.20 270 / 0.35) 0%,
+                  transparent 60%
+                )`,
+                animation: 'tier-breathe 4.5s ease-in-out infinite',
+                filter: 'blur(1px)',
               }}
             />
           </Centered>
@@ -449,35 +463,35 @@ function IconBackEffects({ tier, size }: { tier: Tier; size: number }) {
     }
 
     case 'singularity': {
-      // Deep void with subtle gravitational lensing effect
+      // Deep void — dark centre with gravitational lensing distortion,
+      // no visible rings or orbits from the back layer (front layer handles accretion disk)
       return (
         <>
-          <Centered size={size * 1.8}>
+          <Centered size={size * 2.0}>
             <div
               className="h-full w-full rounded-full"
               style={{
                 background: `radial-gradient(circle,
-                  oklch(0.35 0.02 290 / 0.50) 0%,
-                  oklch(0.30 0.01 290 / 0.30) 30%,
-                  transparent 70%)`,
-                animation: 'tier-soft-glow 6s ease-in-out infinite',
+                  oklch(0.25 0.02 290 / 0.60) 0%,
+                  oklch(0.20 0.01 290 / 0.40) 20%,
+                  oklch(0.15 0.01 280 / 0.25) 40%,
+                  transparent 70%
+                )`,
+                animation: 'tier-soft-glow 7s ease-in-out infinite',
+                filter: 'blur(1px)',
               }}
             />
           </Centered>
-          <Centered size={size * 1.2}>
+          <Centered size={size * 1.4}>
             <div
-              className="absolute inset-0 rounded-full"
+              className="h-full w-full rounded-full"
               style={{
-                background: `conic-gradient(from 0deg,
-                  oklch(0.50 0.04 290 / 0.4),
-                  transparent 30%,
-                  oklch(0.55 0.06 270 / 0.2),
-                  transparent 70%,
-                  oklch(0.50 0.04 290 / 0.4))`,
-                opacity: 0.6,
-                animation: 'tier-rotate-reverse 15s linear infinite',
-                mask: 'radial-gradient(closest-side, transparent 65%, black 67%, black 90%, transparent 92%)',
-                WebkitMask: 'radial-gradient(closest-side, transparent 65%, black 67%, black 90%, transparent 92%)',
+                background: `radial-gradient(circle,
+                  oklch(0.35 0.03 270 / 0.15) 0%,
+                  transparent 50%
+                )`,
+                animation: 'tier-lensing-pulse 8s ease-in-out infinite',
+                filter: 'blur(2px)',
               }}
             />
           </Centered>
@@ -486,54 +500,52 @@ function IconBackEffects({ tier, size }: { tier: Tier; size: number }) {
     }
 
     case 'apex': {
-      // Solar corona — bright gold with warm radiating glow
+      // Solar corona — brilliant gold with layered radial glow,
+      // warm radiating bands, and a bright inner core
       return (
         <>
-          <Centered size={size * 2.4}>
+          <Centered size={size * 2.8}>
             <div
               className="h-full w-full rounded-full"
               style={{
                 background: `radial-gradient(circle,
-                  oklch(${tier.color} / 0.55) 0%,
-                  oklch(0.85 0.18 85 / 0.25) 30%,
-                  oklch(0.88 0.12 70 / 0.10) 60%,
-                  transparent 85%)`,
-                animation: 'tier-soft-glow 3.5s ease-in-out infinite',
+                  oklch(0.92 0.20 85 / 0.30) 0%,
+                  oklch(0.88 0.16 80 / 0.18) 20%,
+                  oklch(0.85 0.14 75 / 0.10) 40%,
+                  oklch(0.82 0.12 70 / 0.06) 60%,
+                  transparent 80%
+                )`,
+                animation: 'tier-soft-glow 4s ease-in-out infinite',
+                filter: 'blur(3px)',
+              }}
+            />
+          </Centered>
+          <Centered size={size * 2.0}>
+            <div
+              className="h-full w-full rounded-full"
+              style={{
+                background: `radial-gradient(circle,
+                  oklch(0.95 0.22 85 / 0.45) 0%,
+                  oklch(0.90 0.18 80 / 0.25) 25%,
+                  oklch(0.85 0.14 75 / 0.12) 50%,
+                  transparent 70%
+                )`,
+                animation: 'tier-solar-flare 5s ease-in-out infinite',
                 filter: 'blur(1px)',
               }}
             />
           </Centered>
-          <Centered size={size * 1.4}>
+          <Centered size={size * 1.3}>
             <div
-              className="absolute inset-0 rounded-full"
+              className="h-full w-full rounded-full"
               style={{
-                background: `conic-gradient(from 0deg,
-                  oklch(${tier.color} / 0.7),
-                  oklch(0.88 0.16 75 / 0.5),
-                  oklch(${tier.color} / 0.8),
-                  oklch(0.88 0.16 75 / 0.5),
-                  oklch(${tier.color} / 0.7))`,
-                opacity: 0.7,
-                animation: 'tier-rotate 8s linear infinite',
-                mask: 'radial-gradient(closest-side, transparent 72%, black 74%, black 92%, transparent 94%)',
-                WebkitMask: 'radial-gradient(closest-side, transparent 72%, black 74%, black 92%, transparent 94%)',
-              }}
-            />
-          </Centered>
-          <Centered size={size * 1.7}>
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{
-                background: `conic-gradient(from 180deg,
-                  transparent 0deg,
-                  oklch(0.90 0.14 85 / 0.4) 90deg,
-                  transparent 180deg,
-                  oklch(0.92 0.12 70 / 0.3) 270deg,
-                  transparent 360deg)`,
-                opacity: 0.5,
-                animation: 'tier-rotate-reverse 12s linear infinite',
-                mask: 'radial-gradient(closest-side, transparent 85%, black 87%, black 95%, transparent 97%)',
-                WebkitMask: 'radial-gradient(closest-side, transparent 85%, black 87%, black 95%, transparent 97%)',
+                background: `radial-gradient(circle,
+                  oklch(0.98 0.22 85 / 0.50) 0%,
+                  oklch(0.95 0.20 80 / 0.30) 30%,
+                  transparent 65%
+                )`,
+                animation: 'tier-breathe 3s ease-in-out infinite',
+                filter: 'blur(1px)',
               }}
             />
           </Centered>
@@ -601,36 +613,204 @@ function IconFrontEffects({ tier, size, accent }: { tier: Tier; size: number; ac
     }
 
     case 'nebula': {
-      // 3 slow-drifting particles resembling distant stars
-      const r = size * 0.8;
+      // Drifting particle cloud — 8-10 small dots that float randomly,
+      // not in orbit paths. Colour shifts between deep indigo, purple, blue.
+      const particles = [
+        { dx: 0, dy: -12, delay: 0, size: 4 },
+        { dx: 14, dy: -6, delay: 0.8, size: 3 },
+        { dx: 10, dy: 10, delay: 1.6, size: 3.5 },
+        { dx: -8, dy: 8, delay: 2.4, size: 2.5 },
+        { dx: -12, dy: -8, delay: 3.2, size: 3 },
+        { dx: 16, dy: 2, delay: 4.0, size: 2.5 },
+        { dx: -4, dy: -14, delay: 4.8, size: 3.5 },
+        { dx: -16, dy: 4, delay: 5.6, size: 3 },
+        { dx: 6, dy: -14, delay: 6.4, size: 2.5 },
+        { dx: -10, dy: 12, delay: 7.2, size: 3 },
+      ];
+      const colors = [
+        `oklch(0.70 0.22 260 / 0.9)`,
+        `oklch(0.65 0.20 280 / 0.8)`,
+        `oklch(0.75 0.18 240 / 0.9)`,
+      ];
       return (
         <>
-          <Orbit radius={r} duration={15} delay={0}   startAngle={0}   color="oklch(0.90 0.22 260 / 0.9)" dotSize={3} />
-          <Orbit radius={r} duration={15} delay={5}   startAngle={120} color="oklch(0.88 0.20 240 / 0.8)" dotSize={3} />
-          <Orbit radius={r} duration={15} delay={10}  startAngle={240} color="oklch(0.92 0.18 280 / 0.9)" dotSize={3} />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ animation: 'tier-nebula-hue 12s ease-in-out infinite' }}
+          >
+            {particles.map((p, i) => (
+              <span
+                key={i}
+                className="absolute rounded-full"
+                style={{
+                  left: '50%',
+                  top: '50%',
+                  width: p.size,
+                  height: p.size,
+                  marginLeft: -p.size / 2,
+                  marginTop: -p.size / 2,
+                  background: colors[i % colors.length],
+                  boxShadow: `0 0 ${p.size * 2}px 1px ${colors[i % colors.length]}`,
+                  animation: `tier-nebula-drift ${6 + (i % 3) * 1.5}s ease-in-out infinite`,
+                  animationDelay: `${p.delay}s`,
+                  willChange: 'transform, opacity',
+                }}
+              />
+            ))}
+          </div>
         </>
       );
     }
 
     case 'singularity': {
-      // 2 tight orbiting particles — matter spiralling inward
+      // Accretion disk effect — bright ring of material spiralling inward
+      // toward a dark centre, with gravitational lensing glow around the edge.
       return (
         <>
-          <Orbit radius={size * 0.6} duration={6} delay={0}  startAngle={0}   color="oklch(0.60 0.06 270 / 0.9)" dotSize={3} />
-          <Orbit radius={size * 0.6} duration={6} delay={3}  startAngle={180} color="oklch(0.55 0.08 290 / 0.8)" dotSize={3} reverse />
+          {/* Outer accretion ring — bright material spiralling inward */}
+          <div
+            className="pointer-events-none absolute"
+            style={{
+              left: '50%', top: '50%',
+              width: size * 1.3, height: size * 1.3,
+              marginLeft: -(size * 0.65), marginTop: -(size * 0.65),
+              borderRadius: '50%',
+              border: '2px solid transparent',
+              background: `conic-gradient(from 0deg,
+                oklch(0.65 0.08 280 / 0.9),
+                oklch(0.85 0.12 250 / 0.7),
+                oklch(0.70 0.10 260 / 0.9),
+                oklch(0.90 0.14 240 / 0.8),
+                oklch(0.65 0.08 280 / 0.9)
+              )`,
+              WebkitMask: 'radial-gradient(closest-side, transparent 40%, black 42%, black 70%, transparent 72%)',
+              mask: 'radial-gradient(closest-side, transparent 40%, black 42%, black 70%, transparent 72%)',
+              animation: 'tier-singularity-spiral 8s linear infinite',
+              boxShadow: '0 0 30px 6px oklch(0.70 0.10 270 / 0.3)',
+              filter: 'blur(1px)',
+              willChange: 'transform',
+            }}
+          />
+          {/* Inner accretion ring — faster, brighter, tighter */}
+          <div
+            className="pointer-events-none absolute"
+            style={{
+              left: '50%', top: '50%',
+              width: size * 0.9, height: size * 0.9,
+              marginLeft: -(size * 0.45), marginTop: -(size * 0.45),
+              borderRadius: '50%',
+              border: '1.5px solid transparent',
+              background: `conic-gradient(from 0deg,
+                oklch(0.90 0.14 250 / 0.9),
+                oklch(0.95 0.18 240 / 0.6),
+                oklch(0.85 0.12 270 / 0.8),
+                oklch(0.90 0.14 250 / 0.9)
+              )`,
+              WebkitMask: 'radial-gradient(closest-side, transparent 55%, black 57%, black 80%, transparent 82%)',
+              mask: 'radial-gradient(closest-side, transparent 55%, black 57%, black 80%, transparent 82%)',
+              animation: 'tier-singularity-spiral 5s linear infinite reverse',
+              boxShadow: '0 0 20px 4px oklch(0.85 0.12 260 / 0.4)',
+              willChange: 'transform',
+            }}
+          />
+          {/* Gravitational lensing glow — outer ring pulse */}
+          <div
+            className="pointer-events-none absolute rounded-full"
+            style={{
+              left: '50%', top: '50%',
+              width: size * 1.6, height: size * 1.6,
+              marginLeft: -(size * 0.8), marginTop: -(size * 0.8),
+              background: `radial-gradient(circle,
+                transparent 40%,
+                oklch(0.60 0.06 280 / 0.15) 50%,
+                oklch(0.70 0.08 260 / 0.08) 65%,
+                transparent 80%
+              )`,
+              animation: 'tier-lensing-pulse 6s ease-in-out infinite',
+              willChange: 'transform, opacity',
+            }}
+          />
         </>
       );
     }
 
     case 'apex': {
-      // Radiant solar flare particles (4 cardinal, fast)
-      const rf = size * 0.65;
+      // Full corona burst — radiating rays of light from the icon,
+      // brilliant gold pulse like a solar flare. Most visually impressive.
+      const rayCount = 8;
+      const rays = Array.from({ length: rayCount }, (_, i) => {
+        const angle = (i / rayCount) * 360;
+        const length = 0.8 + (i % 3) * 0.15;
+        return { angle, length, delay: i * 0.3 };
+      });
       return (
         <>
-          <CardinalSparkle dx={0}  dy={-rf} color="oklch(0.95 0.18 85 / 1)" duration={2.5} delay={0} />
-          <CardinalSparkle dx={rf} dy={0}  color="oklch(0.95 0.18 70 / 1)" duration={2.5} delay={0.6} />
-          <CardinalSparkle dx={0}  dy={rf} color="oklch(0.92 0.16 95 / 1)" duration={2.5} delay={1.2} />
-          <CardinalSparkle dx={-rf} dy={0} color="oklch(0.95 0.18 80 / 1)" duration={2.5} delay={1.8} />
+          {/* Outer solar glow */}
+          <div
+            className="pointer-events-none absolute rounded-full"
+            style={{
+              left: '50%', top: '50%',
+              width: size * 2.2, height: size * 2.2,
+              marginLeft: -(size * 1.1), marginTop: -(size * 1.1),
+              background: `radial-gradient(circle,
+                oklch(0.95 0.20 85 / 0.4) 0%,
+                oklch(0.88 0.16 80 / 0.15) 30%,
+                oklch(0.85 0.12 75 / 0.08) 55%,
+                transparent 75%
+              )`,
+              animation: 'tier-solar-flare 4s ease-in-out infinite',
+              filter: 'blur(2px)',
+              willChange: 'transform, box-shadow',
+            }}
+          />
+          {/* Corona rays — radiating beams */}
+          {rays.map((ray) => (
+            <div
+              key={ray.angle}
+              className="pointer-events-none absolute"
+              style={{
+                left: '50%', top: '50%',
+                width: 0, height: 0,
+                transform: `rotate(${ray.angle}deg)`,
+              }}
+            >
+              <div
+                className="absolute"
+                style={{
+                  left: size * 0.35,
+                  top: -2,
+                  width: size * ray.length,
+                  height: 4,
+                  borderRadius: '50%',
+                  background: `linear-gradient(90deg,
+                    oklch(0.95 0.20 85 / 0.9),
+                    oklch(0.90 0.16 75 / 0.4),
+                    transparent
+                  )`,
+                  animation: 'tier-corona-ray 6s ease-in-out infinite',
+                  animationDelay: `${ray.delay}s`,
+                  filter: 'blur(1px)',
+                  willChange: 'transform, opacity',
+                }}
+              />
+            </div>
+          ))}
+          {/* Inner bright flare particles */}
+          {[0, 1.2, 2.4, 3.6].map((delay) => (
+            <span
+              key={delay}
+              className="pointer-events-none absolute rounded-full"
+              style={{
+                left: '50%', top: '50%',
+                width: 4, height: 4,
+                marginLeft: -2, marginTop: -2,
+                background: 'oklch(0.98 0.22 85 / 1)',
+                boxShadow: '0 0 12px 4px oklch(0.95 0.20 85 / 0.8)',
+                animation: 'tier-spark-flash 3s ease-in-out infinite',
+                animationDelay: `${delay}s`,
+              }}
+            />
+          ))}
         </>
       );
     }

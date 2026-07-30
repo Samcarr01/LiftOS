@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   AlertTriangle,
   Award,
@@ -527,6 +528,15 @@ export default function ProfilePage() {
                   </button>
                 </div>
               </div>
+
+              <Link
+                href="/profile/training"
+                className="mt-3 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-white/[0.06]"
+              >
+                <Sparkles className="h-4 w-4" />
+                More training settings
+                <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground/60" />
+              </Link>
             </div>
           </section>
         )}

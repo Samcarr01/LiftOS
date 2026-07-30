@@ -22,7 +22,7 @@ import { BackButton } from '@/components/ui/back-button';
 import { SelectableRow } from '@/components/ui/selectable-row';
 import { useUnitStore } from '@/store/unit-store';
 
-type Step = 'welcome' | 'goals' | 'experience' | 'reps' | 'body' | 'units' | 'summary';
+type Step = 'welcome' | 'goals' | 'experience' | 'weekly' | 'reps' | 'body' | 'units' | 'summary';
 
 const GOALS = [
   { id: 'strength', label: 'Build Strength', description: 'Lift heavier, get stronger', icon: Zap },
@@ -61,7 +61,7 @@ const REP_PRESETS = [
   { id: 'endurance', label: 'Higher Reps', range: '12–20', min: 12, max: 20, description: 'Muscular endurance and pump' },
 ] as const;
 
-const STEPS: Step[] = ['welcome', 'goals', 'experience', 'reps', 'body', 'units', 'summary'];
+const STEPS: Step[] = ['welcome', 'goals', 'experience', 'weekly', 'reps', 'body', 'units', 'summary'];
 
 const GOAL_LABELS: Record<string, string> = {
   strength: 'Strength',
@@ -91,6 +91,7 @@ export default function OnboardingPage() {
   const [bodyWeight, setBodyWeight] = useState('');
   const [weightInputUnit, setWeightInputUnit] = useState<'kg' | 'lb'>('kg');
   const [unitPreference, setUnitPreference] = useState<'kg' | 'lb'>('kg');
+  const [weeklyTarget, setWeeklyTarget] = useState(4);
   const [saving, setSaving] = useState(false);
 
   const stepIndex = STEPS.indexOf(currentStep);
@@ -146,6 +147,7 @@ export default function OnboardingPage() {
         body_weight_kg: bodyWeightKg,
         preferred_rep_range: preferredRepRange,
         unit_preference: unitPreference,
+        weekly_workout_target: weeklyTarget,
         onboarding_completed: true,
       }).eq('id', (await supabase.auth.getUser()).data.user!.id);
 
@@ -286,6 +288,57 @@ export default function OnboardingPage() {
               onClick={nextStep}
               disabled={!experienceLevel}
               className="premium-button w-full justify-center disabled:opacity-40"
+            >
+              Continue
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
+        {/* ── Weekly Session Target ──────────────────────────────────────── */}
+        {currentStep === 'weekly' && (
+          <div className="space-y-5">
+            <BackButton onClick={prevStep} label="Back" />
+            <div>
+              <h1 className="font-display text-2xl font-bold">Weekly session target?</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                How many sessions per week do you want to aim for? This affects your XP
+                streak targets and training recommendations.
+              </p>
+            </div>
+
+            <div className="flex flex-col items-center gap-4 py-6">
+              <div className="flex items-center gap-6">
+                <button
+                  onClick={() => setWeeklyTarget((v) => Math.max(1, v - 1))}
+                  disabled={weeklyTarget <= 1}
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-2xl font-bold text-foreground transition-colors hover:bg-white/[0.08] disabled:opacity-30"
+                  aria-label="Decrease sessions"
+                >
+                  −
+                </button>
+                <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-primary/12">
+                  <span className="font-display text-4xl font-bold text-primary">{weeklyTarget}</span>
+                </div>
+                <button
+                  onClick={() => setWeeklyTarget((v) => Math.min(7, v + 1))}
+                  disabled={weeklyTarget >= 7}
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-2xl font-bold text-foreground transition-colors hover:bg-white/[0.08] disabled:opacity-30"
+                  aria-label="Increase sessions"
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {weeklyTarget === 1 ? '1 session per week' :
+                 weeklyTarget === 7 ? '7 sessions per week (daily!)' :
+                 `${weeklyTarget} sessions per week`}
+              </p>
+            </div>
+
+            <button
+              onClick={nextStep}
+              className="premium-button w-full justify-center"
             >
               Continue
               <ArrowRight className="h-4 w-4" />
@@ -491,6 +544,12 @@ export default function OnboardingPage() {
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
                 <p className="text-xs font-medium text-muted-foreground">Experience</p>
                 <p className="mt-0.5 text-sm font-semibold">{EXP_LABELS[experienceLevel] ?? 'Not set'}</p>
+              </div>
+
+              {/* Weekly Target */}
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                <p className="text-xs font-medium text-muted-foreground">Weekly Sessions</p>
+                <p className="mt-0.5 text-sm font-semibold">{weeklyTarget} / week</p>
               </div>
 
               {/* Rep Range */}

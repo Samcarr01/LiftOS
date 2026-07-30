@@ -616,6 +616,44 @@
   100% { transform: translateY(0);    opacity: 1; letter-spacing: -0.02em; filter: blur(0); }
 }
 
+/* nebula — drifting particle cloud: random-like float and fade */
+@keyframes tier-nebula-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.2; }
+  25%      { transform: translate(12px, -8px) scale(1.3); opacity: 0.9; }
+  50%      { transform: translate(-6px, 14px) scale(0.8); opacity: 0.5; }
+  75%      { transform: translate(-14px, -6px) scale(1.1); opacity: 0.8; }
+}
+
+/* nebula — colour shift across deep indigo, purple, blue */
+@keyframes tier-nebula-hue {
+  0%, 100% { filter: hue-rotate(0deg); }
+  33%      { filter: hue-rotate(30deg); }
+  66%      { filter: hue-rotate(-20deg); }
+}
+
+/* singularity — accretion disk: bright ring spiralling inward */
+@keyframes tier-singularity-spiral {
+  to { transform: rotate(360deg); }
+}
+
+/* singularity — gravitational lensing glow pulse */
+@keyframes tier-lensing-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50%      { transform: scale(1.15); opacity: 0.85; }
+}
+
+/* apex — coronal ray burst: radiating beams of light */
+@keyframes tier-corona-ray {
+  0%, 100% { transform: rotate(0deg) scaleY(1); opacity: 0.3; }
+  50%      { transform: rotate(180deg) scaleY(1.4); opacity: 0.9; }
+}
+
+/* apex — solar flare pulse */
+@keyframes tier-solar-flare {
+  0%, 100% { box-shadow: 0 0 20px 0px oklch(0.90 0.18 85 / 0.4); }
+  50%      { box-shadow: 0 0 40px 8px oklch(0.95 0.20 80 / 0.8); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

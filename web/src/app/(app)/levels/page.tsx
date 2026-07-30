@@ -158,6 +158,7 @@ function CurrentTierCard({ state }: {
 // ── XP rules explainer ───────────────────────────────────────────────────────
 
 function XpRulesCard() {
+  const [expanded, setExpanded] = useState(false);
   const rules: Array<{ icon: typeof Dumbbell; label: string; xp: string | number; note?: string; category: string }> = [
     // Base
     { icon: Dumbbell,   label: 'Complete a workout',       xp: XP_PER_SESSION,       note: 'per session',           category: 'Base' },
@@ -185,37 +186,47 @@ function XpRulesCard() {
 
   return (
     <div className="space-y-2.5">
-      <h3 className="section-title">How XP works — 12 sources</h3>
-      <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03]">
-        {categories.map((cat) => {
-          const catRules = rules.filter((r) => r.category === cat);
-          if (catRules.length === 0) return null;
-          return (
-            <div key={cat}>
-              <div className="px-4 pt-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground/60 uppercase">
-                {cat}
-              </div>
-              {catRules.map((r, i) => (
-                <div
-                  key={r.label}
-                  className="flex items-center gap-3 px-4 py-2.5 border-t border-white/[0.06] first:border-t-0"
-                >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
-                    <r.icon className="h-3.5 w-3.5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{r.label}</p>
-                    {r.note && <p className="text-xs text-muted-foreground">{r.note}</p>}
-                  </div>
-                  <span className="font-display text-sm font-bold tabular-nums text-primary shrink-0">
-                    +{r.xp}
-                  </span>
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left transition-colors hover:bg-white/[0.06]"
+      >
+        <h3 className="section-title mb-0">How XP works — 12 sources</h3>
+        <span className="text-xs font-semibold text-primary">
+          {expanded ? 'Hide' : 'Show rules'}
+        </span>
+      </button>
+      {expanded && (
+        <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03]">
+          {categories.map((cat) => {
+            const catRules = rules.filter((r) => r.category === cat);
+            if (catRules.length === 0) return null;
+            return (
+              <div key={cat}>
+                <div className="px-4 pt-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground/60 uppercase">
+                  {cat}
                 </div>
-              ))}
-            </div>
-          );
-        })}
-      </div>
+                {catRules.map((r, i) => (
+                  <div
+                    key={r.label}
+                    className="flex items-center gap-3 px-4 py-2.5 border-t border-white/[0.06] first:border-t-0"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
+                      <r.icon className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{r.label}</p>
+                      {r.note && <p className="text-xs text-muted-foreground">{r.note}</p>}
+                    </div>
+                    <span className="font-display text-sm font-bold tabular-nums text-primary shrink-0">
+                      +{r.xp}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
