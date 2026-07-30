@@ -47,6 +47,7 @@ export type {
   SetValues,
   // Zod-derived
   AISuggestionData,
+  ProgressionOutcome,
   ExerciseCreate,
   ExerciseUpdate,
   TemplateCreate,
