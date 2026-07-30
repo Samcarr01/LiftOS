@@ -1,6 +1,6 @@
 /**
  * Supabase database type definitions.
- * Mirrors the exact schema applied in migration 001.
+ * Mirrors the exact schema from all committed migrations.
  *
  * Insert/Update types are kept fully explicit (no self-referential Omit/Partial)
  * to avoid TypeScript circular-inference collapsing them to `never`.
@@ -25,6 +25,14 @@ export interface Database {
           display_name: string | null;
           unit_preference: 'kg' | 'lb';
           subscription_tier: 'free' | 'pro';
+          training_goals: string[];
+          experience_level: 'beginner' | 'intermediate' | 'advanced';
+          body_weight_kg: number | null;
+          preferred_rep_range: Json | null;
+          onboarding_completed: boolean;
+          avatar_url: string | null;
+          prefill_sort_heaviest_first: boolean;
+          weekly_workout_target: number;
           created_at: string;
           updated_at: string;
         };
@@ -34,6 +42,14 @@ export interface Database {
           display_name?: string | null;
           unit_preference?: 'kg' | 'lb';
           subscription_tier?: 'free' | 'pro';
+          training_goals?: string[];
+          experience_level?: 'beginner' | 'intermediate' | 'advanced';
+          body_weight_kg?: number | null;
+          preferred_rep_range?: Json | null;
+          onboarding_completed?: boolean;
+          avatar_url?: string | null;
+          prefill_sort_heaviest_first?: boolean;
+          weekly_workout_target?: number;
         };
         Update: {
           id?: string;
@@ -41,6 +57,14 @@ export interface Database {
           display_name?: string | null;
           unit_preference?: 'kg' | 'lb';
           subscription_tier?: 'free' | 'pro';
+          training_goals?: string[];
+          experience_level?: 'beginner' | 'intermediate' | 'advanced';
+          body_weight_kg?: number | null;
+          preferred_rep_range?: Json | null;
+          onboarding_completed?: boolean;
+          avatar_url?: string | null;
+          prefill_sort_heaviest_first?: boolean;
+          weekly_workout_target?: number;
         };
         Relationships: [];
       };
@@ -151,27 +175,34 @@ export interface Database {
           id: string;
           user_id: string;
           template_id: string | null;
+          template_name: string | null;
           started_at: string;
           completed_at: string | null;
           duration_seconds: number | null;
           notes: string | null;
+          is_light_session: boolean;
           created_at: string;
         };
         Insert: {
+          id?: string;
           user_id: string;
           template_id?: string | null;
+          template_name?: string | null;
           started_at?: string;
           completed_at?: string | null;
           duration_seconds?: number | null;
           notes?: string | null;
+          is_light_session?: boolean;
         };
         Update: {
           user_id?: string;
           template_id?: string | null;
+          template_name?: string | null;
           started_at?: string;
           completed_at?: string | null;
           duration_seconds?: number | null;
           notes?: string | null;
+          is_light_session?: boolean;
         };
         Relationships: [];
       };
@@ -188,6 +219,7 @@ export interface Database {
           notes: string | null;
         };
         Insert: {
+          id?: string;
           session_id: string;
           exercise_id: string;
           order_index: number;
@@ -350,6 +382,29 @@ export interface Database {
         };
         Relationships: [];
       };
+
+      // ── ai_rate_limits ──────────────────────────────────────────────────────
+      ai_rate_limits: {
+        Row: {
+          id: string;
+          user_id: string;
+          window_start: string;
+          call_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          window_start: string;
+          call_count?: number;
+        };
+        Update: {
+          user_id?: string;
+          window_start?: string;
+          call_count?: number;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -372,3 +427,4 @@ export type LastPerformanceSnapshotRow = Tables['last_performance_snapshots']['R
 export type PersonalRecordRow          = Tables['personal_records']['Row'];
 export type AISuggestionRow            = Tables['ai_suggestions']['Row'];
 export type WeeklySummaryRow           = Tables['weekly_summaries']['Row'];
+export type AiRateLimitRow             = Tables['ai_rate_limits']['Row'];

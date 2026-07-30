@@ -9,6 +9,8 @@
  * required by @supabase/postgrest-js >= v1.10.
  *
  * Re-generate with: `supabase gen types typescript --project-id <project-id>`
+ *
+ * Last updated: 2026-07-31 (migration 20260731120000_reconcile_schema_gap)
  */
 
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
@@ -381,6 +383,29 @@ export interface Database {
         };
         Relationships: [];
       };
+
+      // ── ai_rate_limits ───────────────────────────────────────────────────────
+      ai_rate_limits: {
+        Row: {
+          id: string;
+          user_id: string;
+          window_start: string;
+          call_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          window_start: string;
+          call_count?: number;
+        };
+        Update: {
+          user_id?: string;
+          window_start?: string;
+          call_count?: number;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -403,3 +428,4 @@ export type LastPerformanceSnapshotRow = Tables['last_performance_snapshots']['R
 export type PersonalRecordRow          = Tables['personal_records']['Row'];
 export type AISuggestionRow            = Tables['ai_suggestions']['Row'];
 export type WeeklySummaryRow           = Tables['weekly_summaries']['Row'];
+export type AiRateLimitRow             = Tables['ai_rate_limits']['Row'];
