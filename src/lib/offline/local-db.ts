@@ -42,6 +42,11 @@ const SCHEMA = `
 
   CREATE INDEX IF NOT EXISTS idx_local_sets_session
     ON local_set_entries(session_exercise_id);
+
+  CREATE TABLE IF NOT EXISTS active_workout_state (
+    key  TEXT PRIMARY KEY,
+    json TEXT NOT NULL
+  );
 `;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -91,9 +96,16 @@ export async function initLocalDb(): Promise<void> {
 export async function queueInsert(row: Omit<QueueRow, 'retries' | 'status' | 'error_msg' | 'next_retry_at'>): Promise<void> {
   const db = await getDb();
   await db.runAsync(
-    `INSERT OR IGNORE INTO offline_queue
+    `INSERT INTO offline_queue
        (id, table_name, operation, data, timestamp, retries, status)
-     VALUES (?, ?, ?, ?, ?, 0, 'pending')`,
+     VALUES (?, ?, ?, ?, ?, 0, 'pending')
+     ON CONFLICT(id) DO UPDATE SET
+       data       = excluded.data,
+       timestamp  = excluded.timestamp,
+       retries    = 0,
+       status     = 'pending',
+       error_msg  = NULL,
+       next_retry_at = NULL`,
     [row.id, row.table_name, row.operation, row.data, row.timestamp],
   );
 }
@@ -117,6 +129,26 @@ export async function queueMarkSyncing(ids: string[]): Promise<void> {
   const placeholders = ids.map(() => '?').join(',');
   await db.runAsync(
     `UPDATE offline_queue SET status = 'syncing' WHERE id IN (${placeholders})`,
+    ids,
+  );
+}
+
+/**
+ * Revert syncing rows back to pending with incremented retry count.
+ * Called when a sync attempt fails mid-flight so mutations can be retried
+ * instead of being stranded in 'syncing' forever.
+ */
+export async function queueUnmarkSyncing(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  const db = await getDb();
+  const placeholders = ids.map(() => '?').join(',');
+  // Increment retries by 1 so the next attempt respects the backoff limit
+  await db.runAsync(
+    `UPDATE offline_queue
+     SET status    = 'pending',
+         retries   = retries + 1,
+         error_msg = 'sync failed, will retry'
+     WHERE id IN (${placeholders})`,
     ids,
   );
 }
@@ -220,4 +252,28 @@ export async function localSetMarkSynced(sessionExerciseId: string, setIndex: nu
      WHERE session_exercise_id = ? AND set_index = ?`,
     [sessionExerciseId, setIndex],
   );
+}
+
+// ── Active workout state persistence (survives force-quit) ──────────────────
+
+export async function saveActiveWorkoutState(stateJson: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    `INSERT INTO active_workout_state (key, json) VALUES ('active_workout', ?)
+     ON CONFLICT(key) DO UPDATE SET json = excluded.json`,
+    [stateJson],
+  );
+}
+
+export async function loadActiveWorkoutState(): Promise<string | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ json: string }>(
+    `SELECT json FROM active_workout_state WHERE key = 'active_workout'`,
+  );
+  return row?.json ?? null;
+}
+
+export async function clearActiveWorkoutState(): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(`DELETE FROM active_workout_state WHERE key = 'active_workout'`);
 }

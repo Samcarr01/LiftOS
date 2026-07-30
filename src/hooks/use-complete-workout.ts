@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { useCompletionStore, type PRRecord } from '@/store/completion-store';
-import { addToQueue, triggerSync, getIsOnline } from '@/lib/offline';
+import { addToQueue, triggerSync, getIsOnline, getQueueSize } from '@/lib/offline';
 import { Analytics } from '@/lib/analytics';
 import type { WorkoutSessionRow } from '@/types/database';
 
@@ -86,6 +86,23 @@ export function useCompleteWorkout() {
       setError(null);
 
       const sessionId = activeWorkout.session.id;
+
+      // ── Completion barrier: await pending sync mutations ────────────────
+      // Before marking the workout complete, try to flush any pending
+      // mutations for this session so the server-side computation (PRs,
+      // summary, duration) includes all logged sets.
+      let pendingCount = await getQueueSize();
+      if (pendingCount > 0 && getIsOnline()) {
+        // Trigger a sync and wait briefly for it to drain
+        triggerSync();
+        let waited = 0;
+        const maxWait = 5000; // 5-second ceiling
+        while (pendingCount > 0 && waited < maxWait) {
+          await new Promise((r) => setTimeout(r, 200));
+          pendingCount = await getQueueSize();
+          waited += 200;
+        }
+      }
 
       // ── Online path ────────────────────────────────────────────────────────
       if (getIsOnline()) {

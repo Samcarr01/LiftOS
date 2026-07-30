@@ -8,6 +8,7 @@ import {
   queueInsert,
   queueGetPending,
   queueMarkSyncing,
+  queueUnmarkSyncing,
   queueMarkSynced,
   queueMarkFailed,
   queueGetSize,
@@ -90,6 +91,19 @@ export async function markSyncing(ids: string[]): Promise<void> {
     await queueMarkSyncing(ids);
   } catch (err) {
     console.warn('[sync-queue] markSyncing error:', err);
+  }
+}
+
+/**
+ * Revert syncing rows back to pending with incremented retry count.
+ * Called when a sync attempt fails mid-flight.
+ */
+export async function unmarkSyncing(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  try {
+    await queueUnmarkSyncing(ids);
+  } catch (err) {
+    console.warn('[sync-queue] unmarkSyncing error:', err);
   }
 }
 

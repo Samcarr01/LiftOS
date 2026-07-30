@@ -6,7 +6,7 @@
  *   2. offline_queue (for server sync)
  *   then triggers a background sync attempt.
  */
-export { initLocalDb } from './local-db';
+export { initLocalDb, localSetMarkSynced, saveActiveWorkoutState, loadActiveWorkoutState, clearActiveWorkoutState } from './local-db';
 export { addToQueue, getQueueSize, clearSynced, clearAllLocalData, getFailedCount } from './sync-queue';
 export { startSyncManager, stopSyncManager, triggerSync, getIsOnline } from './sync-manager';
 
@@ -53,5 +53,32 @@ export async function logSetEntry(set: SetEntry): Promise<void> {
   });
 
   // 3. Attempt background sync (non-blocking)
+  triggerSync();
+}
+
+/**
+ * Enqueue a deletion mutation for a set and remove it from the local mirror.
+ * Called when the user deletes a set during an active workout.
+ */
+export async function deleteSetEntry(
+  sessionExerciseId: string,
+  setIndex: number,
+): Promise<void> {
+  const now = new Date().toISOString();
+  const deleteId = `del_${sessionExerciseId}_${setIndex}_${Date.now()}`;
+
+  // 1. Enqueue deletion for server sync
+  await addToQueue({
+    id: deleteId,
+    table: 'set_entries',
+    operation: 'delete',
+    data: {
+      session_exercise_id: sessionExerciseId,
+      set_index: setIndex,
+    },
+    timestamp: now,
+  });
+
+  // 2. Attempt background sync (non-blocking)
   triggerSync();
 }
