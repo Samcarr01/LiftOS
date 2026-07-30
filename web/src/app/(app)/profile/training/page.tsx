@@ -165,7 +165,7 @@ export default function TrainingPreferencesPage() {
         </div>
 
         <div className="space-y-2">
-          <div className="content-card flex items-center justify-between gap-3">
+          <div className="content-card !px-4 flex items-center justify-between gap-3">
             <div className="flex flex-col">
               <span className="text-xs font-semibold uppercase tracking-wider text-primary-bright">Goal</span>
               <span className="mt-1 font-display text-2xl font-bold">Weekly Sessions</span>
@@ -198,21 +198,17 @@ export default function TrainingPreferencesPage() {
 
           <div className="list-row justify-between">
             <span className="text-sm font-semibold">Experience</span>
-            <div className="flex overflow-x-auto flex-nowrap rounded-lg border border-white/10 bg-black/15 p-0.5">
+            <select
+              value={experience}
+              onChange={(e) => setExperience(e.target.value as Experience)}
+              className="h-8 rounded-lg border border-white/10 bg-black/15 px-2 text-sm font-medium text-foreground outline-none focus:border-primary/50"
+            >
               {STAGE_IDS.map((level) => (
-                <button
-                  key={level}
-                  onClick={() => setExperience(level)}
-                  className={`h-7 rounded-md px-2 text-xs font-semibold transition-colors ${
-                    experience === level
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-foreground/70 hover:bg-white/[0.06] hover:text-foreground'
-                  }`}
-                >
-                  {level === 'just-starting' ? 'Just Starting' : level === 'early-intermediate' ? 'Early Int.' : level === 'advanced-intermediate' ? 'Adv. Int.' : STAGE_LABELS[level].split(' ')[0]}
-                </button>
+                <option key={level} value={level}>
+                  {STAGE_LABELS[level]}
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           <div className="list-row justify-between">
