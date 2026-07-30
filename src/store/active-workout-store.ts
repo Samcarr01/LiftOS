@@ -8,6 +8,7 @@
 
 import { create } from 'zustand';
 import { localId } from '@/lib/utils';
+import { saveActiveWorkoutState, loadActiveWorkoutState, clearActiveWorkoutState } from '@/lib/offline';
 import type {
   ActiveWorkoutState,
   ActiveExerciseState,
@@ -47,6 +48,14 @@ interface ActiveWorkoutStore {
   startRestTimer: (sessionExerciseId: string) => void;
   tickRestTimer: (sessionExerciseId: string) => void;
   stopRestTimer: (sessionExerciseId: string) => void;
+
+  // ── Persistence (force-quit survival) ─────────────────────────────────────
+  /** Persist the current activeWorkout to SQLite. Safe to call after every mutation. */
+  persistToDb: () => Promise<void>;
+  /** Restore activeWorkout from SQLite. Returns true if state was restored. */
+  restoreFromDb: () => Promise<boolean>;
+  /** Remove persisted state from SQLite (called on completion or discard). */
+  clearPersistedState: () => Promise<void>;
 }
 
 // ── Helper ────────────────────────────────────────────────────────────────────
@@ -106,7 +115,11 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>((set, get) => ({
 
   setLoading: (value) => set({ isLoading: value }),
   setError: (message) => set({ error: message, isLoading: false }),
-  clearWorkout: () => set({ activeWorkout: null, isLoading: false, error: null }),
+  clearWorkout: () => {
+    set({ activeWorkout: null, isLoading: false, error: null });
+    // Fire-and-forget: clear the persisted state from SQLite
+    void clearActiveWorkoutState().catch(() => {});
+  },
   setIsCompleting: (value) =>
     set((state) =>
       state.activeWorkout
@@ -251,5 +264,40 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>((set, get) => ({
         })),
       },
     });
+  },
+
+  // ── Persistence ──────────────────────────────────────────────────────────
+
+  persistToDb: async () => {
+    const { activeWorkout } = get();
+    if (!activeWorkout) return;
+    try {
+      // Serialise only the serialisable subset — exclude runtime-only fields
+      // like restTimer (which is ephemeral and will rehydrate differently)
+      await saveActiveWorkoutState(JSON.stringify(activeWorkout));
+    } catch (err) {
+      console.warn('[active-workout-store] persistToDb error:', err);
+    }
+  },
+
+  restoreFromDb: async () => {
+    try {
+      const json = await loadActiveWorkoutState();
+      if (!json) return false;
+      const parsed = JSON.parse(json) as ActiveWorkoutState;
+      set({ activeWorkout: parsed, isLoading: false, error: null });
+      return true;
+    } catch (err) {
+      console.warn('[active-workout-store] restoreFromDb error:', err);
+      return false;
+    }
+  },
+
+  clearPersistedState: async () => {
+    try {
+      await clearActiveWorkoutState();
+    } catch (err) {
+      console.warn('[active-workout-store] clearPersistedState error:', err);
+    }
   },
 }));

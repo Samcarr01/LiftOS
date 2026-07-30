@@ -6,7 +6,7 @@
  *   2. offline_queue (for server sync)
  *   then triggers a background sync attempt.
  */
-export { initLocalDb, localSetMarkSynced } from './local-db';
+export { initLocalDb, localSetMarkSynced, saveActiveWorkoutState, loadActiveWorkoutState, clearActiveWorkoutState } from './local-db';
 export { addToQueue, getQueueSize, clearSynced, clearAllLocalData, getFailedCount } from './sync-queue';
 export { startSyncManager, stopSyncManager, triggerSync, getIsOnline } from './sync-manager';
 

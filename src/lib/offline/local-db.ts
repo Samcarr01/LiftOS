@@ -42,6 +42,11 @@ const SCHEMA = `
 
   CREATE INDEX IF NOT EXISTS idx_local_sets_session
     ON local_set_entries(session_exercise_id);
+
+  CREATE TABLE IF NOT EXISTS active_workout_state (
+    key  TEXT PRIMARY KEY,
+    json TEXT NOT NULL
+  );
 `;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -247,4 +252,28 @@ export async function localSetMarkSynced(sessionExerciseId: string, setIndex: nu
      WHERE session_exercise_id = ? AND set_index = ?`,
     [sessionExerciseId, setIndex],
   );
+}
+
+// ── Active workout state persistence (survives force-quit) ──────────────────
+
+export async function saveActiveWorkoutState(stateJson: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    `INSERT INTO active_workout_state (key, json) VALUES ('active_workout', ?)
+     ON CONFLICT(key) DO UPDATE SET json = excluded.json`,
+    [stateJson],
+  );
+}
+
+export async function loadActiveWorkoutState(): Promise<string | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ json: string }>(
+    `SELECT json FROM active_workout_state WHERE key = 'active_workout'`,
+  );
+  return row?.json ?? null;
+}
+
+export async function clearActiveWorkoutState(): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(`DELETE FROM active_workout_state WHERE key = 'active_workout'`);
 }

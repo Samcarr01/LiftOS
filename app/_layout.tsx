@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/auth-store';
+import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { initLocalDb, startSyncManager } from '@/lib/offline';
 import { OfflineIndicator } from '@/components/offline-indicator';
 import { initSentry, setSentryUser } from '@/lib/sentry';
@@ -43,7 +44,28 @@ export default function RootLayout() {
 
   // Initialise offline layer once on mount
   useEffect(() => {
-    void initLocalDb().then(() => startSyncManager());
+    const persistUnsubRef: { current: (() => void) | null } = { current: null };
+
+    void initLocalDb().then(async () => {
+      startSyncManager();
+
+      // Restore any persisted active workout state (survives force-quit)
+      await useActiveWorkoutStore.getState().restoreFromDb();
+
+      // Subscribe to activeWorkout changes and persist to SQLite
+      persistUnsubRef.current = useActiveWorkoutStore.subscribe(
+        (state) => state.activeWorkout,
+        (activeWorkout) => {
+          if (activeWorkout) {
+            void useActiveWorkoutStore.getState().persistToDb();
+          }
+        },
+      );
+    });
+
+    return () => {
+      persistUnsubRef.current?.();
+    };
   }, []);
 
   return (
