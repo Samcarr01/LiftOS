@@ -91,9 +91,16 @@ export async function initLocalDb(): Promise<void> {
 export async function queueInsert(row: Omit<QueueRow, 'retries' | 'status' | 'error_msg' | 'next_retry_at'>): Promise<void> {
   const db = await getDb();
   await db.runAsync(
-    `INSERT OR IGNORE INTO offline_queue
+    `INSERT INTO offline_queue
        (id, table_name, operation, data, timestamp, retries, status)
-     VALUES (?, ?, ?, ?, ?, 0, 'pending')`,
+     VALUES (?, ?, ?, ?, ?, 0, 'pending')
+     ON CONFLICT(id) DO UPDATE SET
+       data       = excluded.data,
+       timestamp  = excluded.timestamp,
+       retries    = 0,
+       status     = 'pending',
+       error_msg  = NULL,
+       next_retry_at = NULL`,
     [row.id, row.table_name, row.operation, row.data, row.timestamp],
   );
 }
