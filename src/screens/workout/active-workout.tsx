@@ -17,7 +17,7 @@
  */
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert,
+  View, Text, TouchableOpacity, FlatList, StyleSheet, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -128,7 +128,9 @@ export function ActiveWorkout() {
       </View>
 
       {/* ── Exercise cards ────────────────────────────────────────────────── */}
-      <ScrollView
+      <FlatList
+        data={activeWorkout.exercises}
+        keyExtractor={(ex) => ex.sessionExercise.id}
         style={styles.scroll}
         contentContainerStyle={[
           styles.scrollContent,
@@ -136,62 +138,59 @@ export function ActiveWorkout() {
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-      >
-        {activeWorkout.exercises.length === 0 ? (
+        ListEmptyComponent={
           <View style={styles.emptyExercises}>
             <Text style={styles.emptyExercisesText}>No exercises in this workout.</Text>
             <Text style={styles.emptyExercisesHint}>Use Templates to plan your session.</Text>
           </View>
-        ) : (
-          activeWorkout.exercises.map((ex) => (
-            <ExerciseCard
-              key={ex.sessionExercise.id}
-              exerciseState={ex}
-              onAddSet={() => addSet(ex.sessionExercise.id)}
-              onUpdateSet={(setIndex, patch) => {
-                updateSet(ex.sessionExercise.id, setIndex, patch);
-                // Fire-and-forget: persist value changes locally
-                const updatedSet = useActiveWorkoutStore
-                  .getState()
-                  .activeWorkout?.exercises
-                  .find((e) => e.sessionExercise.id === ex.sessionExercise.id)
-                  ?.sets.find((s) => s.setIndex === setIndex);
-                if (updatedSet?.isCompleted) {
-                  void logSetEntry(updatedSet).catch(console.warn);
-                }
-              }}
-              onDeleteSet={(setIndex) => {
-                deleteSet(ex.sessionExercise.id, setIndex);
-                // Enqueue deletion for remote sync (fire-and-forget)
-                void deleteSetEntry(ex.sessionExercise.id, setIndex).catch(console.warn);
-              }}
-              onCompleteSet={(setIndex) => {
-                completeSet(ex.sessionExercise.id, setIndex);
-                // Fire-and-forget: persist completed set to local DB + queue for sync
-                const completedSet = useActiveWorkoutStore
-                  .getState()
-                  .activeWorkout?.exercises
-                  .find((e) => e.sessionExercise.id === ex.sessionExercise.id)
-                  ?.sets.find((s) => s.setIndex === setIndex);
-                if (completedSet) {
-                  void logSetEntry(completedSet).catch(console.warn);
-                  const w = Number(completedSet.values['weight'] ?? 0);
-                  const r = Number(completedSet.values['reps']   ?? 0);
-                  Analytics.setLogged({
-                    exercise_id: ex.exercise.id,
-                    set_type:    completedSet.setType,
-                    volume_kg:   w * r,
-                  });
-                }
-              }}
-              onStartRest={() => startRestTimer(ex.sessionExercise.id)}
-              onAcceptSuggestion={(_values: SetValues) => {
-                // suggestion already applied in ExerciseCard.handleAcceptSuggestion
-              }}
-            />
-          ))
+        }
+        renderItem={({ item: ex }) => (
+          <ExerciseCard
+            exerciseState={ex}
+            onAddSet={() => addSet(ex.sessionExercise.id)}
+            onUpdateSet={(setIndex, patch) => {
+              updateSet(ex.sessionExercise.id, setIndex, patch);
+              // Fire-and-forget: persist value changes locally
+              const updatedSet = useActiveWorkoutStore
+                .getState()
+                .activeWorkout?.exercises
+                .find((e) => e.sessionExercise.id === ex.sessionExercise.id)
+                ?.sets.find((s) => s.setIndex === setIndex);
+              if (updatedSet?.isCompleted) {
+                void logSetEntry(updatedSet).catch(console.warn);
+              }
+            }}
+            onDeleteSet={(setIndex) => {
+              deleteSet(ex.sessionExercise.id, setIndex);
+              // Enqueue deletion for remote sync (fire-and-forget)
+              void deleteSetEntry(ex.sessionExercise.id, setIndex).catch(console.warn);
+            }}
+            onCompleteSet={(setIndex) => {
+              completeSet(ex.sessionExercise.id, setIndex);
+              // Fire-and-forget: persist completed set to local DB + queue for sync
+              const completedSet = useActiveWorkoutStore
+                .getState()
+                .activeWorkout?.exercises
+                .find((e) => e.sessionExercise.id === ex.sessionExercise.id)
+                ?.sets.find((s) => s.setIndex === setIndex);
+              if (completedSet) {
+                void logSetEntry(completedSet).catch(console.warn);
+                const w = Number(completedSet.values['weight'] ?? 0);
+                const r = Number(completedSet.values['reps']   ?? 0);
+                Analytics.setLogged({
+                  exercise_id: ex.exercise.id,
+                  set_type:    completedSet.setType,
+                  volume_kg:   w * r,
+                });
+              }
+            }}
+            onStartRest={() => startRestTimer(ex.sessionExercise.id)}
+            onAcceptSuggestion={(_values: SetValues) => {
+              // suggestion already applied in ExerciseCard.handleAcceptSuggestion
+            }}
+          />
         )}
-      </ScrollView>
+      />
 
       {/* ── Floating rest timer overlay ────────────────────────────────────── */}
       <RestTimer />
