@@ -165,6 +165,37 @@ export default function TrainingPreferencesPage() {
         </div>
 
         <div className="space-y-2">
+          <div className="content-card flex items-center justify-between gap-3">
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary-bright">Goal</span>
+              <span className="mt-1 font-display text-2xl font-bold">Weekly Sessions</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setWeeklyTarget((v) => Math.max(1, v - 1))}
+                disabled={weeklyTarget <= 1}
+                aria-label="Decrease weekly goal"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/15 text-lg font-bold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+              >
+                −
+              </button>
+              <div className="flex min-w-[3rem] flex-col items-center">
+                <span className="text-center font-display text-3xl font-bold tabular-nums text-primary">{weeklyTarget}</span>
+                <span className="text-xs text-muted-foreground">sessions / wk</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWeeklyTarget((v) => Math.min(7, v + 1))}
+                disabled={weeklyTarget >= 7}
+                aria-label="Increase weekly goal"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/15 text-lg font-bold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
           <div className="list-row justify-between">
             <span className="text-sm font-semibold">Experience</span>
             <div className="flex overflow-x-auto flex-nowrap rounded-lg border border-white/10 bg-black/15 p-0.5">
@@ -181,32 +212,6 @@ export default function TrainingPreferencesPage() {
                   {level === 'just-starting' ? 'Just Starting' : level === 'early-intermediate' ? 'Early Int.' : level === 'advanced-intermediate' ? 'Adv. Int.' : STAGE_LABELS[level].split(' ')[0]}
                 </button>
               ))}
-            </div>
-          </div>
-
-          <div className="list-row justify-between">
-            <span className="text-sm font-semibold">Weekly goal</span>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setWeeklyTarget((v) => Math.max(1, v - 1))}
-                disabled={weeklyTarget <= 1}
-                aria-label="Decrease weekly goal"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-black/15 text-sm font-semibold text-muted-foreground hover:text-foreground disabled:opacity-40"
-              >
-                −
-              </button>
-              <span className="w-9 text-center font-display text-base font-bold tabular-nums">{weeklyTarget}</span>
-              <button
-                type="button"
-                onClick={() => setWeeklyTarget((v) => Math.min(7, v + 1))}
-                disabled={weeklyTarget >= 7}
-                aria-label="Increase weekly goal"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-black/15 text-sm font-semibold text-muted-foreground hover:text-foreground disabled:opacity-40"
-              >
-                +
-              </button>
-              <span className="ml-1 text-xs text-muted-foreground">sessions / wk</span>
             </div>
           </div>
 
