@@ -1,15 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Calendar,
   ChevronRight,
   Dumbbell,
+  Flame,
   Loader2,
   Play,
   Plus,
+  Target,
   Trash2,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -24,6 +26,13 @@ import { createClient } from '@/lib/supabase/client';
 import GettingStartedTutorial from '@/components/tutorial/getting-started-tutorial';
 import { StreakHeatmap } from '@/components/home/streak-heatmap';
 import { LevelChip } from '@/components/home/level-chip';
+import {
+  computeProcessRecognition,
+  BADGES,
+  type BadgeId,
+  type SessionSummary,
+  type WeeklySummary,
+} from '@/lib/leveling';
 
 /* ── Helpers ────────────────────────────────────────────────── */
 
@@ -248,6 +257,56 @@ export default function HomePage() {
 
   const allTemplates = [...(data?.pinned ?? []), ...(data?.suggested ?? [])];
 
+  // ── Process Recognition computation ──────────────────────────────
+  const processResult = useMemo(() => {
+    if (!data || data.xpSessions.length === 0) return null;
+
+    const sessions: SessionSummary[] = data.xpSessions.map((s) => ({
+      startedAt: s.started_at,
+      isDeloadOrRecovery: (s as { is_light_session?: boolean }).is_light_session ?? false,
+      completed: true,
+      hadSafetyOverride: false,
+    }));
+
+    // Compute weekly summaries from session data
+    const weeklyMap = new Map<string, { sessionCount: number; goalHit: boolean }>();
+    for (const s of sessions) {
+      const d = new Date(s.startedAt);
+      const day = d.getDay();
+      const diff = day === 0 ? 6 : day - 1; // Monday = 0
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - diff);
+      const weekKey = monday.toISOString().slice(0, 10);
+
+      const entry = weeklyMap.get(weekKey) ?? { sessionCount: 0, goalHit: false };
+      entry.sessionCount++;
+      weeklyMap.set(weekKey, entry);
+    }
+
+    const weeklySummaries: WeeklySummary[] = [];
+    for (const [weekStart, entry] of weeklyMap) {
+      weeklySummaries.push({
+        weekStart,
+        sessionCount: entry.sessionCount,
+        goalHit: entry.sessionCount >= data.weeklyTarget,
+        hadSafetyOverride: false,
+      });
+    }
+    weeklySummaries.sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+
+    const firstSession = sessions[0];
+    const totalWeeksActive = firstSession
+      ? Math.max(1, Math.ceil((Date.now() - new Date(firstSession.startedAt).getTime()) / (1000 * 60 * 60 * 24 * 7)))
+      : 1;
+
+    return computeProcessRecognition({
+      sessions,
+      weeklySummaries,
+      weeklyTarget: data.weeklyTarget,
+      totalWeeksActive,
+    });
+  }, [data]);
+
   return (
     <>
     {showTutorial && (
@@ -341,6 +400,58 @@ export default function HomePage() {
             <StreakHeatmap sessions={data!.activityDates} target={data!.weeklyTarget} />
           </div>
         ) : null}
+
+        {/* ── Badges (Process Recognition) ─────────── */}
+        {!loading && processResult && processResult.earnedBadges.length > 0 && (
+          <div className="page-reveal delay-2">
+            <section>
+              <h2 className="section-title mb-3">Badges</h2>
+              <div className="flex flex-wrap gap-2">
+                {(() => {
+                  const categoryIcons: Record<string, typeof Flame> = {
+                    streak: Flame,
+                    adherence: Target,
+                    deload: Flame,
+                    process: Target,
+                  };
+                  const categoryColors: Record<string, string> = {
+                    streak: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+                    adherence: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                    deload: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                    process: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+                  };
+                  return processResult.earnedBadges.map((badgeId: string) => {
+                    const badge = BADGES.find((b) => b.id === badgeId);
+                    if (!badge) return null;
+                    const colorClass = categoryColors[badge.category] ?? 'bg-white/[0.06] text-muted-foreground';
+                    const Icon = categoryIcons[badge.category] ?? Flame;
+                    return (
+                      <div
+                        key={badge.id}
+                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 ${colorClass}`}
+                        title={badge.description}
+                      >
+                        <Icon className="h-3.5 w-3.5 shrink-0" />
+                        <span className="text-xs font-semibold">{badge.name}</span>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+              {processResult.currentStreak > 0 && (
+                <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                  <Flame className="h-3.5 w-3.5 text-orange-400" />
+                  <span>
+                    <strong className="text-foreground">{processResult.currentStreak}</strong> week streak
+                    {processResult.longestStreak > processResult.currentStreak && (
+                      <> · Best: <strong className="text-foreground">{processResult.longestStreak}</strong> weeks</>
+                    )}
+                  </span>
+                </div>
+              )}
+            </section>
+          </div>
+        )}
 
         {/* ── Your Workouts ───────────────────────── */}
         {loading ? (

@@ -25,6 +25,7 @@ import { ChartEmptyState } from '@/components/progress/chart-empty-state';
 import { useExerciseInsights } from '@/hooks/use-exercise-insights';
 import { useProgress, usePersonalRecords } from '@/hooks/use-progress';
 import { formatShortDate } from '@/lib/format-date';
+import { computeExerciseMastery } from '@/lib/leveling';
 import type { TimeRange } from '@/hooks/use-progress';
 
 const TopSetChart = dynamic(
@@ -123,7 +124,31 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
         <div className="flex items-center gap-3">
           <BackButton />
           <div className="min-w-0 flex-1">
-            <h1 className="truncate font-display text-lg font-bold">{exercise.name}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="truncate font-display text-lg font-bold">{exercise.name}</h1>
+              {totalSessions > 0 && (() => {
+                const mastery = computeExerciseMastery(exercise.id, exercise.name, {
+                  sessionCount: totalSessions,
+                  techniqueConsistency: null,
+                  controlScore: null,
+                });
+                const colors: Record<string, string> = {
+                  unfamiliar: 'bg-white/[0.08] text-muted-foreground border-white/10',
+                  familiar: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                  consistent: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                  proficient: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                  mastered: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+                };
+                const colorClass = colors[mastery.level.id] ?? colors.unfamiliar;
+                return (
+                  <span className={`shrink-0 rounded-lg border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${colorClass}`}
+                    title={mastery.level.description}
+                  >
+                    {mastery.level.label}
+                  </span>
+                );
+              })()}
+            </div>
             <div className="mt-1 flex flex-wrap gap-1">
               {exercise.muscle_groups.map((muscle) => (
                 <MuscleGroupBadge key={muscle} muscle={muscle} />
