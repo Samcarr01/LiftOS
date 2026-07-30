@@ -5,7 +5,7 @@
  * that coexist with the original XP module:
  *
  *   1. Training Stage (training-stage.ts)
- *      — User-controlled programming stage (Beginner / Intermediate / Advanced)
+ *      — User-controlled programming stage (7 stages from Just Starting to Elite)
  *      — NOT XP-based. Engine can suggest, user decides.
  *      — Controls conservative programme defaults and progression style.
  *
@@ -21,15 +21,17 @@
  *      — Deloads preserve streak. Safety overrides never rewarded.
  *      — Never influences Training Stage (user-controlled).
  *
- * Original XP system (xp.ts) — unchanged, still fully functional.
+ * Original XP system (xp.ts) — expanded to 12 sources, 12 tiers, session-level compute.
  *
+ * See: .hermes/plans/2026-07-30-xp-leveling-overhaul.md
  * See: .hermes/plans/2026-07-30-fix-cycle-5-levels.md
  */
 
-// ── Original XP system (unchanged) ────────────────────────────────────────────
+// ── Original XP system (expanded) ─────────────────────────────────────────────
 
 export {
   computeXp,
+  computeSessionXp,
   levelFromXp,
   xpForLevel,
   tierForLevel,
@@ -37,6 +39,16 @@ export {
   XP_PER_LIGHT_SESSION,
   XP_PER_TARGET_HIT,
   XP_PER_PR_BONUS,
+  XP_HEAVY_SET_BONUS,
+  XP_VOLUME_PR,
+  XP_FULL_SESSION,
+  XP_DELOAD_WEEK,
+  XP_COMEBACK,
+  XP_VARIETY_PER_EX,
+  XP_VARIETY_CAP,
+  XP_WEEKLY_STREAK,
+  XP_STREAK_CAP,
+  XP_TEMPLATE_USER,
   TIERS,
 } from './xp';
 
@@ -48,6 +60,8 @@ export type {
   XpBreakdown,
   XpInputSession,
   XpInputPR,
+  XpInputSet,
+  SessionXpDetail,
 } from './xp';
 
 // ── System 1: Training Stage ──────────────────────────────────────────────────

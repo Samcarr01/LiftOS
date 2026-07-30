@@ -141,7 +141,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
                 };
                 const colorClass = colors[mastery.level.id] ?? colors.unfamiliar;
                 return (
-                  <span className={`shrink-0 rounded-lg border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${colorClass}`}
+                  <span className={`shrink-0 rounded-lg border px-2 py-0.5 text-[12px] font-semibold uppercase tracking-wider ${colorClass}`}
                     title={mastery.level.description}
                   >
                     {mastery.level.label}

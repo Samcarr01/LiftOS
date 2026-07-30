@@ -27,7 +27,7 @@ export interface Database {
           unit_preference: 'kg' | 'lb';
           subscription_tier: 'free' | 'pro';
           training_goals: string[];
-          experience_level: 'beginner' | 'intermediate' | 'advanced';
+          experience_level: 'just-starting' | 'novice' | 'early-intermediate' | 'intermediate' | 'advanced-intermediate' | 'advanced' | 'elite';
           body_weight_kg: number | null;
           preferred_rep_range: { min: number; max: number } | null;
           onboarding_completed: boolean;
@@ -44,7 +44,7 @@ export interface Database {
           unit_preference?: 'kg' | 'lb';
           subscription_tier?: 'free' | 'pro';
           training_goals?: string[];
-          experience_level?: 'beginner' | 'intermediate' | 'advanced';
+          experience_level?: 'just-starting' | 'novice' | 'early-intermediate' | 'intermediate' | 'advanced-intermediate' | 'advanced' | 'elite';
           body_weight_kg?: number | null;
           preferred_rep_range?: { min: number; max: number } | null;
           onboarding_completed?: boolean;
@@ -59,7 +59,7 @@ export interface Database {
           unit_preference?: 'kg' | 'lb';
           subscription_tier?: 'free' | 'pro';
           training_goals?: string[];
-          experience_level?: 'beginner' | 'intermediate' | 'advanced';
+          experience_level?: 'just-starting' | 'novice' | 'early-intermediate' | 'intermediate' | 'advanced-intermediate' | 'advanced' | 'elite';
           body_weight_kg?: number | null;
           preferred_rep_range?: { min: number; max: number } | null;
           onboarding_completed?: boolean;

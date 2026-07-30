@@ -1,8 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Trophy, Award, CheckCircle2, Share2 } from 'lucide-react';
+import {
+  Trophy, Award, CheckCircle2, Share2, ChevronDown, ChevronUp,
+  Dumbbell, Target, Flame, Zap, Layers, BrainCircuit, Star,
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 import { useCompletionStore, recoverCompletionResult } from '@/store/completion-store';
@@ -10,6 +13,15 @@ import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import type { CompletionPR, CompletionSummary } from '@/store/completion-store';
 import { useTierPromotion } from '@/hooks/use-tier-promotion';
 import { TierPromotionOverlay } from '@/components/home/tier-promotion-overlay';
+import { createClient } from '@/lib/supabase/client';
+import {
+  computeXp, levelFromXp, tierForLevel, computeSessionXp,
+  XP_PER_SESSION, XP_PER_LIGHT_SESSION, XP_HEAVY_SET_BONUS,
+  XP_FULL_SESSION, XP_VARIETY_PER_EX, XP_VARIETY_CAP,
+  XP_TEMPLATE_USER, XP_PER_PR_BONUS,
+  type Tier, type XpInputSession, type XpInputPR, type XpBreakdown, type LevelState,
+} from '@/lib/leveling/xp';
+import { TierIcon, TIER_ICON_MAP } from '@/lib/leveling/tier-visuals';
 
 const PR_LABEL: Record<CompletionPR['record_type'], string> = {
   best_weight:          'New Weight PR',
@@ -76,6 +88,134 @@ function AnimatedNumber({ value, duration = 700 }: { value: number; duration?: n
   return <>{Math.round(display).toLocaleString()}</>;
 }
 
+// ── XP Slider Component ─────────────────────────────────────────────────────
+
+interface XpSliderData {
+  sessionXp: number;
+  preLevel: LevelState;
+  postLevel: LevelState;
+  preTier: Tier;
+  postTier: Tier;
+  breakdown: {
+    sessionBase: number;
+    heavySetsXp: number;
+    fullSessionXp: number;
+    varietyXp: number;
+    templateXp: number;
+    prXp: number;
+  };
+}
+
+function XpSlider({ data }: { data: XpSliderData }) {
+  const [showBreakdown, setShowBreakdown] = useState(false);
+  const { sessionXp, preLevel, postLevel, preTier, postTier, breakdown } = data;
+  const accent = `oklch(${postTier.color})`;
+
+  const progressPct = postLevel.progressPct;
+  const tierChanged = preTier.id !== postTier.id;
+
+  const Icon = TIER_ICON_MAP[postTier.icon];
+
+  return (
+    <div className="mt-6 w-full max-w-sm rounded-2xl border border-white/[0.10] bg-white/[0.06] backdrop-blur-2xl px-4 py-4">
+      {/* XP Earned Counter */}
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-overline">XP earned this session</p>
+        <span className="font-display text-lg font-bold tabular-nums" style={{ color: accent }}>
+          +<AnimatedNumber value={sessionXp} />
+        </span>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="relative">
+        <div className="flex items-center justify-between text-xs mb-1.5">
+          <span className="text-muted-foreground">
+            {preTier.name} L{preLevel.level}
+          </span>
+          <span className="text-muted-foreground">
+            L{postLevel.level + 1}
+          </span>
+        </div>
+        <div className="relative h-3 w-full overflow-hidden rounded-full bg-white/[0.06]">
+          {/* Pre-session level indicator */}
+          <div
+            className="absolute left-0 top-0 h-full rounded-full transition-all duration-700 ease-out"
+            style={{
+              width: `${Math.max(2, preLevel.progressPct * 100)}%`,
+              background: `linear-gradient(90deg, oklch(${preTier.color} / 0.4), oklch(${preTier.color} / 0.6))`,
+            }}
+          />
+          {/* Post-session level indicator (overlay) */}
+          <div
+            className="absolute left-0 top-0 h-full rounded-full transition-all duration-1000 ease-out"
+            style={{
+              width: `${Math.max(2, progressPct * 100)}%`,
+              background: `linear-gradient(90deg, oklch(${postTier.color} / 0.6), ${accent})`,
+              boxShadow: `0 0 10px oklch(${postTier.color} / 0.5)`,
+              animation: 'tier-soft-glow 3s ease-in-out infinite',
+            }}
+          />
+          {/* Tier icon at current position */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 transition-all duration-1000 ease-out"
+            style={{ left: `calc(${Math.max(3, progressPct * 100)}% - 10px)` }}
+          >
+            <div
+              className="flex h-5 w-5 items-center justify-center rounded-full"
+              style={{ background: accent, boxShadow: `0 0 8px ${accent}` }}
+            >
+              <Icon className="h-3 w-3 text-white" strokeWidth={2.5} />
+            </div>
+          </div>
+        </div>
+        {/* Level indicator */}
+        <div className="mt-1 text-center">
+          <span className="text-xs font-semibold" style={{ color: accent }}>
+            {postTier.name} · Level {postLevel.level}
+          </span>
+          {tierChanged && (
+            <span className="ml-1.5 text-xs text-emerald-400">↑ Tier up!</span>
+          )}
+        </div>
+      </div>
+
+      {/* Expandable Breakdown */}
+      <button
+        onClick={() => setShowBreakdown((v) => !v)}
+        className="mt-3 flex w-full items-center justify-between rounded-xl bg-white/[0.04] px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <span className="font-semibold">Breakdown</span>
+        {showBreakdown ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+      </button>
+
+      {showBreakdown && (
+        <div className="mt-2 space-y-1.5">
+          <XpBreakdownRow icon={Dumbbell} label="Session base" xp={breakdown.sessionBase} />
+          {breakdown.heavySetsXp > 0 && <XpBreakdownRow icon={Flame} label="Heavy sets" xp={breakdown.heavySetsXp} />}
+          {breakdown.fullSessionXp > 0 && <XpBreakdownRow icon={Zap} label="Full session" xp={breakdown.fullSessionXp} />}
+          {breakdown.varietyXp > 0 && <XpBreakdownRow icon={Layers} label="Variety" xp={breakdown.varietyXp} />}
+          {breakdown.templateXp > 0 && <XpBreakdownRow icon={BrainCircuit} label="Template" xp={breakdown.templateXp} />}
+          {breakdown.prXp > 0 && <XpBreakdownRow icon={Trophy} label="PR bonus" xp={breakdown.prXp} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function XpBreakdownRow({ icon: Icon, label, xp }: { icon: typeof Dumbbell; label: string; xp: number }) {
+  return (
+    <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-white/[0.02]">
+      <div className="flex items-center gap-2">
+        <Icon className="h-3 w-3 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">{label}</span>
+      </div>
+      <span className="text-xs font-semibold tabular-nums text-primary">+{xp}</span>
+    </div>
+  );
+}
+
+// ── Main Page ───────────────────────────────────────────────────────────────
+
 export default function WorkoutCompletePage() {
   const storeResult = useCompletionStore((s) => s.result);
   const setResult   = useCompletionStore((s) => s.setResult);
@@ -83,9 +223,10 @@ export default function WorkoutCompletePage() {
   const router      = useRouter();
   const firedConfetti = useRef(false);
 
-  // Tier promotion: compute pre/post tier from session+PR history (RLS-scoped),
-  // and if the just-completed session pushed us into a new tier, render a
-  // full-screen reveal over this page. Dismissed on tap or auto-timeout.
+  // XP slider state
+  const [xpData, setXpData] = useState<XpSliderData | null>(null);
+
+  // Tier promotion: compute pre/post tier from session+PR history
   const promotion = useTierPromotion(storeResult?.sessionId ?? null);
   const [promotionDismissed, setPromotionDismissed] = useState(false);
 
@@ -97,10 +238,75 @@ export default function WorkoutCompletePage() {
       return;
     }
     // Splash is showing real data — safe to clear the active workout now.
-    // Done here (not in finish-dialog) so the /workout/[id] guard can't
-    // race router.replace('/') against router.replace('/workout/complete').
     useActiveWorkoutStore.getState().clearWorkout();
   }, [storeResult, setResult, router]);
+
+  // Compute XP for the slider
+  useEffect(() => {
+    if (!storeResult) return;
+    let cancelled = false;
+
+    (async () => {
+      const supabase = createClient();
+      const [usersRes, sessionsRes, prsRes] = await Promise.all([
+        supabase.from('users').select('weekly_workout_target').single(),
+        supabase
+          .from('workout_sessions')
+          .select('id, started_at, is_light_session')
+          .not('completed_at', 'is', null),
+        supabase.from('personal_records').select('session_id'),
+      ]);
+
+      if (cancelled) return;
+
+      const weeklyTarget =
+        (usersRes.data as { weekly_workout_target: number | null } | null)
+          ?.weekly_workout_target ?? 4;
+      const allSessions = (sessionsRes.data ?? []) as XpInputSession[];
+      const allPRs      = (prsRes.data ?? []) as XpInputPR[];
+
+      const preSessions = allSessions.filter((s) => s.id !== storeResult.sessionId);
+      const prePRs      = allPRs.filter((p) => p.session_id !== storeResult.sessionId);
+
+      const pre  = computeXp(preSessions, prePRs, weeklyTarget);
+      const post = computeXp(allSessions,  allPRs,  weeklyTarget);
+
+      const preLevel  = levelFromXp(pre.total);
+      const postLevel = levelFromXp(post.total);
+      const preTier   = tierForLevel(preLevel.level);
+      const postTier  = tierForLevel(postLevel.level);
+
+      const sessionXp = post.total - pre.total;
+
+      // Compute session-level breakdown
+      // Determine if the session has a PR
+      const hasPr = allPRs.some((p) => p.session_id === storeResult.sessionId);
+      const sessionDetail = computeSessionXp(
+        { id: storeResult.sessionId, started_at: new Date().toISOString(), is_light_session: false },
+        storeResult.summary.total_sets,  // heavy set count (approximate)
+        storeResult.summary.exercise_count,
+        hasPr,
+      );
+
+      setXpData({
+        sessionXp,
+        preLevel,
+        postLevel,
+        preTier,
+        postTier,
+        breakdown: {
+          sessionBase:   sessionDetail.sessionBase,
+          heavySetsXp:   sessionDetail.heavySetsXp,
+          fullSessionXp: storeResult.summary.total_sets > 0 ? XP_FULL_SESSION : 0,
+          varietyXp:     Math.min(storeResult.summary.exercise_count * XP_VARIETY_PER_EX, XP_VARIETY_CAP),
+          templateXp:    0, // Can't easily determine if template was used from completion store
+          prXp:          hasPr ? XP_PER_PR_BONUS : 0,
+        },
+      });
+    })();
+
+    return () => { cancelled = true; };
+  }, [storeResult]);
 
   useEffect(() => {
     if (!storeResult || storeResult.newPrs.length === 0) return;
@@ -127,7 +333,6 @@ export default function WorkoutCompletePage() {
 
   const { summary, newPrs, exerciseNames } = result;
   const hasPrs = newPrs.length > 0;
-  const volumeDelta = volumeDeltaPct(summary.total_volume_kg, summary.previous?.total_volume_kg);
 
   function handleDone() {
     clearResult();
@@ -192,8 +397,11 @@ export default function WorkoutCompletePage() {
       <div className="mt-8 grid w-full max-w-sm grid-cols-3 gap-4">
         <StatCard label="Duration" staticValue={formatDuration(summary.duration_seconds)} />
         <StatCard label={summary.total_sets === 1 ? 'Set' : 'Sets'} value={summary.total_sets} />
-        <StatCard label="Volume" value={Math.round(summary.total_volume_kg)} suffix="kg" delta={volumeDelta} />
+        <StatCard label="Volume" value={Math.round(summary.total_volume_kg)} suffix="kg" />
       </div>
+
+      {/* XP Slider — between stats strip and exercises */}
+      {xpData && <XpSlider data={xpData} />}
 
       {/* Exercises */}
       {exerciseNames.length > 0 && (
@@ -258,24 +466,13 @@ function StatCard({
   label,
   value,
   suffix = '',
-  delta,
   staticValue,
 }: {
   label: string;
   value?: number;
   suffix?: string;
-  delta?: number | null;
   staticValue?: string;
 }) {
-  const hasDelta = delta !== null && delta !== undefined;
-  const deltaColor = hasDelta
-    ? delta >= 1
-      ? 'text-emerald-400'
-      : delta <= -1
-        ? 'text-orange-400'
-        : 'text-muted-foreground'
-    : '';
-  const deltaArrow = hasDelta ? (delta >= 1 ? '↑' : delta <= -1 ? '↓' : '=') : '';
   return (
     <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-white/[0.10] bg-white/[0.06] backdrop-blur-2xl px-3 py-5">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
@@ -284,11 +481,6 @@ function StatCard({
           ? staticValue
           : <><AnimatedNumber value={value ?? 0} />{suffix ? ` ${suffix}` : ''}</>}
       </span>
-      {hasDelta && (
-        <span className={`mt-0.5 text-xs font-semibold ${deltaColor}`}>
-          {deltaArrow} {Math.abs(Math.round(delta))}%
-        </span>
-      )}
       <span className="mt-0.5 text-sm text-muted-foreground">{label}</span>
     </div>
   );

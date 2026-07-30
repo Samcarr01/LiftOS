@@ -142,7 +142,7 @@ export default function OnboardingPage() {
 
       const { error } = await supabase.from('users').update({
         training_goals: selectedGoals,
-        experience_level: (experienceLevel || 'intermediate') as 'beginner' | 'intermediate' | 'advanced',
+        experience_level: (experienceLevel || 'intermediate') as 'just-starting' | 'novice' | 'early-intermediate' | 'intermediate' | 'advanced-intermediate' | 'advanced' | 'elite',
         body_weight_kg: bodyWeightKg,
         preferred_rep_range: preferredRepRange,
         unit_preference: unitPreference,

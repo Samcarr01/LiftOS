@@ -7,10 +7,9 @@ import {
   Award,
   ChevronRight,
   Download,
-  Dumbbell,
+  HelpCircle,
   KeyRound,
   Loader2,
-  HelpCircle,
   LogOut,
   Pencil,
   RefreshCw,
@@ -450,12 +449,6 @@ export default function ProfilePage() {
         <section>
           <h2 className="section-title mb-2">Preferences</h2>
           <div className="space-y-2">
-            <LinkRow
-              icon={<Dumbbell className="h-4 w-4" />}
-              label="Training preferences"
-              description="Goals, experience, rep range, body weight"
-              onClick={() => router.push('/profile/training')}
-            />
             <div className="list-row justify-between">
               <span className="text-sm font-semibold">Weight unit</span>
               <div className="flex rounded-lg border border-white/10 bg-black/15 p-0.5">

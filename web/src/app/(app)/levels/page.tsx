@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Check, Lock, Loader2,
-  Dumbbell, Trophy, Target, Award,
+  Dumbbell, Trophy, Target, Award, Sparkles, Flame, Zap, RotateCcw,
+  Repeat, Star, Layers, BrainCircuit,
 } from 'lucide-react';
 import { BackButton } from '@/components/ui/back-button';
 import { createClient } from '@/lib/supabase/client';
@@ -11,6 +12,8 @@ import {
   computeXp, levelFromXp, tierForLevel, xpForLevel,
   TIERS,
   XP_PER_SESSION, XP_PER_LIGHT_SESSION, XP_PER_TARGET_HIT, XP_PER_PR_BONUS,
+  XP_HEAVY_SET_BONUS, XP_VOLUME_PR, XP_FULL_SESSION, XP_DELOAD_WEEK,
+  XP_COMEBACK, XP_VARIETY_PER_EX, XP_VARIETY_CAP, XP_WEEKLY_STREAK, XP_STREAK_CAP, XP_TEMPLATE_USER,
   type Tier, type XpInputSession, type XpInputPR, type XpBreakdown,
 } from '@/lib/leveling/xp';
 import {
@@ -76,8 +79,8 @@ export default function LevelsPage() {
         <div>
           <h1 className="font-display text-2xl font-bold">Levels</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Nine tiers from Bronze to Cosmic. Earn XP for showing up, hitting
-            your weekly goal, and breaking PRs.
+            Twelve tiers from Bronze to Apex. Earn XP from 12 sources — showing
+            up, intensity, consistency, variety, and more.
           </p>
         </div>
 
@@ -155,34 +158,63 @@ function CurrentTierCard({ state }: {
 // ── XP rules explainer ───────────────────────────────────────────────────────
 
 function XpRulesCard() {
-  const rules: Array<{ icon: typeof Dumbbell; label: string; xp: number; note?: string }> = [
-    { icon: Dumbbell, label: 'Complete a workout', xp: XP_PER_SESSION },
-    { icon: Target,   label: 'Hit your weekly goal',   xp: XP_PER_TARGET_HIT, note: 'once per week' },
-    { icon: Award,    label: 'Set a personal record',  xp: XP_PER_PR_BONUS,   note: 'per session' },
-    { icon: Trophy,   label: 'Light / off-day session', xp: XP_PER_LIGHT_SESSION, note: "you showed up" },
+  const rules: Array<{ icon: typeof Dumbbell; label: string; xp: string | number; note?: string; category: string }> = [
+    // Base
+    { icon: Dumbbell,   label: 'Complete a workout',       xp: XP_PER_SESSION,       note: 'per session',           category: 'Base' },
+    { icon: Dumbbell,   label: 'Light / off-day session',  xp: XP_PER_LIGHT_SESSION, note: 'per session',           category: 'Base' },
+    // Consistency
+    { icon: Target,     label: 'Hit your weekly goal',     xp: XP_PER_TARGET_HIT,    note: 'once per week',         category: 'Consistency' },
+    { icon: Repeat,     label: 'Weekly streak',            xp: `+${XP_WEEKLY_STREAK}`, note: `per week, cap ${XP_STREAK_CAP}`, category: 'Consistency' },
+    // Achievement
+    { icon: Award,      label: 'Set a personal record',    xp: XP_PER_PR_BONUS,      note: 'per session',           category: 'Achievement' },
+    { icon: Trophy,     label: 'Volume PR',                xp: XP_VOLUME_PR,         note: 'first time weekly',     category: 'Achievement' },
+    // Intensity
+    { icon: Flame,      label: 'Heavy set bonus',          xp: `+${XP_HEAVY_SET_BONUS}`, note: 'per set ≥85% e1RM', category: 'Intensity' },
+    // Discipline
+    { icon: Zap,        label: 'Full session',             xp: XP_FULL_SESSION,      note: 'complete all sets',     category: 'Discipline' },
+    { icon: RotateCcw,  label: 'Deload week',              xp: XP_DELOAD_WEEK,       note: 'complete deload',       category: 'Discipline' },
+    // Retention
+    { icon: Star,       label: 'Comeback',                 xp: XP_COMEBACK,          note: 'after 14+ day gap',     category: 'Retention' },
+    // Balance
+    { icon: Layers,     label: 'Variety bonus',            xp: `+${XP_VARIETY_PER_EX}`, note: `per exercise, cap ${XP_VARIETY_CAP}`, category: 'Balance' },
+    // Planning
+    { icon: BrainCircuit, label: 'Template user',          xp: XP_TEMPLATE_USER,     note: 'from saved template',   category: 'Planning' },
   ];
+
+  const categories = ['Base', 'Consistency', 'Achievement', 'Intensity', 'Discipline', 'Retention', 'Balance', 'Planning'];
 
   return (
     <div className="space-y-2.5">
-      <h3 className="section-title">How XP works</h3>
+      <h3 className="section-title">How XP works — 12 sources</h3>
       <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03]">
-        {rules.map((r, i) => (
-          <div
-            key={r.label}
-            className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? 'border-t border-white/[0.06]' : ''}`}
-          >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
-              <r.icon className="h-4 w-4" />
+        {categories.map((cat) => {
+          const catRules = rules.filter((r) => r.category === cat);
+          if (catRules.length === 0) return null;
+          return (
+            <div key={cat}>
+              <div className="px-4 pt-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground/60 uppercase">
+                {cat}
+              </div>
+              {catRules.map((r, i) => (
+                <div
+                  key={r.label}
+                  className="flex items-center gap-3 px-4 py-2.5 border-t border-white/[0.06] first:border-t-0"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
+                    <r.icon className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">{r.label}</p>
+                    {r.note && <p className="text-xs text-muted-foreground">{r.note}</p>}
+                  </div>
+                  <span className="font-display text-sm font-bold tabular-nums text-primary shrink-0">
+                    +{r.xp}
+                  </span>
+                </div>
+              ))}
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">{r.label}</p>
-              {r.note && <p className="text-xs text-muted-foreground">{r.note}</p>}
-            </div>
-            <span className="font-display text-sm font-bold tabular-nums text-primary">
-              +{r.xp}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -23,12 +23,25 @@
 
 import {
   Medal, Hammer, Shield, Mountain, Atom, Star, Gem, Sparkles, Crown,
+  Globe, Sun,
   type LucideIcon,
 } from 'lucide-react';
 import type { Tier, TierIcon as TierIconName } from './xp';
 
+// BlackHole icon — we compose from Circle + Minus (no native BlackHole in lucide)
+export const BlackHoleIcon: LucideIcon = ({ style, ...props }: React.ComponentPropsWithoutRef<'svg'>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={style} {...props}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 8a8 8 0 0 1 8 8" opacity="0.6" />
+    <path d="M12 16a8 8 0 0 1-8-8" opacity="0.6" />
+    <path d="M8 12a8 8 0 0 1 8-8" opacity="0.4" />
+    <path d="M16 12a8 8 0 0 1-8 8" opacity="0.4" />
+  </svg>
+);
+
 export const TIER_ICON_MAP: Record<TierIconName, LucideIcon> = {
   Medal, Hammer, Shield, Mountain, Atom, Star, Gem, Sparkles, Crown,
+  Globe, BlackHole: BlackHoleIcon, Sun,
 };
 
 export const TIER_DESCRIPTIONS: Record<string, string> = {
@@ -41,6 +54,9 @@ export const TIER_DESCRIPTIONS: Record<string, string> = {
   diamond:  'Hardest natural material. Years of dedication.',
   mythic:   'Beyond what most achieve. Legendary territory.',
   cosmic:   'Transcendent. The standard others measure against.',
+  nebula:   'A cloud of pure potential. Years of relentless training.',
+  singularity: 'The point of no return. Gravity bends around you.',
+  apex:     'The summit. There is no higher tier.',
 };
 
 // ── TierIcon: icon + icon-centric effects ────────────────────────────────────
@@ -108,6 +124,23 @@ function iconBubbleStyle(tier: Tier): React.CSSProperties {
         ...base,
         animation: 'tier-glow-shift 4s ease-in-out infinite',
         ['--tier-accent' as string]: `oklch(${tier.color} / 0.55)`,
+      };
+    case 'nebula':
+      return {
+        ...base,
+        animation: 'tier-soft-glow 4s ease-in-out infinite',
+      };
+    case 'singularity':
+      return {
+        ...base,
+        animation: 'tier-pulse 5s ease-in-out infinite',
+        boxShadow: `inset 0 0 0 1px oklch(${tier.color} / 0.3), 0 0 20px -4px rgba(0,0,0,0.6)`,
+      };
+    case 'apex':
+      return {
+        ...base,
+        animation: 'tier-breathe 3s ease-in-out infinite, tier-glow-shift 4s ease-in-out infinite',
+        ['--tier-accent' as string]: `oklch(${tier.color} / 0.7)`,
       };
     default:
       return base;
@@ -374,6 +407,137 @@ function IconBackEffects({ tier, size }: { tier: Tier; size: number }) {
       );
     }
 
+    case 'nebula': {
+      // Drifting cloud of color — slow rotating deep indigo with soft glow
+      return (
+        <>
+          <Centered size={size * 2.2}>
+            <div
+              className="h-full w-full rounded-full"
+              style={{
+                background: `radial-gradient(circle,
+                  oklch(${tier.color} / 0.50) 0%,
+                  oklch(0.60 0.24 240 / 0.20) 30%,
+                  oklch(0.50 0.20 280 / 0.10) 60%,
+                  transparent 85%)`,
+                animation: 'tier-soft-glow 5s ease-in-out infinite',
+                filter: 'blur(2px)',
+              }}
+            />
+          </Centered>
+          <Centered size={size * 1.5}>
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: `conic-gradient(from 0deg,
+                  oklch(${tier.color} / 0.6),
+                  oklch(0.60 0.24 240 / 0.3),
+                  oklch(0.50 0.20 280 / 0.4),
+                  oklch(${tier.color} / 0.6))`,
+                opacity: 0.5,
+                animation: 'tier-rotate 20s linear infinite',
+                mask: 'radial-gradient(closest-side, transparent 70%, black 72%, black 90%, transparent 92%)',
+                WebkitMask: 'radial-gradient(closest-side, transparent 70%, black 72%, black 90%, transparent 92%)',
+              }}
+            />
+          </Centered>
+        </>
+      );
+    }
+
+    case 'singularity': {
+      // Deep void with subtle gravitational lensing effect
+      return (
+        <>
+          <Centered size={size * 1.8}>
+            <div
+              className="h-full w-full rounded-full"
+              style={{
+                background: `radial-gradient(circle,
+                  oklch(0.35 0.02 290 / 0.50) 0%,
+                  oklch(0.30 0.01 290 / 0.30) 30%,
+                  transparent 70%)`,
+                animation: 'tier-soft-glow 6s ease-in-out infinite',
+              }}
+            />
+          </Centered>
+          <Centered size={size * 1.2}>
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: `conic-gradient(from 0deg,
+                  oklch(0.50 0.04 290 / 0.4),
+                  transparent 30%,
+                  oklch(0.55 0.06 270 / 0.2),
+                  transparent 70%,
+                  oklch(0.50 0.04 290 / 0.4))`,
+                opacity: 0.6,
+                animation: 'tier-rotate-reverse 15s linear infinite',
+                mask: 'radial-gradient(closest-side, transparent 65%, black 67%, black 90%, transparent 92%)',
+                WebkitMask: 'radial-gradient(closest-side, transparent 65%, black 67%, black 90%, transparent 92%)',
+              }}
+            />
+          </Centered>
+        </>
+      );
+    }
+
+    case 'apex': {
+      // Solar corona — bright gold with warm radiating glow
+      return (
+        <>
+          <Centered size={size * 2.4}>
+            <div
+              className="h-full w-full rounded-full"
+              style={{
+                background: `radial-gradient(circle,
+                  oklch(${tier.color} / 0.55) 0%,
+                  oklch(0.85 0.18 85 / 0.25) 30%,
+                  oklch(0.88 0.12 70 / 0.10) 60%,
+                  transparent 85%)`,
+                animation: 'tier-soft-glow 3.5s ease-in-out infinite',
+                filter: 'blur(1px)',
+              }}
+            />
+          </Centered>
+          <Centered size={size * 1.4}>
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: `conic-gradient(from 0deg,
+                  oklch(${tier.color} / 0.7),
+                  oklch(0.88 0.16 75 / 0.5),
+                  oklch(${tier.color} / 0.8),
+                  oklch(0.88 0.16 75 / 0.5),
+                  oklch(${tier.color} / 0.7))`,
+                opacity: 0.7,
+                animation: 'tier-rotate 8s linear infinite',
+                mask: 'radial-gradient(closest-side, transparent 72%, black 74%, black 92%, transparent 94%)',
+                WebkitMask: 'radial-gradient(closest-side, transparent 72%, black 74%, black 92%, transparent 94%)',
+              }}
+            />
+          </Centered>
+          <Centered size={size * 1.7}>
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: `conic-gradient(from 180deg,
+                  transparent 0deg,
+                  oklch(0.90 0.14 85 / 0.4) 90deg,
+                  transparent 180deg,
+                  oklch(0.92 0.12 70 / 0.3) 270deg,
+                  transparent 360deg)`,
+                opacity: 0.5,
+                animation: 'tier-rotate-reverse 12s linear infinite',
+                mask: 'radial-gradient(closest-side, transparent 85%, black 87%, black 95%, transparent 97%)',
+                WebkitMask: 'radial-gradient(closest-side, transparent 85%, black 87%, black 95%, transparent 97%)',
+              }}
+            />
+          </Centered>
+        </>
+      );
+    }
+
     default:
       void halfSize; // not used in default path; here to silence linter for tiers without back effects
       void accent;
@@ -429,6 +593,41 @@ function IconFrontEffects({ tier, size, accent }: { tier: Tier; size: number; ac
           <Orbit radius={outer} duration={13} delay={0}   startAngle={60}  color="oklch(0.95 0.20 90 / 0.85)"  dotSize={3} reverse />
           <Orbit radius={outer} duration={13} delay={4.4} startAngle={180} color="oklch(0.95 0.20 230 / 0.85)" dotSize={3} reverse />
           <Orbit radius={outer} duration={13} delay={8.8} startAngle={300} color="oklch(0.95 0.22 290 / 0.85)" dotSize={3} reverse />
+        </>
+      );
+    }
+
+    case 'nebula': {
+      // 3 slow-drifting particles resembling distant stars
+      const r = size * 0.8;
+      return (
+        <>
+          <Orbit radius={r} duration={15} delay={0}   startAngle={0}   color="oklch(0.90 0.22 260 / 0.9)" dotSize={3} />
+          <Orbit radius={r} duration={15} delay={5}   startAngle={120} color="oklch(0.88 0.20 240 / 0.8)" dotSize={3} />
+          <Orbit radius={r} duration={15} delay={10}  startAngle={240} color="oklch(0.92 0.18 280 / 0.9)" dotSize={3} />
+        </>
+      );
+    }
+
+    case 'singularity': {
+      // 2 tight orbiting particles — matter spiralling inward
+      return (
+        <>
+          <Orbit radius={size * 0.6} duration={6} delay={0}  startAngle={0}   color="oklch(0.60 0.06 270 / 0.9)" dotSize={3} />
+          <Orbit radius={size * 0.6} duration={6} delay={3}  startAngle={180} color="oklch(0.55 0.08 290 / 0.8)" dotSize={3} reverse />
+        </>
+      );
+    }
+
+    case 'apex': {
+      // Radiant solar flare particles (4 cardinal, fast)
+      const rf = size * 0.65;
+      return (
+        <>
+          <CardinalSparkle dx={0}  dy={-rf} color="oklch(0.95 0.18 85 / 1)" duration={2.5} delay={0} />
+          <CardinalSparkle dx={rf} dy={0}  color="oklch(0.95 0.18 70 / 1)" duration={2.5} delay={0.6} />
+          <CardinalSparkle dx={0}  dy={rf} color="oklch(0.92 0.16 95 / 1)" duration={2.5} delay={1.2} />
+          <CardinalSparkle dx={-rf} dy={0} color="oklch(0.95 0.18 80 / 1)" duration={2.5} delay={1.8} />
         </>
       );
     }
@@ -576,6 +775,72 @@ export function TierCardEffects({ tier }: { tier: Tier }) {
             style={{
               boxShadow: `inset 0 0 0 1px oklch(${tier.color} / 0.30), 0 0 26px -8px oklch(${tier.color} / 0.6)`,
               animation: 'tier-breathe 5s ease-in-out infinite',
+            }}
+          />
+        </div>
+      );
+
+    case 'nebula':
+      return (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden>
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(135deg, oklch(${tier.color} / 0.20), oklch(0.60 0.24 240 / 0.12), transparent 70%)`,
+              backgroundSize: '200% 200%',
+              animation: 'tier-bg-cycle 9s ease-in-out infinite',
+            }}
+          />
+          <div
+            className="absolute inset-0 rounded-2xl"
+            style={{
+              boxShadow: `inset 0 0 0 1px oklch(${tier.color} / 0.25), 0 0 24px -8px oklch(${tier.color} / 0.5)`,
+              animation: 'tier-breathe 6s ease-in-out infinite',
+            }}
+          />
+        </div>
+      );
+
+    case 'singularity':
+      return (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden>
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(135deg, oklch(0.30 0.01 290 / 0.20), transparent 80%)`,
+            }}
+          />
+          <SweepBand colorAlpha={0.08} duration={8} delay={0} />
+          <div
+            className="absolute inset-0 rounded-2xl"
+            style={{
+              boxShadow: `inset 0 0 0 1px oklch(0.50 0.04 290 / 0.20), 0 0 20px -8px rgba(0,0,0,0.5)`,
+              animation: 'tier-breathe 7s ease-in-out infinite',
+            }}
+          />
+        </div>
+      );
+
+    case 'apex':
+      return (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden>
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(110deg,
+                oklch(0.88 0.16 85 / 0.18),
+                oklch(0.85 0.14 70 / 0.12),
+                oklch(0.90 0.18 95 / 0.10),
+                oklch(0.88 0.16 85 / 0.18))`,
+              backgroundSize: '300% 100%',
+              animation: 'tier-bg-cycle 5s ease-in-out infinite',
+            }}
+          />
+          <div
+            className="absolute inset-0 rounded-2xl"
+            style={{
+              boxShadow: `inset 0 0 0 1px oklch(${tier.color} / 0.35), 0 0 30px -8px oklch(${tier.color} / 0.6)`,
+              animation: 'tier-breathe 4s ease-in-out infinite',
             }}
           />
         </div>
