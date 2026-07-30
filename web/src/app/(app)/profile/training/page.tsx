@@ -9,7 +9,38 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
 import { useUnitStore } from '@/store/unit-store';
 
-type Experience = 'beginner' | 'intermediate' | 'advanced';
+const STAGE_IDS = [
+  'just-starting',
+  'novice',
+  'early-intermediate',
+  'intermediate',
+  'advanced-intermediate',
+  'advanced',
+  'elite',
+] as const;
+
+type Experience = (typeof STAGE_IDS)[number];
+
+const OLD_TO_NEW: Record<string, Experience> = {
+  beginner: 'just-starting',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+};
+
+function mapOldStageToNew(v: string): Experience | null {
+  if (STAGE_IDS.includes(v as Experience)) return v as Experience;
+  return OLD_TO_NEW[v] ?? null;
+}
+
+const STAGE_LABELS: Record<Experience, string> = {
+  'just-starting': 'Just Starting',
+  'novice': 'Novice',
+  'early-intermediate': 'Early Intermediate',
+  'intermediate': 'Intermediate',
+  'advanced-intermediate': 'Advanced Intermediate',
+  'advanced': 'Advanced',
+  'elite': 'Elite',
+};
 
 // Same goal set + icons as onboarding, so editing goals here matches the
 // screen the user first saw.
@@ -65,7 +96,7 @@ export default function TrainingPreferencesPage() {
           weekly_workout_target: number | null;
         } | null;
         setGoals(row?.training_goals ?? []);
-        setExperience((row?.experience_level as Experience) ?? 'intermediate');
+        setExperience(mapOldStageToNew(row?.experience_level as string) ?? 'intermediate');
         if (row?.body_weight_kg) {
           setBodyWeight(unit === 'lb' ? String(Math.round(row.body_weight_kg * 2.205)) : String(row.body_weight_kg));
         }
@@ -137,17 +168,17 @@ export default function TrainingPreferencesPage() {
           <div className="list-row justify-between">
             <span className="text-sm font-semibold">Experience</span>
             <div className="flex rounded-lg border border-white/10 bg-black/15 p-0.5">
-              {(['beginner', 'intermediate', 'advanced'] as const).map((level) => (
+              {STAGE_IDS.map((level) => (
                 <button
                   key={level}
                   onClick={() => setExperience(level)}
-                  className={`h-7 rounded-md px-2.5 text-xs font-semibold capitalize transition-colors ${
+                  className={`h-7 rounded-md px-2 text-xs font-semibold transition-colors ${
                     experience === level
                       ? 'bg-primary text-primary-foreground'
                       : 'text-foreground/70 hover:bg-white/[0.06] hover:text-foreground'
                   }`}
                 >
-                  {level}
+                  {level === 'just-starting' ? 'Just Starting' : level === 'early-intermediate' ? 'Early Int.' : level === 'advanced-intermediate' ? 'Adv. Int.' : STAGE_LABELS[level].split(' ')[0]}
                 </button>
               ))}
             </div>

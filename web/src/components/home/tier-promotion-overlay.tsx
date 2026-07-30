@@ -13,13 +13,16 @@
 import { useEffect, useRef } from 'react';
 import {
   Medal, Hammer, Shield, Mountain, Atom, Star, Gem, Sparkles, Crown,
+  Globe, Sun,
   type LucideIcon,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { Tier, TierIcon } from '@/lib/leveling/xp';
+import { BlackHoleIcon } from '@/lib/leveling/tier-visuals';
 
 const ICON_MAP: Record<TierIcon, LucideIcon> = {
   Medal, Hammer, Shield, Mountain, Atom, Star, Gem, Sparkles, Crown,
+  Globe, BlackHole: BlackHoleIcon, Sun,
 };
 
 interface TierPromotionOverlayProps {

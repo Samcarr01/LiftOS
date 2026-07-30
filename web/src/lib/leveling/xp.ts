@@ -334,13 +334,8 @@ export function computeXp(
 
   // ── Volume PR detection ───────────────────────────────────────────────────
   // (Simplified: uses total session volume from sets data. Falls back to 0.)
-  if (sets) {
-    for (const s of sets) {
-      const weekKey = isoWeekKey(new Date(s.started_at)); // approximate from session
-      // We'll use a simpler approach: just detect the first time weekly volume
-      // beats previous best
-    }
 
+  if (sets) {
     // Group weekly volume
     // This is a simplified version — real volume PR detection needs session
     // started_at mapped to sets. For now we estimate conservatively.

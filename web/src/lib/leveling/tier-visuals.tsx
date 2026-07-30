@@ -27,16 +27,19 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { Tier, TierIcon as TierIconName } from './xp';
+import React from 'react';
 
 // BlackHole icon — we compose from Circle + Minus (no native BlackHole in lucide)
-export const BlackHoleIcon: LucideIcon = ({ style, ...props }: React.ComponentPropsWithoutRef<'svg'>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={style} {...props}>
-    <circle cx="12" cy="12" r="3" />
-    <path d="M12 8a8 8 0 0 1 8 8" opacity="0.6" />
-    <path d="M12 16a8 8 0 0 1-8-8" opacity="0.6" />
-    <path d="M8 12a8 8 0 0 1 8-8" opacity="0.4" />
-    <path d="M16 12a8 8 0 0 1-8 8" opacity="0.4" />
-  </svg>
+export const BlackHoleIcon = React.forwardRef<SVGSVGElement, React.ComponentPropsWithoutRef<'svg'>>(
+  ({ style, ...props }, ref) => (
+    <svg ref={ref} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={style} {...props}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 8a8 8 0 0 1 8 8" opacity="0.6" />
+      <path d="M12 16a8 8 0 0 1-8-8" opacity="0.6" />
+      <path d="M8 12a8 8 0 0 1 8-8" opacity="0.4" />
+      <path d="M16 12a8 8 0 0 1-8 8" opacity="0.4" />
+    </svg>
+  )
 );
 
 export const TIER_ICON_MAP: Record<TierIconName, LucideIcon> = {
