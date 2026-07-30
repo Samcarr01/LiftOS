@@ -128,6 +128,26 @@ export async function queueMarkSyncing(ids: string[]): Promise<void> {
   );
 }
 
+/**
+ * Revert syncing rows back to pending with incremented retry count.
+ * Called when a sync attempt fails mid-flight so mutations can be retried
+ * instead of being stranded in 'syncing' forever.
+ */
+export async function queueUnmarkSyncing(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  const db = await getDb();
+  const placeholders = ids.map(() => '?').join(',');
+  // Increment retries by 1 so the next attempt respects the backoff limit
+  await db.runAsync(
+    `UPDATE offline_queue
+     SET status    = 'pending',
+         retries   = retries + 1,
+         error_msg = 'sync failed, will retry'
+     WHERE id IN (${placeholders})`,
+    ids,
+  );
+}
+
 export async function queueMarkSynced(ids: string[]): Promise<void> {
   if (!ids.length) return;
   const db = await getDb();

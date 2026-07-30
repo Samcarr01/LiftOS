@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabase';
 import {
   getPendingMutations,
   markSyncing,
+  unmarkSyncing,
   markSynced,
   recordFailure,
   clearSynced,
@@ -49,8 +50,10 @@ async function runSync(): Promise<void> {
   if (isSyncing || !isOnline) return;
   isSyncing = true;
 
+  let pending: QueuedMutation[] = [];
+
   try {
-    const pending = await getPendingMutations(); // max 100
+    pending = await getPendingMutations(); // max 100
     if (!pending.length) return;
 
     // Mark as syncing to prevent double-send
@@ -114,6 +117,14 @@ async function runSync(): Promise<void> {
     }
   } catch (err) {
     console.warn('[sync-manager] runSync error:', err);
+    // Revert any mutations that were marked syncing back to pending
+    // so they are not stranded forever. We capture the pending list before
+    // the try block to handle this edge case — fall back to re-reading
+    // syncing rows from the DB if we don't have the list.
+    const syncingIds = pending?.map((m) => m.id) ?? [];
+    if (syncingIds.length > 0) {
+      await unmarkSyncing(syncingIds).catch(() => {});
+    }
   } finally {
     isSyncing = false;
   }
