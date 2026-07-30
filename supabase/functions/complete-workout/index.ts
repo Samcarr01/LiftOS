@@ -88,6 +88,20 @@ Deno.serve(async (req: Request) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return json({ error: 'Unauthorized' }, 401);
 
+    // ── Service-role client for data operations ────────────────────────────────
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+
+    // ── Pro entitlement check (DB, not JWT — canonical source of truth) ────────
+    const { data: userProfile } = await serviceClient
+      .from('users')
+      .select('subscription_tier')
+      .eq('id', user.id)
+      .single();
+    const isPro = userProfile?.subscription_tier === 'pro';
+
     const body = await req.json();
     const sessionId: string = body.session_id;
     if (!sessionId) return json({ error: 'session_id required' }, 422);
@@ -247,10 +261,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ── Fire-and-forget: AI suggestion regeneration ────────────────────────
-    // Invokes generate-ai-suggestion for each exercise asynchronously.
-    // We intentionally do NOT await this — it runs after response is sent.
-    if (exerciseIds.length > 0) {
+    // ── Fire-and-forget: AI suggestion regeneration (Pro only) ──────────────
+    // Free users: skip AI suggestion regeneration entirely to avoid unnecessary
+    // function invocations. The generate-ai-suggestion function also has its own
+    // Pro entitlement guard, but avoiding the call entirely is more efficient.
+    if (isPro && exerciseIds.length > 0) {
       EdgeRuntime.waitUntil(
         Promise.allSettled(
           exerciseIds.map((eid: string) =>

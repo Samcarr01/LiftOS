@@ -403,6 +403,20 @@ Deno.serve(async (req: Request) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) return json({ error: 'Unauthorized' }, 401);
 
+    // ── Service-role client for data operations ────────────────────────────────
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+
+    // ── Pro entitlement check (DB, not JWT — canonical source of truth) ────────
+    const { data: userProfile } = await serviceClient
+      .from('users')
+      .select('subscription_tier')
+      .eq('id', user.id)
+      .single();
+    const isPro = userProfile?.subscription_tier === 'pro';
+
     const body = await req.json().catch(() => ({}));
     const mode: Mode = body.mode === 'rolling_30d' ? 'rolling_30d' : 'weekly';
     const forceRefresh = body.force === true;
@@ -681,42 +695,65 @@ Deno.serve(async (req: Request) => {
       training_frequency:  trainingFrequency,
     };
 
-    // ── AI analysis ───────────────────────────────────────────────────────
+    // ── AI analysis (Pro only) ──────────────────────────────────────────────
     let aiError: string | null = null;
-    try {
-      const apiKey = Deno.env.get('OPENAI_API_KEY');
-      if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
 
-      const aiResult = await generateStructuredInsight(apiKey, mode, {
-        workouts:           sessionIds.length,
-        volume:             cur.totalVolumeKg,
-        totalSets:          cur.totalSets,
-        strongest:          cur.bestExercise
-          ? `${cur.bestExercise} at ${cur.bestE1RMLabel}`
-          : 'N/A',
-        mostImproved:       improvedGroup,
-        muscleGroups:       Object.keys(cur.muscleVolume),
-        prevVolume:         prevVolumeKg,
-        volumeByWeek,
-        exerciseHighlights,
-        prs:                prsInPeriod,
-        sessionDays,
-        muscleSplit,
-        periodDays:         mode === 'rolling_30d' ? 30 : 7,
-        trainingFrequency,
+    if (isPro) {
+      // ── Rate limit check ────────────────────────────────────────────────────
+      const HOURLY_SUMMARY_CAP = 6; // max 6 AI-generated summaries per hour per Pro user
+      const { data: rateResult } = await serviceClient.rpc('get_ai_rate_limit', {
+        p_user_id: user.id,
       });
+      const rateLimited = rateResult && rateResult.length > 0 && rateResult[0].call_count >= HOURLY_SUMMARY_CAP;
 
-      summaryData.ai_analysis = aiResult;
-      if (aiResult?.greeting) {
-        summaryData.insight = aiResult.greeting;
+      if (!rateLimited) {
+        try {
+          const apiKey = Deno.env.get('OPENAI_API_KEY');
+          if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
+
+          const aiResult = await generateStructuredInsight(apiKey, mode, {
+            workouts:           sessionIds.length,
+            volume:             cur.totalVolumeKg,
+            totalSets:          cur.totalSets,
+            strongest:          cur.bestExercise
+              ? `${cur.bestExercise} at ${cur.bestE1RMLabel}`
+              : 'N/A',
+            mostImproved:       improvedGroup,
+            muscleGroups:       Object.keys(cur.muscleVolume),
+            prevVolume:         prevVolumeKg,
+            volumeByWeek,
+            exerciseHighlights,
+            prs:                prsInPeriod,
+            sessionDays,
+            muscleSplit,
+            periodDays:         mode === 'rolling_30d' ? 30 : 7,
+            trainingFrequency,
+          });
+
+          summaryData.ai_analysis = aiResult;
+          if (aiResult?.greeting) {
+            summaryData.insight = aiResult.greeting;
+          }
+          if (!aiResult) aiError = 'AI returned no usable response (see edge function logs)';
+
+          console.log(`[generate-weekly-summary] AI analysis generated (${mode}) for user`, user.id, '| ok:', !!aiResult);
+
+          // ── Track rate limit usage ───────────────────────────────────────────
+          await serviceClient.rpc('increment_ai_rate_limit', { p_user_id: user.id }).catch(() => {});
+        } catch (aiErr) {
+          const err = aiErr as Error & { status?: number; error?: { message?: string } };
+          aiError = err?.error?.message ?? err?.message ?? 'Unknown AI error';
+          console.error('[generate-weekly-summary] AI analysis failed:', aiError, '| status:', err?.status);
+        }
+      } else {
+        aiError = 'Rate limit reached. AI analysis will be available next hour.';
+        console.warn(
+          `[generate-weekly-summary] Rate limit hit for user ${user.id}: ${rateResult[0].call_count}/${HOURLY_SUMMARY_CAP}`,
+        );
       }
-      if (!aiResult) aiError = 'AI returned no usable response (see edge function logs)';
-
-      console.log(`[generate-weekly-summary] AI analysis generated (${mode}) for user`, user.id, '| ok:', !!aiResult);
-    } catch (aiErr) {
-      const err = aiErr as Error & { status?: number; error?: { message?: string } };
-      aiError = err?.error?.message ?? err?.message ?? 'Unknown AI error';
-      console.error('[generate-weekly-summary] AI analysis failed:', aiError, '| status:', err?.status);
+    } else {
+      // Free users: no AI analysis, deterministic output only
+      console.log(`[generate-weekly-summary] Free user ${user.id}: skipping AI analysis`);
     }
 
     // ── Upsert ────────────────────────────────────────────────────────────

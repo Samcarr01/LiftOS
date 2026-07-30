@@ -657,6 +657,14 @@ Deno.serve(async (req: Request) => {
 
     const userId = user.id;
 
+    // ── Pro entitlement check (DB, not JWT — canonical source of truth) ────────
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('subscription_tier')
+      .eq('id', userId)
+      .single();
+    const isPro = userProfile?.subscription_tier === 'pro';
+
     const body = await req.json().catch(() => ({}));
     const { exercise_id: exerciseId } = body as Record<string, string>;
 
@@ -812,41 +820,61 @@ COACHING RULES:
 Respond ONLY with this exact JSON structure (no other text):
 {"primary":{"weight":number|null,"added_weight":number|null,"reps":number|null,"laps":number|null,"duration":number|null,"distance":number|null,"rationale":"string max 200 chars"},"alternative":{"weight":number|null,"added_weight":number|null,"reps":number|null,"laps":number|null,"duration":number|null,"distance":number|null,"rationale":"string max 200 chars"},"plateau_flag":boolean}`;
 
-    // ── Call OpenAI ──────────────────────────────────────────────────────────
+    // ── Rate limit check (Pro users) ────────────────────────────────────────────
+    const HOURLY_AI_CAP = 30; // max AI suggestion generations per hour per user
+    let rateLimited = false;
+    if (isPro) {
+      const { data: rateResult } = await supabase.rpc('get_ai_rate_limit', {
+        p_user_id: userId,
+      });
+      if (rateResult && rateResult.length > 0 && rateResult[0].call_count >= HOURLY_AI_CAP) {
+        rateLimited = true;
+        console.warn(
+          `[generate-ai-suggestion] Rate limit hit for user ${userId}: ${rateResult[0].call_count}/${HOURLY_AI_CAP}`,
+        );
+      }
+    }
+
+    // ── Call OpenAI (Pro only, not rate-limited) ────────────────────────────────
     let suggestion: AISuggestion | null = null;
     let source = 'rule-based';
 
-    try {
-      const apiKey = Deno.env.get('OPENAI_API_KEY');
-      if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
+    if (isPro && !rateLimited) {
+      try {
+        const apiKey = Deno.env.get('OPENAI_API_KEY');
+        if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
 
-      const openai = new OpenAI({ apiKey });
+        const openai = new OpenAI({ apiKey });
 
-      const response = await openai.chat.completions.create({
-        model:           'gpt-4o',
-        response_format: { type: 'json_object' },
-        temperature:     0.3,
-        max_tokens:      400,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user',   content: userPrompt   },
-        ],
-      });
+        const response = await openai.chat.completions.create({
+          model:           'gpt-4o',
+          response_format: { type: 'json_object' },
+          temperature:     0.3,
+          max_tokens:      400,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user',   content: userPrompt   },
+          ],
+        });
 
-      const rawText = response.choices[0]?.message?.content ?? '{}';
-      const parsed  = JSON.parse(rawText);
-      const valid   = validateSuggestion(parsed);
+        const rawText = response.choices[0]?.message?.content ?? '{}';
+        const parsed  = JSON.parse(rawText);
+        const valid   = validateSuggestion(parsed);
 
-      if (valid) {
-        suggestion = applyBounds(valid, baseline);
-        source     = 'ai';
-        console.log('[generate-ai-suggestion] AI suggestion generated for exercise', exerciseId);
-      } else {
-        console.warn('[generate-ai-suggestion] AI response failed validation, using rule-based');
+        if (valid) {
+          suggestion = applyBounds(valid, baseline);
+          source     = 'ai';
+          console.log('[generate-ai-suggestion] AI suggestion generated for exercise', exerciseId);
+        } else {
+          console.warn('[generate-ai-suggestion] AI response failed validation, using rule-based');
+        }
+
+        // ── Track rate limit usage ─────────────────────────────────────────────
+        await supabase.rpc('increment_ai_rate_limit', { p_user_id: userId }).catch(() => {});
+      } catch (aiErr) {
+        console.error('[generate-ai-suggestion] OpenAI call failed:', (aiErr as Error).message);
+        // Fall through to rule-based
       }
-    } catch (aiErr) {
-      console.error('[generate-ai-suggestion] OpenAI call failed:', (aiErr as Error).message);
-      // Fall through to rule-based
     }
 
     // ── Fallback if AI failed ────────────────────────────────────────────────
