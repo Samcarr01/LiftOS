@@ -3,6 +3,15 @@
  *
  * QueuedMutation is the app-layer type. The DB stores it serialised as JSON.
  * All public functions are safe to call from any context; they no-op on error.
+ *
+ * ── Ordering guarantees ──────────────────────────────────────────────────
+ * 1. Mutations are fetched from the queue in timestamp-ASC order (oldest first).
+ * 2. The server also sorts by timestamp before processing (last-write-wins).
+ * 3. Filters ensure only 'pending' rows with retries < 5 and valid backoff are
+ *    returned. Mutations in 'syncing' state are reverted to 'pending' on sync
+ *    failure (see sync-manager.ts catch block).
+ * 4. Current operation types: 'insert', 'update', 'delete' for set_entries;
+ *    'update' for workout_sessions; 'insert' for session_exercises.
  */
 import {
   queueInsert,

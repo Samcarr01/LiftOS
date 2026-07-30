@@ -6,14 +6,15 @@
  *  - The exercise has < 2 sessions of history
  *  - The Edge Function is unreachable
  *
- * Produces the same AISuggestionData shape as the server, so the
- * AI banner renders identically regardless of source.
+ * Produces the same AISuggestionData shape as the server, using the
+ * same deterministic outcomes contract (progress, hold, deload, etc.)
+ * so the AI banner renders identically regardless of source.
  *
- * Logic (mirrors Claude-ai.md rule-based spec):
- *  - All sets completed + reps ≥ target  → +2.5 kg, same reps
- *  - All sets completed (under target)   → same weight, +1 rep
- *  - Incomplete session                  → repeat last session
- *  - No history                          → generic starter suggestion
+ * Logic (mirrors the edge function deterministic progression engine):
+ *  - All sets completed + reps consistent  → progress (+2.5 kg, same reps)
+ *  - All sets completed (under target)     → progress (+1 rep, same weight)
+ *  - Incomplete session                   → hold (repeat last session)
+ *  - No history                           → insufficient_evidence
  */
 
 import type { AISuggestionData, LastPerformanceSet } from '@/types/app';
@@ -40,6 +41,8 @@ export function computeRuleBasedSuggestion(
         rationale: 'No previous data. Start with a comfortable weight for 3 sets of 8 reps.',
       },
       alternative:  null,
+      outcome:      'insufficient_evidence',
+      reason:       'Fewer than 2 logged sessions for this exercise.',
       plateau_flag: false,
     };
   }
@@ -53,6 +56,8 @@ export function computeRuleBasedSuggestion(
     return {
       primary:      { rationale: 'Match your last session performance.' },
       alternative:  null,
+      outcome:      'hold',
+      reason:       'No working sets completed in the latest session.',
       plateau_flag: false,
     };
   }
@@ -88,6 +93,8 @@ function bodyweightSuggestion(
       reps:      maxReps,
       rationale: 'Maintain your reps with tighter form.',
     },
+    outcome:      'progress',
+    reason:       `All sets completed at ${maxReps} reps bodyweight. Ready to increase reps.`,
     plateau_flag: false,
   };
 }
@@ -100,7 +107,7 @@ function weightRepsSuggestion(
     ...workingSets.map((s) => Number(s.values.weight ?? 0)),
     0,
   );
-  const topSet  = workingSets.find((s) => Number(s.values.weight) === bestWeight);
+  const topSet   = workingSets.find((s) => Number(s.values.weight) === bestWeight);
   const lastReps = Number(topSet?.values.reps ?? 0);
 
   // We don't have full-session completion info from last_performance_snapshots,
@@ -120,6 +127,8 @@ function weightRepsSuggestion(
       reps:      nextReps,
       rationale: `Or stay at ${bestWeight}kg and aim for ${nextReps} reps.`,
     },
+    outcome:      'progress',
+    reason:       `All sets completed at ${bestWeight}kg × ${lastReps}. Ready to progress.`,
     plateau_flag: false,
   };
 }

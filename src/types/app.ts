@@ -10,6 +10,7 @@
 import type { z } from 'zod';
 import type {
   AISuggestionDataSchema,
+  ProgressionOutcomeSchema,
   ExerciseCreateSchema,
   ExerciseUpdateSchema,
   TemplateCreateSchema,
@@ -36,6 +37,7 @@ export type SetValues         = Record<string, number | string>;
 // ── Zod-inferred complex types ────────────────────────────────────────────────
 
 export type AISuggestionData          = z.infer<typeof AISuggestionDataSchema>;
+export type ProgressionOutcome        = z.infer<typeof ProgressionOutcomeSchema>;
 export type ExerciseCreate            = z.infer<typeof ExerciseCreateSchema>;
 export type ExerciseUpdate            = z.infer<typeof ExerciseUpdateSchema>;
 export type TemplateCreate            = z.infer<typeof TemplateCreateSchema>;

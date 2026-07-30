@@ -2,6 +2,9 @@
  * AISuggestionBanner — shows the AI progression target for an exercise.
  * Accept fills the next uncompleted set with target values.
  * Dismiss hides the banner for the current session.
+ *
+ * Displays outcome type (progress, hold, deload, plateau_detected, insufficient_evidence)
+ * and a human-readable reason alongside the target.
  */
 import React, { useState } from 'react';
 import {
@@ -13,6 +16,23 @@ interface AISuggestionBannerProps {
   suggestion: AISuggestionData;
   onAccept: (values: SetValues) => void;
   onDismiss: () => void;
+}
+
+function outcomeBadge(outcome: string): { label: string; color: string; bg: string } {
+  switch (outcome) {
+    case 'progress':
+      return { label: '▲ Progress', color: '#86efac', bg: '#14532d' };
+    case 'hold':
+      return { label: '◆ Hold', color: '#fde68a', bg: '#713f12' };
+    case 'deload':
+      return { label: '▼ Deload', color: '#fca5a5', bg: '#7f1d1d' };
+    case 'plateau_detected':
+      return { label: '⚠ Plateau', color: '#fb923c', bg: '#7c2d12' };
+    case 'insufficient_evidence':
+      return { label: '○ New', color: '#94a3b8', bg: '#1e293b' };
+    default:
+      return { label: outcome, color: '#94a3b8', bg: '#1e293b' };
+  }
 }
 
 function targetLabel(suggestion: AISuggestionData): string {
@@ -37,6 +57,7 @@ function buildAcceptValues(suggestion: AISuggestionData): SetValues {
 
 export function AISuggestionBanner({ suggestion, onAccept, onDismiss }: AISuggestionBannerProps) {
   const [expanded, setExpanded] = useState(false);
+  const badge = outcomeBadge(suggestion.outcome);
 
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -48,12 +69,10 @@ export function AISuggestionBanner({ suggestion, onAccept, onDismiss }: AISugges
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <Text style={styles.aiLabel}>✦ AI</Text>
+          <View style={[styles.outcomeBadge, { backgroundColor: badge.bg }]}>
+            <Text style={[styles.outcomeText, { color: badge.color }]}>{badge.label}</Text>
+          </View>
           <Text style={styles.target}>{targetLabel(suggestion)}</Text>
-          {suggestion.plateau_flag && (
-            <View style={styles.plateauBadge}>
-              <Text style={styles.plateauText}>⚠ Plateau</Text>
-            </View>
-          )}
         </View>
         <View style={styles.actions}>
           <TouchableOpacity
@@ -82,6 +101,12 @@ export function AISuggestionBanner({ suggestion, onAccept, onDismiss }: AISugges
 
       {expanded && (
         <View style={styles.rationale}>
+          {suggestion.reason ? (
+            <View style={styles.reasonBox}>
+              <Text style={styles.reasonLabel}>Why</Text>
+              <Text style={styles.reasonText}>{suggestion.reason}</Text>
+            </View>
+          ) : null}
           {suggestion.plateau_flag && suggestion.plateau_intervention && (
             <View style={styles.interventionBox}>
               <Text style={styles.interventionLabel}>Plateau Tip</Text>
@@ -121,7 +146,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   aiLabel: {
     color: '#a3e635',
@@ -129,20 +154,18 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.5,
   },
-  target: {
-    color: '#d9f99d',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  plateauBadge: {
-    backgroundColor: '#713f12',
+  outcomeBadge: {
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  plateauText: {
-    color: '#fde68a',
-    fontSize: 11,
+  outcomeText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  target: {
+    color: '#d9f99d',
+    fontSize: 15,
     fontWeight: '700',
   },
   actions: {
@@ -184,7 +207,27 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     borderTopWidth: 1,
     borderTopColor: '#1f2f0c',
-    gap: 4,
+    gap: 6,
+  },
+  reasonBox: {
+    backgroundColor: '#0f172a',
+    borderRadius: 6,
+    padding: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#64748b',
+  },
+  reasonLabel: {
+    color: '#94a3b8',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 3,
+  },
+  reasonText: {
+    color: '#cbd5e1',
+    fontSize: 12,
+    lineHeight: 18,
   },
   interventionBox: {
     backgroundColor: '#451a03',

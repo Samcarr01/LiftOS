@@ -18,6 +18,11 @@ import type { SetEntry } from '@/types';
 /**
  * Persists a set entry to the local DB and enqueues it for server sync.
  * Fire-and-forget — the UI never awaits this.
+ *
+ * Operation type is chosen dynamically:
+ *   - 'insert' for new sets that haven't been completed yet
+ *   - 'update' for edits to completed sets
+ * The server handles both via upsert on (session_exercise_id, set_index).
  */
 export async function logSetEntry(set: SetEntry): Promise<void> {
   const now = set.loggedAt || new Date().toISOString();
@@ -36,10 +41,12 @@ export async function logSetEntry(set: SetEntry): Promise<void> {
   });
 
   // 2. Enqueue for server sync
+  // Use 'update' for edits to completed sets, 'insert' for new sets
+  const operation = set.isCompleted ? 'update' : 'insert' as const;
   await addToQueue({
     id: set.id,
     table: 'set_entries',
-    operation: 'insert', // upsert on server via (session_exercise_id, set_index)
+    operation,
     data: {
       session_exercise_id: set.sessionExerciseId,
       set_index: set.setIndex,
