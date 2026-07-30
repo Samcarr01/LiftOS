@@ -93,8 +93,12 @@ async function runSync(): Promise<void> {
     const resultMap = new Map(results.map((r) => [r.client_id, r]));
     for (const mutation of pending) {
       const result = resultMap.get(mutation.id);
-      if (!result || result.status === 'success' || result.status === 'duplicate') {
+      if (result && (result.status === 'success' || result.status === 'duplicate')) {
         succeededIds.push(mutation.id);
+      } else if (!result) {
+        // Missing result — the server did not acknowledge this mutation.
+        // Treat as a retry to avoid silent data loss.
+        failedItems.push({ mutation, message: 'No acknowledgement from server' });
       } else {
         failedItems.push({ mutation, message: result.message ?? 'Server error' });
       }
