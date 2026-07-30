@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
+  Award,
   ChevronRight,
   Download,
   Dumbbell,
@@ -14,6 +15,7 @@ import {
   Pencil,
   RefreshCw,
   Smartphone,
+  Sparkles,
   Trash2,
 } from 'lucide-react';
 import {
@@ -32,6 +34,13 @@ import { usePwaInstall } from '@/hooks/use-pwa-install';
 import { exportUserData } from '@/lib/export';
 import { getQueueSize, processQueue } from '@/lib/offline/sync-queue';
 import { AvatarUploader } from '@/components/ui/avatar-uploader';
+import {
+  getTrainingStage,
+  suggestStage,
+  isStageChangeAllowed,
+  TRAINING_STAGES,
+  type TrainingStageId,
+} from '@/lib/leveling';
 
 const APP_VERSION = '0.1.0';
 
@@ -194,19 +203,25 @@ export default function ProfilePage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
+  const [trainingStage, setTrainingStage] = useState<TrainingStageId>('intermediate');
+  const [suggestedStage, setSuggestedStage] = useState<TrainingStageId | null>(null);
+  const [stageLoaded, setStageLoaded] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
     void supabase
       .from('users')
-      .select('display_name, avatar_url, created_at')
+      .select('display_name, avatar_url, created_at, experience_level')
       .single()
       .then(({ data }) => {
-        const row = data as { display_name: string | null; avatar_url: string | null; created_at: string | null } | null;
+        const row = data as { display_name: string | null; avatar_url: string | null; created_at: string | null; experience_level: string | null } | null;
         setDisplayName(row?.display_name ?? '');
         setAvatarUrl(row?.avatar_url ?? null);
         setMemberSince(row?.created_at ?? user.created_at ?? null);
+        const stage = (row?.experience_level as TrainingStageId) ?? 'intermediate';
+        setTrainingStage(stage);
+        setStageLoaded(true);
       });
 
     void Promise.all([
@@ -276,6 +291,58 @@ export default function ProfilePage() {
 
   async function handleSignOut() {
     await signOut();
+  }
+
+  async function handleStageChange(newStage: TrainingStageId) {
+    if (!user || !stageLoaded) return;
+    const { warning } = isStageChangeAllowed(trainingStage, newStage);
+    if (warning) {
+      // Let it go through but warn the user
+      toast.info(warning, { duration: 4000 });
+    }
+    setTrainingStage(newStage);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('users')
+      .update({ experience_level: newStage })
+      .eq('id', user.id);
+    if (error) {
+      toast.error('Failed to save training stage');
+      // Revert
+      setTrainingStage(trainingStage);
+    } else {
+      toast.success(`Training stage set to ${getTrainingStage(newStage).label}`);
+    }
+  }
+
+  async function handleSuggestStage() {
+    if (!user || !stageLoaded) return;
+    const supabase = createClient();
+    // Fetch session stats for suggestion
+    const [monthsResult, sessionsResult] = await Promise.all([
+      supabase
+        .from('users')
+        .select('created_at')
+        .eq('id', user.id)
+        .single(),
+      supabase
+        .from('workout_sessions')
+        .select('started_at', { count: 'exact', head: true })
+        .not('completed_at', 'is', null),
+    ]);
+
+    const createdAt = (monthsResult.data as { created_at: string | null } | null)?.created_at;
+    const totalSessions = sessionsResult.count ?? 0;
+    const monthsActive = createdAt
+      ? Math.max(1, Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30)))
+      : 1;
+
+    // Approximate sessions in last 90 days as a fraction of total
+    const sessionsLast90Days = Math.min(totalSessions, Math.round(totalSessions * (90 / (monthsActive * 30))));
+
+    const suggested = suggestStage({ monthsActive, sessionsLast90Days, totalSessions });
+    setSuggestedStage(suggested.id);
+    toast.info(`Suggested stage: ${suggested.label} — ${suggested.description}`, { duration: 5000 });
   }
 
   return (
@@ -407,6 +474,69 @@ export default function ProfilePage() {
             </div>
           </div>
         </section>
+
+        {/* ── Training Stage ──────────────────────────────── */}
+        {stageLoaded && (
+          <section>
+            <h2 className="section-title mb-2">Training Stage</h2>
+            <div className="content-card space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-primary">
+                  <Award className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">{getTrainingStage(trainingStage).label}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{getTrainingStage(trainingStage).description}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {getTrainingStage(trainingStage).defaultWeeklySessions} sessions/wk ·{' '}
+                    {getTrainingStage(trainingStage).progressionStyle} progression
+                  </p>
+                </div>
+              </div>
+
+              {suggestedStage && suggestedStage !== trainingStage && (
+                <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/[0.06] px-3 py-2">
+                  <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  <p className="text-xs text-muted-foreground">
+                    Suggested: <span className="font-semibold text-foreground">{getTrainingStage(suggestedStage).label}</span>
+                  </p>
+                  <button
+                    onClick={() => void handleStageChange(suggestedStage)}
+                    className="ml-auto shrink-0 rounded-lg border border-primary/30 px-2.5 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+                  >
+                    Apply
+                  </button>
+                </div>
+              )}
+
+              <div>
+                <p className="mb-1.5 text-xs font-semibold text-muted-foreground">Change stage</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {TRAINING_STAGES.map((stage) => (
+                    <button
+                      key={stage.id}
+                      onClick={() => void handleStageChange(stage.id)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                        trainingStage === stage.id
+                          ? 'bg-primary text-primary-foreground'
+                          : 'border border-white/10 bg-white/[0.04] text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {stage.label}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => void handleSuggestStage()}
+                    className="flex items-center gap-1 rounded-lg border border-dashed border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    Suggest
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ── Account ───────────────────────────────────── */}
         <section>
