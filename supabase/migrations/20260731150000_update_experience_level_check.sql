@@ -4,8 +4,8 @@
 -- intermediate, advanced-intermediate, advanced, elite.
 
 ALTER TABLE users
-  DROP CONSTRAINT IF EXISTS users_experience_level_check,
-  ADD CONSTRAINT users_experience_level_check
+  DROP CONSTRAINT IF EXISTS chk_experience_level,
+  ADD CONSTRAINT chk_experience_level
     CHECK (experience_level IN (
       'just-starting',
       'novice',
