@@ -23,7 +23,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { useCompleteWorkout } from '@/hooks/use-complete-workout';
-import { logSetEntry } from '@/lib/offline';
+import { logSetEntry, deleteSetEntry } from '@/lib/offline';
 import { Analytics } from '@/lib/analytics';
 import { ExerciseCard } from '@/components/active-workout/exercise-card';
 import { RestTimer } from '@/components/active-workout/rest-timer';
@@ -160,7 +160,11 @@ export function ActiveWorkout() {
                   void logSetEntry(updatedSet).catch(console.warn);
                 }
               }}
-              onDeleteSet={(setIndex) => deleteSet(ex.sessionExercise.id, setIndex)}
+              onDeleteSet={(setIndex) => {
+                deleteSet(ex.sessionExercise.id, setIndex);
+                // Enqueue deletion for remote sync (fire-and-forget)
+                void deleteSetEntry(ex.sessionExercise.id, setIndex).catch(console.warn);
+              }}
               onCompleteSet={(setIndex) => {
                 completeSet(ex.sessionExercise.id, setIndex);
                 // Fire-and-forget: persist completed set to local DB + queue for sync
