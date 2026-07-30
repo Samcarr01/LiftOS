@@ -481,10 +481,6 @@ export default function ProfilePage() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold">{getTrainingStage(trainingStage).label}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{getTrainingStage(trainingStage).description}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {getTrainingStage(trainingStage).defaultWeeklySessions} sessions/wk ·{' '}
-                    {getTrainingStage(trainingStage).progressionStyle} progression
-                  </p>
                 </div>
               </div>
 

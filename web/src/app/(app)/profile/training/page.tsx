@@ -167,7 +167,7 @@ export default function TrainingPreferencesPage() {
         <div className="space-y-2">
           <div className="list-row justify-between">
             <span className="text-sm font-semibold">Experience</span>
-            <div className="flex rounded-lg border border-white/10 bg-black/15 p-0.5">
+            <div className="flex overflow-x-auto flex-nowrap rounded-lg border border-white/10 bg-black/15 p-0.5">
               {STAGE_IDS.map((level) => (
                 <button
                   key={level}

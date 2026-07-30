@@ -111,7 +111,7 @@ export default function RootLayout({
         <AuthGate>
           {children}
         </AuthGate>
-        <Toaster position="top-center" />
+        <Toaster position="bottom-center" />
       </body>
     </html>
   );

@@ -33,7 +33,7 @@ interface TierPromotionOverlayProps {
   autoDismissMs?: number;
 }
 
-const PARTICLE_TIERS = new Set(['diamond', 'mythic', 'cosmic']);
+const PARTICLE_TIERS = new Set(['diamond', 'mythic', 'cosmic', 'nebula', 'singularity', 'apex']);
 
 export function TierPromotionOverlay({
   toTier,
@@ -152,6 +152,12 @@ function tierNameGradient(tier: Tier): string {
       return `linear-gradient(110deg, oklch(${tier.color}), oklch(0.78 0.22 280), oklch(${tier.color}))`;
     case 'cosmic':
       return `linear-gradient(110deg, oklch(0.85 0.18 50), oklch(0.80 0.20 180), oklch(0.78 0.22 320), oklch(0.85 0.18 50))`;
+    case 'nebula':
+      return `linear-gradient(110deg, oklch(0.72 0.26 270), oklch(0.65 0.22 250), oklch(0.78 0.28 280), oklch(0.72 0.26 270))`;
+    case 'singularity':
+      return `linear-gradient(110deg, oklch(0.85 0.20 260), oklch(0.90 0.22 290), oklch(0.80 0.18 240), oklch(0.85 0.20 260))`;
+    case 'apex':
+      return `linear-gradient(110deg, oklch(0.95 0.24 85), oklch(0.98 0.22 85), oklch(0.92 0.20 80), oklch(0.95 0.24 85))`;
     default:
       return `linear-gradient(110deg, oklch(${tier.color}), oklch(${tier.color} / 0.85), oklch(${tier.color}))`;
   }
@@ -163,6 +169,9 @@ function tierNameAnimation(tier: Tier): string {
     case 'diamond':  return 'tier-refract 3.5s linear infinite 1.1s';
     case 'mythic':   return 'tier-gradient-cycle 5s ease-in-out infinite 1.1s';
     case 'cosmic':   return 'tier-holographic 6s ease-in-out infinite 1.1s';
+    case 'nebula':   return 'tier-soft-glow 2.5s ease-in-out infinite 1.1s';
+    case 'singularity': return 'tier-refract 2.5s linear infinite 1.1s';
+    case 'apex':     return 'tier-gradient-cycle 2s ease-in-out infinite 1.1s';
     default:         return 'none';
   }
 }
@@ -172,6 +181,9 @@ function confettiColorsForTier(id: string): string[] {
     case 'diamond': return ['#A5F3FC', '#67E8F9', '#CFFAFE', '#FFFFFF'];
     case 'mythic':  return ['#D8B4FE', '#F0ABFC', '#A78BFA', '#FBCFE8'];
     case 'cosmic':  return ['#FDE68A', '#FCA5A5', '#A5B4FC', '#86EFAC', '#F9A8D4'];
+    case 'nebula':  return ['#7C5CFC', '#A78BFA', '#6D28D9', '#C4B5FD', '#8B5CF6'];
+    case 'singularity': return ['#C084FC', '#A855F7', '#FFFFFF', '#E9D5FF', '#D8B4FE'];
+    case 'apex':    return ['#FCD34D', '#F59E0B', '#FEF3C7', '#FDE68A', '#FFFBEB'];
     default:        return ['#FFFFFF'];
   }
 }
