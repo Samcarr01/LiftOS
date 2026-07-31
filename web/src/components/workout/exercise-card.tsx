@@ -202,23 +202,41 @@ export const ExerciseCard = memo(function ExerciseCard({
       })()}
 
       <div className="mt-3 space-y-2">
-        {sets.map((set, index) => (
-          <SetRow
-            key={set.id}
-            set={set}
-            setNumber={index + 1}
-            lastValues={lastPerformanceSets?.[index] ?? null}
-            fields={fields}
-            aiTarget={
-              aiSuggestion?.next_target && !isSuggestionDismissed
-                ? (aiSuggestion.next_target.values as Record<string, number | string | undefined>)
-                : null
-            }
-            onUpdate={(patch) => handleUpdate(set.id, patch)}
-            onComplete={() => handleComplete(set.id)}
-            onDelete={() => deleteSet(exerciseIndex, set.id)}
-          />
-        ))}
+        {sets.map((set, index) => {
+          // Per-set targets (Cycle 1): only apply to working/top sets
+          // The per_set_targets array contains entries for qualifying sets only,
+          // indexed sequentially (not by all-set index)
+          const isQualifying = set.setType === 'working' || set.setType === 'top';
+          const qualifyingIndex = sets
+            .slice(0, index)
+            .filter(s => s.setType === 'working' || s.setType === 'top')
+            .length;
+
+          const perSetTarget = isQualifying && aiSuggestion?.per_set_targets?.[qualifyingIndex]
+            ? (aiSuggestion.per_set_targets[qualifyingIndex] as Record<string, number | string | undefined>)
+            : undefined;
+
+          // Universal target only applies to qualifying sets; warmup/drop/failure get no AI target
+          const universalTarget = isQualifying
+            ? (aiSuggestion?.next_target?.values as Record<string, number | string | undefined> | undefined)
+            : undefined;
+
+          const aiTarget = !isSuggestionDismissed && (perSetTarget || universalTarget) || null;
+
+          return (
+            <SetRow
+              key={set.id}
+              set={set}
+              setNumber={index + 1}
+              lastValues={lastPerformanceSets?.[index] ?? null}
+              fields={fields}
+              aiTarget={aiTarget}
+              onUpdate={(patch) => handleUpdate(set.id, patch)}
+              onComplete={() => handleComplete(set.id)}
+              onDelete={() => deleteSet(exerciseIndex, set.id)}
+            />
+          );
+        })}
       </div>
 
       <div className="mt-3 flex gap-2">

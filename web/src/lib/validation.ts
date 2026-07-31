@@ -65,6 +65,9 @@ export const AISuggestionDataSchema = z.object({
     .optional(),
   last_result: SuggestionResultSchema.nullable(),
   next_target: SuggestionResultSchema.nullable(),
+  // Per-set targets for working/top sets (Cycle 1). Array of SetValues, one per qualifying set.
+  // When present, UI renders individual targets per row instead of universal next_target.
+  per_set_targets: z.array(z.record(z.string(), z.union([z.number(), z.string()]))).optional(),
   reason: z.string().max(500),
   reason_codes: z.array(z.string().max(64)).max(8).optional(),
   progression: z.object({

@@ -838,21 +838,32 @@ function buildDoubleProgressionSuggestion(params: {
   const currentLoad = (baselineValues as Record<string, number | undefined>)[weightKey] ?? 0;
 
   if (latestAnalysis.allSetsAtCeiling && repRange.max > 0) {
-    // PROGRESS: increase load, reset reps to midpoint of range (not floor — less jarring)
+    // PROGRESS: increase load with per-set derived realistic targets
     const newLoad = params.loadKey
       ? currentLoad + step  // height: simple addition, no rounding to plate increments
       : roundLoadUp(currentLoad + step, unitPreference);
 
     // Regression guard: if rounding still lands on same weight, fall through to hold
     if (newLoad > currentLoad) {
-      // Historical attempt check: have they tried this weight before and struggled?
-      const pastAttempt = findFailedAttemptAtWeight(allSessions, newLoad, weightKey, schema, repRange);
+      // Build per-set targets for load progression (conservative, shape-preserving)
+      const perSetTargets = buildPerSetTargets({
+        workingSets: latestAnalysis.workingSets,
+        repRange,
+        allSetsAtCeiling: true,
+        isLoadProgression: true,
+        schema,
+      });
 
-      const resetReps = Math.ceil((repRange.min + repRange.max) / 2);
+      // Universal next_target derived from first per-set target (typical/representative)
+      // Fallback: use range min if no per-set targets available
+      const typicalReps = perSetTargets?.[0]
+        ? getNumeric(perSetTargets[0], 'reps')
+        : repRange.min;
+
       const targetValues: SuggestionValues = {
         ...baselineValues,
         [weightKey]: newLoad,
-        reps: pastAttempt.attempted ? Math.max(pastAttempt.bestReps, repRange.min) : resetReps,
+        reps: typicalReps,
       };
       const targetDisplay = formatSetValues(targetValues as SetValues, schema);
 
@@ -861,21 +872,14 @@ function buildDoubleProgressionSuggestion(params: {
 
       if (isModerateBreak) {
         // After a break, temper expectations even if they hit ceiling last time
-        reason = `You were hitting ${repRange.max} reps before your break — try ${newLoad}${displayUnit} but don't force it if the weight feels heavy`;
-      } else if (pastAttempt.attempted) {
-        // They've tried this weight before and didn't complete
-        const targetReps = targetValues.reps ?? resetReps;
-        if (pastAttempt.attempts >= 2) {
-          reason = `You've attempted ${newLoad}${displayUnit} ${pastAttempt.attempts} times before — you hit ${pastAttempt.bestReps} reps at best. Aim for ${targetReps} reps this time, you're stronger now`;
-        } else {
-          reason = `Nailed ${repRange.max} reps on ${setsLabel} — ${newLoad}${displayUnit} is next. You tried it once before and hit ${pastAttempt.bestReps} reps, go get it`;
-        }
+        reason = `You were hitting ${repRange.max} reps before your break — try ${newLoad}${displayUnit} with conservative targets (see per-set)`;
       } else {
-        reason = `Nailed ${repRange.max} reps on ${setsLabel} — time to move up to ${newLoad}${displayUnit}, start at ${resetReps} reps and build again`;
+        // Build explanation based on per-set pattern
+        const perSetReps = perSetTargets?.map(t => t.reps).join(', ') ?? `${typicalReps}`;
+        reason = `Nailed ${repRange.max} reps on ${setsLabel} — load up to ${newLoad}${displayUnit}. Target ${perSetReps} reps across sets (conservative start at higher weight)`;
       }
 
       const progressCodes: ReasonCode[] = [REASON_CODES.ALL_SETS_AT_REP_CEILING];
-      if (pastAttempt.attempted) progressCodes.push(REASON_CODES.FAILED_ATTEMPT_AT_WEIGHT);
       if (isModerateBreak) progressCodes.push(REASON_CODES.RETURN_FROM_BREAK_SHORT);
 
       return buildResult({
@@ -899,15 +903,33 @@ function buildDoubleProgressionSuggestion(params: {
         eligible: true,
         exerciseNotes: params.exerciseNotes,
         sessionCount,
+        perSetTargets,
       });
     }
     // newLoad == currentLoad after rounding — fall through to hold path
   }
 
-  // Not at ceiling (or weight couldn't increase) — hold load, aim for consistency
+  // Not at ceiling (or weight couldn't increase) — hold load with per-set realistic targets
+
+  // Build per-set targets: preserve rep vector, add one rep to a feasible set
+  const perSetTargets = buildPerSetTargets({
+    workingSets: latestAnalysis.workingSets,
+    repRange,
+    allSetsAtCeiling: false,
+    isLoadProgression: false,
+    schema,
+  });
+
+  // Universal next_target derived from the qualifying set that's targeted for +1 rep
   const maxRep = Math.max(...reps);
   const minRep = Math.min(...reps);
-  const targetRep = repRange.max > 0 ? repRange.max : maxRep + 1;
+  // Safely extract numeric targetReps vector from perSetTargets
+  const targetReps = perSetTargets?.map(t => getNumeric(t, 'reps')) ?? reps;
+  // Find which set got the +1 rep
+  const qualifyingSetIndex = reps.findIndex((r, i) => r < repRange.max && targetReps[i] > r);
+  const targetRep = qualifyingSetIndex >= 0
+    ? targetReps[qualifyingSetIndex]
+    : targetReps[targetReps.length - 1];
 
   const targetValues: SuggestionValues = {
     ...baselineValues,
@@ -920,23 +942,27 @@ function buildDoubleProgressionSuggestion(params: {
 
   if (isModerateBreak) {
     // After a moderate break, focus on matching rather than pushing
-    reason = `First session back after a break — focus on matching ${currentLoad}${displayUnit} × ${maxRep} across ${setsLabel} before pushing for more`;
+    const perSetReps = perSetTargets?.map(t => t.reps).join(', ') ?? `${maxRep}`;
+    reason = `First session back after a break — aim for ${perSetReps} reps at ${currentLoad}${displayUnit} to rebuild your groove`;
   } else if (hasDropoff && reps.length >= 3) {
     // Per-set awareness: acknowledge natural fatigue drop-off
     const firstRep = reps[0];
     const lastRep = reps[reps.length - 1];
-    reason = `Your reps dropped from ${firstRep} to ${lastRep} across sets — that's normal fatigue. Get ${targetRep} on your first ${Math.ceil(reps.length / 2)} sets, the rest will follow`;
+    const perSetReps = perSetTargets?.map(t => t.reps).join(', ') ?? `${targetRep}`;
+    reason = `Reps dropped ${firstRep} → ${lastRep} across sets (normal fatigue). Target ${perSetReps} reps, adding one rep to a specific set`;
   } else if (reps.length > 1 && minRep < maxRep) {
-    reason = `You hit ${maxRep} on one set but ${minRep} on another — lock in ${targetRep} across ${setsLabel} at ${currentLoad}${displayUnit} before adding weight`;
+    const perSetReps = perSetTargets?.map(t => t.reps).join(', ') ?? `${targetRep}`;
+    reason = `You hit ${maxRep} on one set, ${minRep} on another — aim for ${perSetReps} reps at ${currentLoad}${displayUnit}, adding one rep to set ${qualifyingSetIndex >= 0 ? qualifyingSetIndex + 1 : numSets}`;
   } else {
-    reason = `Solid work at ${currentLoad}${displayUnit} — push for ${targetRep} reps across ${setsLabel}, then you're ready to go up`;
+    const perSetReps = perSetTargets?.map(t => t.reps).join(', ') ?? `${targetRep}`;
+    reason = `Solid work at ${currentLoad}${displayUnit} — target ${perSetReps} reps (adding one rep to a qualifying set), then you're ready to load up`;
   }
 
   // Plateau warning
   const isPlateau = sessionsAtWeight >= plateauThreshold;
   if (isPlateau) {
     const label = params.loadKey === 'height' ? 'height' : 'weight';
-    reason += ` \u00b7 You've been at this ${label} for ${sessionsAtWeight} sessions \u2014 try a deload week or swap in a variation`;
+    reason += ` · You've been at this ${label} for ${sessionsAtWeight} sessions — consider a deload week or exercise variation`;
   }
 
   const holdCodes: ReasonCode[] = [REASON_CODES.PARTIAL_REP_PROGRESS];
@@ -965,6 +991,7 @@ function buildDoubleProgressionSuggestion(params: {
     eligible: false,
     exerciseNotes: params.exerciseNotes,
     sessionCount,
+    perSetTargets,
   });
 }
 
@@ -1115,6 +1142,58 @@ function buildFallbackSuggestion(params: {
   });
 }
 
+// ── Per-Set Target Builder (Cycle 1) ─────────────────────────────────────────
+
+/**
+ * Compute per-set targets from the actual rep vector.
+ * - When not all sets hit ceiling: preserve vector, add exactly one rep to a feasible set.
+ * - When all at ceiling: after load increase, use conservative per-set targets.
+ */
+function buildPerSetTargets(params: {
+  workingSets: TrackingSetLike[];
+  repRange: RepRange;
+  allSetsAtCeiling: boolean;
+  isLoadProgression: boolean;
+  schema: TrackingSchema;
+}): SetValues[] | undefined {
+  const { workingSets, repRange, allSetsAtCeiling, isLoadProgression, schema } = params;
+  const keys = new Set(schema.fields.map((f) => f.key));
+  const hasReps = keys.has('reps');
+
+  if (!hasReps || repRange.max === 0) return undefined;
+
+  // When increasing load, use conservative per-set targets based on prior vector
+  if (allSetsAtCeiling && isLoadProgression) {
+    // After load increase, suggest one rep below each prior set's reps, floored at range min.
+    // This preserves the shape of the rep vector while being conservative post-load.
+    // If they did [12, 12, 11], suggest [11, 11, 10] at the higher weight.
+    const reps = workingSets.map((s) => getNumeric(s.values, 'reps'));
+    return workingSets.map((s) => {
+      const priorRep = getNumeric(s.values, 'reps');
+      const targetRep = Math.max(repRange.min, priorRep - 1);
+      return { ...s.values, reps: targetRep };
+    });
+  }
+
+  // Not at ceiling: preserve the actual rep vector, add exactly one rep to a feasible set
+  if (!allSetsAtCeiling) {
+    const reps = workingSets.map((s) => getNumeric(s.values, 'reps'));
+    const targets = [...reps];
+
+    // Find the last set that didn't hit ceiling and can still progress
+    for (let i = targets.length - 1; i >= 0; i--) {
+      if (targets[i] < repRange.max) {
+        targets[i] = targets[i] + 1;
+        break;
+      }
+    }
+
+    return workingSets.map((s, i) => ({ ...s.values, reps: targets[i] }));
+  }
+
+  return undefined;
+}
+
 // ── Result Builder ───────────────────────────────────────────────────────────
 
 function buildResult(params: {
@@ -1138,6 +1217,7 @@ function buildResult(params: {
   eligible: boolean;
   exerciseNotes?: string | null;
   sessionCount: number;
+  perSetTargets?: SetValues[];
 }): GuidedSuggestionResult {
   // Append exercise notes to reason so the user sees context (e.g. "reps = each arm")
   let reason = params.reason;
@@ -1164,6 +1244,7 @@ function buildResult(params: {
       display: params.targetDisplay,
       values: params.targetValues,
     },
+    per_set_targets: params.perSetTargets,
     reason,
     reason_codes: reasonCodes,
     progression: {

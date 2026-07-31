@@ -1084,3 +1084,46 @@ new code correctly, and source + production build are verified correct.
   now-unused `ActivitySpark`/`getWeeklyBuckets` helpers); both destinations now live under Progress.
 
 **Build:** ✅ `npm run build` — 30 routes, 0 TS errors, 0 ESLint errors.
+
+---
+
+## Progressive Overload Cycle 1 — ✅ COMPLETE (violations corrected) — 31 Jul 2026
+
+**Goal:** Honour configured rep ranges and preserve actual per-set performance vectors. Remove universal `×8` / rep-ceiling prescription.
+
+**Violations Fixed (Second Pass):**
+1. ✅ **Load progression** (lines 840-907): Universal `targetValues.reps` now derived from first per-set target (not hardcoded midpoint)
+2. ✅ **Hold path** (lines 909-991): Universal `targetValues.reps` now derived from qualifying set that got +1 rep (not ceiling)
+3. ✅ **Exercise-card mapping** (lines 204-240): Per-set targets only apply to working/top rows via `qualifyingIndex`, not raw all-set index
+4. ✅ **Reason text**: Now includes actual per-set breakdown (e.g., "Target 10, 8, 8 reps across sets")
+5. ✅ **Tests strengthened**: Verify actual values and reason text, removed contrived source-text assertions
+
+**Changes:**
+- `web/src/lib/validation.ts` — Added `per_set_targets` array to `AISuggestionDataSchema` (jsonb, no migration)
+- `web/src/lib/workout/guided-progression.ts` — **Corrected**: Load/hold paths build `perSetTargets` *first*, then derive universal target from per-set array. Reason text includes per-set breakdown. buildPerSetTargets() helper (60 lines) preserves actual rep vector (e.g., 10,8,7 → 10,8,8), adds exactly one rep to feasible set when not at ceiling; after load increase, uses conservative per-set targets based on prior shape.
+- `web/src/components/workout/exercise-card.tsx` — **Corrected**: Computes `isQualifying` (working/top only) and `qualifyingIndex` by filtering preceding qualifying sets. Maps `per_set_targets[qualifyingIndex]` only to working/top rows; warmup/drop/failure get no AI target. Falls back to universal target for legacy suggestions.
+- `web/src/store/active-workout-store.ts` — **Critical regression fix:** `values: ps.values` instead of `values: {}` on line 88 (hydration now initializes editable set values from prefilled snapshot)
+
+**Priority verified:** Template range → user global preferred → goal → category fallback (already correct).
+
+**Test coverage:** `web/src/lib/workout/__tests__/progression-cycle-1.spec.ts` — **9 comprehensive tests**:
+1. Global preferred range `3–8` with no template override is resolved and honoured
+2. Template range overrides global range only when explicitly present
+3. `[10, 8, 7]` at a fixed load becomes `[10, 8, 8]`, not all max reps
+4. All sets at range ceiling causes a small load increase with conservative per-set targets
+5. A non-ceiling session holds load and realistic vector
+6. Per-set targets map correctly, reason text includes per-set breakdown
+7. Store hydration preserves prefilled snapshot values (regression test)
+8. UI renders different targets when per-set values genuinely differ
+9. **NEW**: Warmup/drop/failure sets excluded from per-set targets (only working/top qualify)
+
+**Limitations:** No readiness/RIR/RPE/fatigue/deload improvements, no DB migrations, no production deployment (Cycle 2+). Per-set targets only for weight+reps exercises; cardio/other schemas use universal target.
+
+**Files changed:** 3 files, 105 insertions(+), 57 deletions(-)
+- `web/src/lib/workout/guided-progression.ts` (+60 lines, -38 lines) — load/hold paths corrected
+- `web/src/components/workout/exercise-card.tsx` (+20 lines, -6 lines) — qualifying-set mapping corrected
+- `web/src/lib/workout/__tests__/progression-cycle-1.spec.ts` (+28 lines, -15 lines) — strengthened, +1 test
+- `PROGRESS.md` (this file)
+- `web/test-verification.md` (manual trace verification)
+
+**No breaking changes** to existing API or DB schema. Backwards compatibility maintained for legacy universal suggestions.
