@@ -216,12 +216,9 @@ export const ExerciseCard = memo(function ExerciseCard({
             ? (aiSuggestion.per_set_targets[qualifyingIndex] as Record<string, number | string | undefined>)
             : undefined;
 
-          // Universal target only applies to qualifying sets; warmup/drop/failure get no AI target
-          const universalTarget = isQualifying
-            ? (aiSuggestion?.next_target?.values as Record<string, number | string | undefined> | undefined)
-            : undefined;
-
-          const aiTarget = !isSuggestionDismissed && (perSetTarget || universalTarget) || null;
+          // Row targets ONLY from per_set_targets (never from universal next_target)
+          // Universal target remains in summary card only
+          const aiTarget = !isSuggestionDismissed && perSetTarget || null;
 
           return (
             <SetRow
