@@ -85,7 +85,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
         id:                crypto.randomUUID(),
         sessionExerciseId: ex.sessionExercise.id,
         setIndex:          ps.setIndex,
-        values:            ps.values,  // Initialize from prefilled values, not {}
+        values:            {},  // Blank inputs; last performance & per-set targets are display-only
         setType:           ps.setType,
         isCompleted:       false,
         notes:             null,

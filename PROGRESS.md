@@ -1127,3 +1127,15 @@ new code correctly, and source + production build are verified correct.
 - `web/test-verification.md` (manual trace verification)
 
 **No breaking changes** to existing API or DB schema. Backwards compatibility maintained for legacy universal suggestions.
+
+---
+
+## Progression UI Regression Fix — ✅ COMPLETE — 31 Jul 2026
+
+**Issue:** Regression caused hydrateWorkout to copy `ps.values` to editable `set.values` — rendered sets displayed prefilled snapshot instead of blank editable fields.
+
+**Fix:** `web/src/store/active-workout-store.ts:88` — changed `values: ps.values` to `values: {}` — editable values now start blank while `lastPerformance` and `per_set_targets` remain display-only.
+
+**Test:** Created `web/tests/progression-ui-regression.tsx` — rendered-component test verified hydrated editable values remain separate from display-only lastPerformance/per_set_targets. Focused rendered regression test passed.
+
+**Verification:** Nine Cycle 1 progression tests passed, safe-placeholder-env `npm run build` succeeded with no errors (Next emitted its middleware deprecation and webpack-cache performance warnings), `git diff --check` passed with no whitespace errors. Service worker regenerated during build was restored to HEAD (out of scope).

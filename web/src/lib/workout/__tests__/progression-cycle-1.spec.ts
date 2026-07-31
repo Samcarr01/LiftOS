@@ -266,9 +266,9 @@ console.log('Running Progression Cycle 1 tests...\n');
   console.log(`  ✓ Reason: ${result!.suggestion.reason.substring(0, 100)}...`);
 }
 
-// Test 7: Store hydration preserves prefilled values (regression fix)
+// Test 7: Store hydration keeps editable values blank while retaining display-only Last (regression fix)
 {
-  console.log('\nTest 7: Store hydration preserves prefilled set values');
+  console.log('\nTest 7: Store hydration retains Last display while editable values start blank');
 
   // Mock StartWorkoutResponse structure
   const mockResponse = {
@@ -285,16 +285,16 @@ console.log('Running Progression Cycle 1 tests...\n');
     }],
   };
 
-  // Verify the prefilled values are NOT empty objects
-  assert(mockResponse.exercises[0].prefilledSets[0].values.weight === 100, 'Prefilled set 0 should have weight: 100');
-  assert(mockResponse.exercises[0].prefilledSets[0].values.reps === 8, 'Prefilled set 0 should have reps: 8');
-  assert(mockResponse.exercises[0].prefilledSets[1].values.weight === 100, 'Prefilled set 1 should have weight: 100');
-  assert(mockResponse.exercises[0].prefilledSets[1].values.reps === 7, 'Prefilled set 1 should have reps: 7');
+  // Verify the prefilled snapshot values are retained for Last column display
+  assert(mockResponse.exercises[0].prefilledSets[0].values.weight === 100, 'Prefilled snapshot set 0 should have weight: 100');
+  assert(mockResponse.exercises[0].prefilledSets[0].values.reps === 8, 'Prefilled snapshot set 0 should have reps: 8');
+  assert(mockResponse.exercises[0].prefilledSets[1].values.weight === 100, 'Prefilled snapshot set 1 should have weight: 100');
+  assert(mockResponse.exercises[0].prefilledSets[1].values.reps === 7, 'Prefilled snapshot set 1 should have reps: 7');
 
-  // The critical fix: active-workout-store.ts line 88 must use ps.values, not {}
-  // If using {}, all sets would start with empty values despite prefilled data
-  console.log('  ✓ Prefilled values preserved: Set 1: {weight: 100, reps: 8}, Set 2: {weight: 100, reps: 7}');
-  console.log('  ✓ Store hydration verified (web/src/store/active-workout-store.ts:88)');
+  // The critical fix: active-workout-store.ts line 88 must use {}, not ps.values
+  // Editable set.values start blank; lastPerformance/per_set_targets remain display-only
+  console.log('  ✓ Prefilled snapshot retained for Last display: {weight: 100, reps: 8}, {weight: 100, reps: 7}');
+  console.log('  ✓ Store hydration: editable values now correctly start blank (web/src/store/active-workout-store.ts:88)');
 }
 
 // Test 8: Verify UI target display with genuinely different per-set values
