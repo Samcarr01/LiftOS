@@ -18,8 +18,8 @@ import type { TrackingSchema } from '@/types/tracking';
 
 const WEIGHT_REPS_SCHEMA: TrackingSchema = {
   fields: [
-    { key: 'weight', label: 'Weight', type: 'number', unit: 'kg' },
-    { key: 'reps', label: 'Reps', type: 'number' },
+    { key: 'weight', label: 'Weight', type: 'number', unit: 'kg', optional: false },
+    { key: 'reps', label: 'Reps', type: 'number', optional: false },
   ],
 };
 
@@ -38,6 +38,39 @@ function assertEqual<T>(actual: T, expected: T, message: string) {
 }
 
 console.log('Running Progression Cycle 1 tests...\n');
+
+// Regression: the screenshot vector must remain set-specific. The engine's
+// representative next_target is 80kg × 6, but the authoritative vector is
+// [80×3, 75×4, 70×6].
+{
+  console.log('Test 0: Trace screenshot vector [80×3, 75×4, 70×5]');
+  const result = buildGuidedSuggestion({
+    schema: WEIGHT_REPS_SCHEMA,
+    sessions: [{
+      sessionId: 'screenshot-vector',
+      completedAt: '2026-08-01T10:00:00Z',
+      sets: [
+        { set_index: 0, values: { weight: 80, reps: 3 }, set_type: 'working', is_completed: true },
+        { set_index: 1, values: { weight: 75, reps: 4 }, set_type: 'working', is_completed: true },
+        { set_index: 2, values: { weight: 70, reps: 5 }, set_type: 'working', is_completed: true },
+      ],
+    }],
+    unitPreference: 'kg',
+    generatedAt: '2026-08-01T10:00:00Z',
+    muscleGroups: ['chest'],
+    preferredRepRange: { min: 3, max: 8 },
+  });
+
+  assert(result !== null, 'Screenshot vector should generate a suggestion');
+  assertEqual(
+    result!.suggestion.per_set_targets?.map((target) => target.reps),
+    [3, 4, 6],
+    'Engine must preserve the first two reps and advance only the third set',
+  );
+  assertEqual(result!.suggestion.next_target?.values, { weight: 80, reps: 6 }, 'Representative target is 80kg × 6');
+  assert(result!.suggestion.reason.includes('3, 4, 6'), 'Reason must describe the per-set target vector');
+  console.log('  ✓ Engine output: next_target 80kg × 6; per-set targets [80×3, 75×4, 70×6]');
+}
 
 // Test 1: Global preferred range 3–8
 {
@@ -382,7 +415,7 @@ console.log('Running Progression Cycle 1 tests...\n');
   console.log('  ✓ Warmup and drop sets excluded from per-set progression');
 }
 
-console.log('\n✅ All 9 progression tests passed!\n');
+console.log('\n✅ All 10 progression tests passed!');
 console.log('Coverage verified:');
 console.log('  ✓ Global preferred range (3-8) honored');
 console.log('  ✓ Template range overrides global');

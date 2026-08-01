@@ -5,6 +5,7 @@ import { ArrowRight, ChevronDown, ChevronUp, Minus, Plus, TrendingDown, Trending
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { logSetEntry } from '@/lib/offline';
+import { formatSetValues } from '@/lib/workout/formatting';
 import type { ActiveExerciseState, SetEntry, SetValues } from '@/types/app';
 import { SetRow } from './set-row';
 
@@ -115,10 +116,18 @@ export const ExerciseCard = memo(function ExerciseCard({
 
       {/* AI Suggestion — passive coaching card. No accept/decline; the target is
           also surfaced inline on each SetRow, so this card is purely informational. */}
-      {aiSuggestion && !isSuggestionDismissed && aiSuggestion.next_target && (() => {
+      {aiSuggestion && !isSuggestionDismissed && (aiSuggestion.next_target || aiSuggestion.per_set_targets?.length) && (() => {
         const isProgress = aiSuggestion.decision === 'progress';
         const isDeload = aiSuggestion.decision === 'deload';
         const label = isProgress ? 'Level Up' : isDeload ? 'Recovery' : 'Keep Building';
+        const perSetTargets = aiSuggestion.per_set_targets?.map(
+          (target) => target as SetValues,
+        ) ?? [];
+        // A per-set vector is the authoritative progression target. Do not let
+        // its representative next_target obscure differing set targets.
+        const targetSummary = perSetTargets.length > 0
+          ? `Set targets: ${perSetTargets.map((target) => formatSetValues(target, exercise.tracking_schema)).join(' · ')}`
+          : aiSuggestion.next_target?.display;
 
         // Single source of truth for the accent — derived strings keep all four
         // surfaces (bg / border / text / divider / bubble) in lock-step.
@@ -180,7 +189,7 @@ export const ExerciseCard = memo(function ExerciseCard({
                   className="font-display text-3xl font-bold leading-tight tabular-nums tracking-tight"
                   style={{ textShadow: `0 0 24px oklch(${accent} / 0.25)` }}
                 >
-                  {aiSuggestion.next_target.display}
+                  {targetSummary}
                 </p>
                 {aiSuggestion.last_result && (
                   <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">

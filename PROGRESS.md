@@ -1139,3 +1139,13 @@ new code correctly, and source + production build are verified correct.
 **Test:** Created `web/tests/progression-ui-regression.tsx` — rendered-component test verified hydrated editable values remain separate from display-only lastPerformance/per_set_targets. Focused rendered regression test passed.
 
 **Verification:** Nine Cycle 1 progression tests passed, safe-placeholder-env `npm run build` succeeded with no errors (Next emitted its middleware deprecation and webpack-cache performance warnings), `git diff --check` passed with no whitespace errors. Service worker regenerated during build was restored to HEAD (out of scope).
+
+---
+
+## Set-Specific Target Display Fix — ✅ COMPLETE — 01 Aug 2026
+
+**Trace:** For prior working sets `[80×3, 75×4, 70×5]` with the 3–8 range, the progression engine intentionally returns representative `next_target` `80kg × 6` and authoritative `per_set_targets` `[80×3, 75×4, 70×6]`; its reason also names `3, 4, 6`.
+
+**Fix:** `web/src/components/workout/exercise-card.tsx` now renders `Set targets: 80kg x 3 reps · 75kg x 4 reps · 70kg x 6 reps` from `per_set_targets` whenever that vector exists. It retains `next_target.display` only for legacy suggestions without the vector. Orange row targets already use the same qualifying-set-indexed vector, so the third row now uses generated `70×6`, while its separate Last value remains the historical `70×5`. Editable values remain blank.
+
+**Tests:** Added the exact engine vector assertion to `web/src/lib/workout/__tests__/progression-cycle-1.spec.ts` and updated `web/tests/progression-ui-regression.tsx` to assert header, reason, and orange rows share `[3,4,6]`. Both focused tests and the legacy cached-target regression passed. `tsc --noEmit` remains blocked only by pre-existing errors in `src/hooks/use-history.ts` (`never.map` / `never.length`).

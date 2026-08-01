@@ -7,7 +7,7 @@
  * - Blank NumericInput values (never prefilled from AI targets)
  *
  * Fixture: 3 working sets with prior [80×3, 75×4, 70×5]
- * Expected AI targets: [82.5×4, 77.5×5, 72.5×6]
+ * Expected AI targets: [80×3, 75×4, 70×6]
  * + warmup/drop/failure rows with no AI targets
  */
 
@@ -30,7 +30,8 @@ import type { StartWorkoutResponse } from '../src/types/app';
 function runTest() {
   // Build a StartWorkoutResponse matching the bug scenario:
   // 3 prefilled working sets with prior values [80×3, 75×4, 70×5]
-  // and per_set_targets [82.5×4, 77.5×5, 72.5×6]
+  // and per_set_targets [80×3, 75×4, 70×6]. next_target is intentionally
+  // generic (80×6), matching the screenshot contradiction.
   const startWorkoutResponse: StartWorkoutResponse = {
     session: {
       id: 'ws_1',
@@ -84,18 +85,18 @@ function runTest() {
         aiSuggestion: {
           decision: 'progress' as const,
           next_target: {
-            display: '82.5kg × 4 reps',
-            values: { weight: 82.5, reps: 4 },
+            display: '80kg × 6 reps',
+            values: { weight: 80, reps: 6 },
           },
           last_result: {
             display: '80kg × 3 reps',
             values: { weight: 80, reps: 3 },
           },
-          reason: 'You completed all 3 sets last session. Time to push weight.',
+          reason: 'Reps dropped 3 → 5 across sets (normal fatigue). Target 3, 4, 6 reps, adding one rep to a specific set.',
           per_set_targets: [
-            { weight: 82.5, reps: 4 },
-            { weight: 77.5, reps: 5 },
-            { weight: 72.5, reps: 6 },
+            { weight: 80, reps: 3 },
+            { weight: 75, reps: 4 },
+            { weight: 70, reps: 6 },
           ],
           progression: {
             eligible: true,
@@ -133,25 +134,41 @@ function runTest() {
 
   console.log('\n=== Progression UI Regression Test ===\n');
   console.log('Fixture: 3 working sets with prior [80×3, 75×4, 70×5]');
-  console.log('Expected AI targets: [82.5×4, 77.5×5, 72.5×6]');
+  console.log('Expected AI targets: [80×3, 75×4, 70×6]');
   console.log('Expected Last values: [80kg × 3, 75kg × 4, 70kg × 5]');
   console.log('Expected input values: blank (never prefilled)\n');
 
   let passed = 0;
   let failed = 0;
 
-  // Test 1: AI targets appear on working sets (formatTarget outputs "82.5kg × 4")
-  const hasTarget1 = markup.includes('82.5kg × 4');
-  const hasTarget2 = markup.includes('77.5kg × 5');
-  const hasTarget3 = markup.includes('72.5kg × 6');
+  // Test 0: The suggestion header must summarize the authoritative per-set
+  // vector, not repeat its generic representative target (80kg × 6 reps).
+  const hasSetSpecificHeader = markup.includes('Set targets: 80kg x 3 reps · 75kg x 4 reps · 70kg x 6 reps');
+  const hasGenericHeader = markup.includes('80kg × 6 reps');
+  const hasVectorReason = markup.includes('Target 3, 4, 6 reps');
+  if (hasSetSpecificHeader && !hasGenericHeader && hasVectorReason) {
+    console.log('✓ Header, reason, and row targets use the same [3, 4, 6] vector');
+    passed++;
+  } else {
+    console.log('✗ Header/reason target contradiction remains');
+    if (!hasSetSpecificHeader) console.log('  - Missing set-specific header');
+    if (hasGenericHeader) console.log('  - Generic 80kg × 6 reps header rendered');
+    if (!hasVectorReason) console.log('  - Reason does not describe 3, 4, 6');
+    failed++;
+  }
+
+  // Test 1: AI targets appear on working sets (formatTarget outputs "80kg × 3")
+  const hasTarget1 = markup.includes('80kg × 3');
+  const hasTarget2 = markup.includes('75kg × 4');
+  const hasTarget3 = markup.includes('70kg × 6');
   if (hasTarget1 && hasTarget2 && hasTarget3) {
     console.log('✓ All 3 AI targets rendered');
     passed++;
   } else {
     console.log('✗ Missing AI targets:');
-    if (!hasTarget1) console.log('  - 82.5kg × 4');
-    if (!hasTarget2) console.log('  - 77.5kg × 5');
-    if (!hasTarget3) console.log('  - 72.5kg × 6');
+    if (!hasTarget1) console.log('  - 80kg × 3');
+    if (!hasTarget2) console.log('  - 75kg × 4');
+    if (!hasTarget3) console.log('  - 70kg × 6');
     failed++;
   }
 
@@ -175,11 +192,11 @@ function runTest() {
   // This is distinct from the AI banner which shows "82.5kg × 4 reps" (with " reps" suffix).
   // We extract all occurrences of the small target text and verify exactly 3 working sets have targets.
 
-  // Match the exact structure: <p class="text-[11px] font-medium text-primary/70 truncate">TARGET</p>
-  // where TARGET is formatted by formatTarget() which produces "82.5kg × 4" (no " reps")
-  const target1Matches = markup.match(/<p class="text-\[11px\] font-medium text-primary\/70 truncate">82\.5kg × 4<\/p>/g) || [];
-  const target2Matches = markup.match(/<p class="text-\[11px\] font-medium text-primary\/70 truncate">77\.5kg × 5<\/p>/g) || [];
-  const target3Matches = markup.match(/<p class="text-\[11px\] font-medium text-primary\/70 truncate">72\.5kg × 6<\/p>/g) || [];
+  // Match the exact structure: <p class="text-[11px] font-medium text-primary/70 truncate">80kg × 3</p>
+  // where TARGET is formatted by formatTarget() which produces "80kg × 3" (no " reps")
+  const target1Matches = markup.match(/<p class="text-\[11px\] font-medium text-primary\/70 truncate">80kg × 3<\/p>/g) || [];
+  const target2Matches = markup.match(/<p class="text-\[11px\] font-medium text-primary\/70 truncate">75kg × 4<\/p>/g) || [];
+  const target3Matches = markup.match(/<p class="text-\[11px\] font-medium text-primary\/70 truncate">70kg × 6<\/p>/g) || [];
 
   const target1Count = target1Matches.length;
   const target2Count = target2Matches.length;
@@ -191,9 +208,9 @@ function runTest() {
     passed++;
   } else {
     console.log('✗ Per-set targets not correctly isolated to working sets');
-    if (target1Count !== 1) console.log(`  - Target 82.5kg × 4 appears ${target1Count} times in set rows (expected 1)`);
-    if (target2Count !== 1) console.log(`  - Target 77.5kg × 5 appears ${target2Count} times in set rows (expected 1)`);
-    if (target3Count !== 1) console.log(`  - Target 72.5kg × 6 appears ${target3Count} times in set rows (expected 1)`);
+    if (target1Count !== 1) console.log(`  - Target 80kg × 3 appears ${target1Count} times in set rows (expected 1)`);
+    if (target2Count !== 1) console.log(`  - Target 75kg × 4 appears ${target2Count} times in set rows (expected 1)`);
+    if (target3Count !== 1) console.log(`  - Target 70kg × 6 appears ${target3Count} times in set rows (expected 1)`);
     failed++;
   }
 
