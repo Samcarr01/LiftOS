@@ -5,8 +5,8 @@ import { SetTypeSchema, TrackingSchemaValidator, AISuggestionDataSchema } from '
 import {
   buildGuidedSuggestion,
   parsePreviousProgressionHistory,
-  type ProgressHistorySession,
 } from '@/lib/workout/guided-progression';
+import { loadHistorySessions } from '@/lib/workout/load-history';
 import {
   computeVolumeKg,
 } from '@/lib/workout/formatting';
@@ -306,61 +306,6 @@ async function loadSessionContext(
       sets: setsBySessionExercise.get(row.id) ?? [],
     };
   });
-}
-
-async function loadHistorySessions(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  exerciseId: string,
-): Promise<ProgressHistorySession[]> {
-  const { data, error } = await supabase
-    .from('session_exercises')
-    .select(`
-      session_id,
-      exercise_id,
-      workout_sessions!inner (
-        completed_at,
-        is_light_session
-      ),
-      set_entries (
-        set_index,
-        values,
-        set_type,
-        is_completed,
-        logged_at
-      )
-    `)
-    .eq('exercise_id', exerciseId)
-    .not('workout_sessions.completed_at', 'is', null);
-
-  if (error) throw error;
-
-  const historyRows = (data ?? []) as Array<{
-    session_id: string;
-    exercise_id: string;
-    workout_sessions: { completed_at: string; is_light_session: boolean } | null;
-    set_entries: Array<{
-      set_index: number;
-      values: Json;
-      set_type: string;
-      is_completed: boolean;
-      logged_at: string | null;
-    }>;
-  }>;
-
-  return historyRows
-    .filter((row) => !row.workout_sessions?.is_light_session)
-    .map((row) => ({
-      sessionId: row.session_id,
-      completedAt: row.workout_sessions?.completed_at as string,
-      sets: (row.set_entries ?? []).map((set) => ({
-        set_index: set.set_index,
-        values: set.values as SetValues,
-        set_type: set.set_type,
-        is_completed: set.is_completed,
-        logged_at: set.logged_at,
-      })),
-    }))
-    .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
 }
 
 async function loadPreviousSessionTotals(

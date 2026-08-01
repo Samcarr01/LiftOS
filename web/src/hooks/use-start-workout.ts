@@ -12,25 +12,11 @@ import type {
   TemplateExerciseRow,
   WorkoutSessionRow,
 } from '@/types/database';
-import { AISuggestionDataSchema, LastPerformanceSetsDataSchema } from '@/lib/validation';
+import { LastPerformanceSetsDataSchema } from '@/lib/validation';
 import { TrackingSchemaValidator } from '@/lib/validation';
-import type { ExerciseWithSchema, PrefilledSet, AISuggestionData, LastPerformanceSet } from '@/types/app';
-
-// The Edge Function returns snake_case (per Claude-api.md spec).
-// We map to camelCase here before hydrating the store.
-
-interface RawExerciseResponse {
-  session_exercise: SessionExerciseRow;
-  exercise:         Record<string, unknown>;
-  last_performance: unknown[] | null;
-  ai_suggestion:    unknown | null;
-  prefilled_sets:   Array<{ set_index: number; values: Record<string, number | string>; set_type: string }>;
-}
-
-interface RawStartWorkoutResponse {
-  session:   WorkoutSessionRow;
-  exercises: RawExerciseResponse[];
-}
+import { buildGuidedSuggestion, type ProgressHistorySession } from '@/lib/workout/guided-progression';
+import { loadHistorySessions } from '@/lib/workout/load-history';
+import type { ExerciseWithSchema, PrefilledSet, LastPerformanceSet, UnitPreference } from '@/types/app';
 
 interface RawTemplateExercise extends TemplateExerciseRow {
   exercise: ExerciseRow;
@@ -44,60 +30,12 @@ function parseExercise(raw: Record<string, unknown>): ExerciseWithSchema {
   };
 }
 
-function parseAiSuggestion(raw: unknown): AISuggestionData | null {
-  if (!raw) return null;
-  const result = AISuggestionDataSchema.safeParse(raw);
-  return result.success ? result.data : null;
-}
-
-/** Parse history_snapshot provenance to verify suggestion freshness */
-function parseHistorySnapshotProvenance(raw: unknown): { sourceSessionId: string; schemaVersion: number } | null {
-  if (typeof raw !== 'object' || raw === null) return null;
-  const obj = raw as Record<string, unknown>;
-  const sourceSessionId = obj['source_session_id'];
-  const schemaVersion = obj['schema_version'];
-  if (typeof sourceSessionId === 'string' && typeof schemaVersion === 'number') {
-    return { sourceSessionId, schemaVersion };
-  }
-  return null;
-}
-
-/**
- * Check if a cached AI suggestion is still valid.
- * A suggestion is stale if:
- * - It lacks schema_version 2 provenance (legacy)
- * - Its source_session_id doesn't match the current snapshot session_id
- */
-function isSuggestionFresh(
-  historySnapshot: unknown,
-  snapshotSessionId: string | null,
-): boolean {
-  if (!snapshotSessionId) return false;
-  const provenance = parseHistorySnapshotProvenance(historySnapshot);
-  if (!provenance) return false;
-  return provenance.schemaVersion === 2 && provenance.sourceSessionId === snapshotSessionId;
-}
-
 function parseLastPerformance(raw: unknown[] | null): LastPerformanceSet[] | null {
   if (!raw) return null;
   const result = LastPerformanceSetsDataSchema.safeParse(raw);
   return result.success ? result.data : null;
 }
 
-function mapResponse(raw: RawStartWorkoutResponse): StartWorkoutResponse {
-  const exercises: StartWorkoutExercise[] = raw.exercises.map((ex) => ({
-    sessionExercise: ex.session_exercise,
-    exercise:        parseExercise(ex.exercise),
-    lastPerformance: parseLastPerformance(ex.last_performance),
-    aiSuggestion:    parseAiSuggestion(ex.ai_suggestion),
-    prefilledSets:   (ex.prefilled_sets ?? []).map((ps): PrefilledSet => ({
-      setIndex: ps.set_index,
-      values:   ps.values,
-      setType:  ps.set_type as PrefilledSet['setType'],
-    })),
-  }));
-  return { session: raw.session, exercises };
-}
 
 function buildPrefilledSets(
   count: number,
@@ -208,39 +146,59 @@ export function useStartWorkout() {
       }));
 
       const readBranch: Promise<{
-        lastPerformanceRows: { exercise_id: string; sets_data: unknown; session_id: string | null }[];
-        suggestionRows:      { exercise_id: string; suggestion_data: unknown; history_snapshot: unknown }[];
+        lastPerformanceRows: { exercise_id: string; sets_data: unknown }[];
         heaviestFirst:       boolean;
+        unitPreference:      UnitPreference;
+        trainingGoals:       string[];
+        experienceLevel:     string;
+        preferredRepRange:   { min: number; max: number } | null;
+        historySessionsByExercise: Map<string, ProgressHistorySession[]>;
       }> = exerciseIds.length > 0
         ? (async () => {
-            const [lp, sg, prefRow] = await Promise.all([
+            const [lp, prefRow, historyEntries] = await Promise.all([
               supabase
                 .from('last_performance_snapshots')
-                .select('exercise_id, sets_data, session_id')
+                .select('exercise_id, sets_data')
                 .eq('user_id', user.id)
                 .in('exercise_id', exerciseIds),
               supabase
-                .from('ai_suggestions')
-                .select('exercise_id, suggestion_data, history_snapshot')
-                .eq('user_id', user.id)
-                .in('exercise_id', exerciseIds)
-                .gt('expires_at', new Date().toISOString()),
-              supabase
                 .from('users')
-                .select('prefill_sort_heaviest_first')
+                .select('prefill_sort_heaviest_first, unit_preference, training_goals, experience_level, preferred_rep_range')
                 .eq('id', user.id)
                 .single(),
+              Promise.all(exerciseIds.map(async (exerciseId) => ([
+                exerciseId,
+                await loadHistorySessions(supabase, exerciseId),
+              ] as const))),
             ]);
             if (lp.error) throw lp.error;
-            if (sg.error) throw sg.error;
+            if (prefRow.error) throw prefRow.error;
+            const preferences = prefRow.data as {
+              prefill_sort_heaviest_first?: boolean;
+              unit_preference?: UnitPreference;
+              training_goals?: string[];
+              experience_level?: string;
+              preferred_rep_range?: { min: number; max: number } | null;
+            } | null;
             return {
               lastPerformanceRows: lp.data ?? [],
-              suggestionRows:      sg.data ?? [],
-              heaviestFirst:       (prefRow.data as { prefill_sort_heaviest_first?: boolean } | null)
-                                     ?.prefill_sort_heaviest_first ?? false,
+              heaviestFirst: preferences?.prefill_sort_heaviest_first ?? false,
+              unitPreference: preferences?.unit_preference ?? 'kg',
+              trainingGoals: preferences?.training_goals ?? [],
+              experienceLevel: preferences?.experience_level ?? 'intermediate',
+              preferredRepRange: preferences?.preferred_rep_range ?? null,
+              historySessionsByExercise: new Map(historyEntries),
             };
           })()
-        : Promise.resolve({ lastPerformanceRows: [], suggestionRows: [], heaviestFirst: false });
+        : Promise.resolve({
+            lastPerformanceRows: [],
+            heaviestFirst: false,
+            unitPreference: 'kg' as UnitPreference,
+            trainingGoals: [],
+            experienceLevel: 'intermediate',
+            preferredRepRange: null,
+            historySessionsByExercise: new Map(),
+          });
 
       const writeBranch = (async (): Promise<WorkoutSessionRow> => {
         const { data: session, error: sessionError } = await supabase
@@ -269,33 +227,27 @@ export function useStartWorkout() {
         return session;
       })();
 
-      const [{ lastPerformanceRows, suggestionRows, heaviestFirst }, session] = await Promise.all([readBranch, writeBranch]);
+      const [{
+        lastPerformanceRows,
+        heaviestFirst,
+        unitPreference,
+        trainingGoals,
+        experienceLevel,
+        preferredRepRange,
+        historySessionsByExercise,
+      }, session] = await Promise.all([readBranch, writeBranch]);
 
       const sessionExerciseByOrder = new Map(
         sessionExercisesToInsert.map((exercise) => [exercise.order_index, exercise]),
       );
 
-      const lastPerformanceByExercise = new Map<string, { sets: LastPerformanceSet[] | null; sessionId: string | null }>(
+      const lastPerformanceByExercise = new Map<string, { sets: LastPerformanceSet[] | null }>(
         (lastPerformanceRows ?? []).map((row) => [
           row.exercise_id,
           {
             sets: parseLastPerformance(Array.isArray(row.sets_data) ? row.sets_data : null),
-            sessionId: row.session_id,
           },
         ]),
-      );
-
-      // Build suggestion map with stale-guard: only include suggestions whose
-      // provenance matches the current snapshot session_id
-      const suggestionByExercise = new Map<string, AISuggestionData | null>(
-        (suggestionRows ?? []).map((row) => {
-          const snapshotSessionId = lastPerformanceByExercise.get(row.exercise_id)?.sessionId ?? null;
-          const isFresh = isSuggestionFresh(row.history_snapshot, snapshotSessionId);
-          return [
-            row.exercise_id,
-            isFresh ? parseAiSuggestion(row.suggestion_data) : null,
-          ];
-        }),
       );
 
       const response: StartWorkoutResponse = {
@@ -306,12 +258,25 @@ export function useStartWorkout() {
           // Sort once; reuse the same array for both the "was XX" hint mapping
           // and prefilled-set construction so they stay in lockstep.
           const lastPerformance = sortLastPerformanceForPrefill(rawLast, heaviestFirst);
+          const exercise = parseExercise(templateExercise.exercise as unknown as Record<string, unknown>);
+          const guided = buildGuidedSuggestion({
+            schema: exercise.tracking_schema,
+            sessions: historySessionsByExercise.get(templateExercise.exercise_id) ?? [],
+            unitPreference,
+            generatedAt: startedAt,
+            muscleGroups: exercise.muscle_groups,
+            targetRanges: templateExercise.target_ranges as Record<string, { min?: number; max?: number }> | null,
+            trainingGoals,
+            experienceLevel,
+            preferredRepRange,
+            exerciseNotes: exercise.notes,
+          });
 
           return {
             sessionExercise: sessionExerciseByOrder.get(templateExercise.order_index)!,
-            exercise: parseExercise(templateExercise.exercise as unknown as Record<string, unknown>),
+            exercise,
             lastPerformance,
-            aiSuggestion: suggestionByExercise.get(templateExercise.exercise_id) ?? null,
+            aiSuggestion: guided?.suggestion ?? null,
             prefilledSets: buildPrefilledSets(
               templateExercise.default_set_count ?? 3,
               lastPerformance,
