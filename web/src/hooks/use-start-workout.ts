@@ -50,6 +50,34 @@ function parseAiSuggestion(raw: unknown): AISuggestionData | null {
   return result.success ? result.data : null;
 }
 
+/** Parse history_snapshot provenance to verify suggestion freshness */
+function parseHistorySnapshotProvenance(raw: unknown): { sourceSessionId: string; schemaVersion: number } | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const obj = raw as Record<string, unknown>;
+  const sourceSessionId = obj['source_session_id'];
+  const schemaVersion = obj['schema_version'];
+  if (typeof sourceSessionId === 'string' && typeof schemaVersion === 'number') {
+    return { sourceSessionId, schemaVersion };
+  }
+  return null;
+}
+
+/**
+ * Check if a cached AI suggestion is still valid.
+ * A suggestion is stale if:
+ * - It lacks schema_version 2 provenance (legacy)
+ * - Its source_session_id doesn't match the current snapshot session_id
+ */
+function isSuggestionFresh(
+  historySnapshot: unknown,
+  snapshotSessionId: string | null,
+): boolean {
+  if (!snapshotSessionId) return false;
+  const provenance = parseHistorySnapshotProvenance(historySnapshot);
+  if (!provenance) return false;
+  return provenance.schemaVersion === 2 && provenance.sourceSessionId === snapshotSessionId;
+}
+
 function parseLastPerformance(raw: unknown[] | null): LastPerformanceSet[] | null {
   if (!raw) return null;
   const result = LastPerformanceSetsDataSchema.safeParse(raw);
@@ -180,20 +208,20 @@ export function useStartWorkout() {
       }));
 
       const readBranch: Promise<{
-        lastPerformanceRows: { exercise_id: string; sets_data: unknown }[];
-        suggestionRows:      { exercise_id: string; suggestion_data: unknown }[];
+        lastPerformanceRows: { exercise_id: string; sets_data: unknown; session_id: string | null }[];
+        suggestionRows:      { exercise_id: string; suggestion_data: unknown; history_snapshot: unknown }[];
         heaviestFirst:       boolean;
       }> = exerciseIds.length > 0
         ? (async () => {
             const [lp, sg, prefRow] = await Promise.all([
               supabase
                 .from('last_performance_snapshots')
-                .select('exercise_id, sets_data')
+                .select('exercise_id, sets_data, session_id')
                 .eq('user_id', user.id)
                 .in('exercise_id', exerciseIds),
               supabase
                 .from('ai_suggestions')
-                .select('exercise_id, suggestion_data')
+                .select('exercise_id, suggestion_data, history_snapshot')
                 .eq('user_id', user.id)
                 .in('exercise_id', exerciseIds)
                 .gt('expires_at', new Date().toISOString()),
@@ -247,27 +275,34 @@ export function useStartWorkout() {
         sessionExercisesToInsert.map((exercise) => [exercise.order_index, exercise]),
       );
 
-      const lastPerformanceByExercise = new Map<string, LastPerformanceSet[] | null>(
+      const lastPerformanceByExercise = new Map<string, { sets: LastPerformanceSet[] | null; sessionId: string | null }>(
         (lastPerformanceRows ?? []).map((row) => [
           row.exercise_id,
-          parseLastPerformance(
-            Array.isArray(row.sets_data) ? row.sets_data : null,
-          ),
+          {
+            sets: parseLastPerformance(Array.isArray(row.sets_data) ? row.sets_data : null),
+            sessionId: row.session_id,
+          },
         ]),
       );
 
+      // Build suggestion map with stale-guard: only include suggestions whose
+      // provenance matches the current snapshot session_id
       const suggestionByExercise = new Map<string, AISuggestionData | null>(
-        (suggestionRows ?? []).map((row) => [
-          row.exercise_id,
-          parseAiSuggestion(row.suggestion_data),
-        ]),
+        (suggestionRows ?? []).map((row) => {
+          const snapshotSessionId = lastPerformanceByExercise.get(row.exercise_id)?.sessionId ?? null;
+          const isFresh = isSuggestionFresh(row.history_snapshot, snapshotSessionId);
+          return [
+            row.exercise_id,
+            isFresh ? parseAiSuggestion(row.suggestion_data) : null,
+          ];
+        }),
       );
 
       const response: StartWorkoutResponse = {
         session,
         exercises: templateExercises.map((templateExercise): StartWorkoutExercise => {
-          const rawLast =
-            lastPerformanceByExercise.get(templateExercise.exercise_id) ?? null;
+          const lpEntry = lastPerformanceByExercise.get(templateExercise.exercise_id);
+          const rawLast = lpEntry?.sets ?? null;
           // Sort once; reuse the same array for both the "was XX" hint mapping
           // and prefilled-set construction so they stay in lockstep.
           const lastPerformance = sortLastPerformanceForPrefill(rawLast, heaviestFirst);

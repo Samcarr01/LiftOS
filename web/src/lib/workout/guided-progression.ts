@@ -41,6 +41,9 @@ export interface GuidedSuggestionResult {
     source: string;
     generated_at: string;
     session_id: string;
+    // Provenance fields for stale-suggestion guard
+    source_session_id: string;
+    schema_version: number;
     progression: {
       decision: AISuggestionData['decision'];
       metric: AISuggestionData['metric'];
@@ -1268,6 +1271,9 @@ function buildResult(params: {
       source: 'guided-progression-v2',
       generated_at: params.generatedAt,
       session_id: params.latestSession.sessionId,
+      // Provenance fields for stale-suggestion guard
+      source_session_id: params.latestSession.sessionId,
+      schema_version: 2,
       progression: {
         decision: params.decision,
         metric: params.metric,
