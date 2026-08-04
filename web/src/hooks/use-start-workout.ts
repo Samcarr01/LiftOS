@@ -16,6 +16,7 @@ import { LastPerformanceSetsDataSchema } from '@/lib/validation';
 import { TrackingSchemaValidator } from '@/lib/validation';
 import { buildGuidedSuggestion, type ProgressHistorySession } from '@/lib/workout/guided-progression';
 import { loadHistorySessions } from '@/lib/workout/load-history';
+import { buildPrefilledSets, sortLastPerformanceForPrefill } from '@/lib/workout/prefill-sort';
 import type { ExerciseWithSchema, PrefilledSet, LastPerformanceSet, UnitPreference } from '@/types/app';
 
 interface RawTemplateExercise extends TemplateExerciseRow {
@@ -37,62 +38,13 @@ function parseLastPerformance(raw: unknown[] | null): LastPerformanceSet[] | nul
 }
 
 
-function buildPrefilledSets(
-  count: number,
-  lastPerformance: LastPerformanceSet[] | null,
-): PrefilledSet[] {
-  return Array.from({ length: count }, (_, index) => {
-    const lastSet = lastPerformance?.find((s) => s.set_index === index);
-    return {
-      setIndex: index,
-      values: lastSet?.values ?? {},
-      setType: (lastSet?.set_type as PrefilledSet['setType']) ?? 'working',
-    };
-  });
-}
-
-// Heaviest-set-first prefill ordering. Pure function over the snapshot — never
-// touches saved sessions or workout/exercise order. Warmups remain leading in
-// their original order; everything else is sorted by weight DESC, reps DESC.
-// set_index is reassigned positionally so buildPrefilledSets (which looks up by
+// ── Heaviest-set-first prefill ordering ────────────────────────────────────────
+// Pure function over the snapshot — never touches saved sessions or
+// workout/exercise order. Warmups remain leading in their original order;
+// everything else is sorted by weight DESC, reps DESC. set_index is
+// reassigned positionally so buildPrefilledSets (which looks up by
 // set_index) consumes the new order with no further changes.
-function num(v: unknown): number {
-  if (typeof v === 'number') return v;
-  if (typeof v === 'string') {
-    const parsed = parseFloat(v);
-    return Number.isFinite(parsed) ? parsed : -Infinity;
-  }
-  return -Infinity;
-}
-
-function sortLastPerformanceForPrefill(
-  sets: LastPerformanceSet[] | null,
-  heaviestFirst: boolean,
-): LastPerformanceSet[] | null {
-  if (!sets || !heaviestFirst || sets.length < 2) return sets;
-
-  const sample = sets.find((s) => Object.keys(s.values).length > 0);
-  if (!sample) return sets;
-  const weightKey: 'weight' | 'added_weight' | null =
-    'weight' in sample.values ? 'weight'
-    : 'added_weight' in sample.values ? 'added_weight'
-    : null;
-  if (!weightKey) return sets;
-
-  const repsKey = 'reps' in sample.values ? 'reps' : null;
-
-  const warmups = sets.filter((s) => s.set_type === 'warmup');
-  const others = sets
-    .filter((s) => s.set_type !== 'warmup')
-    .sort((a, b) => {
-      const diff = num(b.values[weightKey]) - num(a.values[weightKey]);
-      if (diff !== 0) return diff;
-      if (repsKey) return num(b.values[repsKey]) - num(a.values[repsKey]);
-      return 0;
-    });
-
-  return [...warmups, ...others].map((s, i) => ({ ...s, set_index: i }));
-}
+// sortLastPerformanceForPrefill lives in prefill-sort.ts — imported above.
 
 export function useStartWorkout() {
   const router = useRouter();
@@ -257,7 +209,7 @@ export function useStartWorkout() {
           const rawLast = lpEntry?.sets ?? null;
           // Sort once; reuse the same array for both the "was XX" hint mapping
           // and prefilled-set construction so they stay in lockstep.
-          const lastPerformance = sortLastPerformanceForPrefill(rawLast, heaviestFirst);
+          const { sorted: lastPerformance, originalQualifyingOrder } = sortLastPerformanceForPrefill(rawLast, heaviestFirst);
           const exercise = parseExercise(templateExercise.exercise as unknown as Record<string, unknown>);
           const guided = buildGuidedSuggestion({
             schema: exercise.tracking_schema,
@@ -272,11 +224,32 @@ export function useStartWorkout() {
             exerciseNotes: exercise.notes,
           });
 
+          const suggestion = guided?.suggestion ?? null;
+
+          // When prefill sorts heaviest-first, reorder per_set_targets to match
+          // the sorted lastPerformance order rather than original positional order.
+          // Without this, orange guidance pairs with the wrong set row.
+          // Immutable spread — never mutates the guided.suggestion object.
+          const orderedTargets =
+            suggestion?.per_set_targets?.length &&
+            heaviestFirst &&
+            originalQualifyingOrder.length > 0 &&
+            originalQualifyingOrder.length === suggestion.per_set_targets.length
+              ? originalQualifyingOrder.map(
+                  (origIdx) => suggestion.per_set_targets![origIdx],
+                )
+              : null;
+
+          const reorderedSuggestion =
+            orderedTargets && suggestion
+              ? { ...suggestion, per_set_targets: orderedTargets }
+              : suggestion;
+
           return {
             sessionExercise: sessionExerciseByOrder.get(templateExercise.order_index)!,
             exercise,
             lastPerformance,
-            aiSuggestion: guided?.suggestion ?? null,
+            aiSuggestion: reorderedSuggestion,
             prefilledSets: buildPrefilledSets(
               templateExercise.default_set_count ?? 3,
               lastPerformance,

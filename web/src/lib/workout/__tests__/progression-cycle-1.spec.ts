@@ -14,6 +14,7 @@
  */
 
 import { buildGuidedSuggestion, type ProgressHistorySession } from '../guided-progression';
+import { sortLastPerformanceForPrefill, buildPrefilledSets } from '../prefill-sort';
 import type { TrackingSchema } from '@/types/tracking';
 
 const WEIGHT_REPS_SCHEMA: TrackingSchema = {
@@ -415,7 +416,233 @@ console.log('Running Progression Cycle 1 tests...\n');
   console.log('  ✓ Warmup and drop sets excluded from per-set progression');
 }
 
-console.log('\n✅ All 10 progression tests passed!');
+// ── Sort + guidance pairing tests ─────────────────────────────────────
+
+// Test 10: Load increase — guidance uses new heavier weight, Last displays old
+{
+  console.log('\nTest 10: Load increase — guidance uses new heavier weight, Last displays old');
+
+  // Build a suggestion that triggers load progression (all at ceiling)
+  const progResult = buildGuidedSuggestion({
+    schema: WEIGHT_REPS_SCHEMA,
+    sessions: [{
+      sessionId: 's1',
+      completedAt: '2026-08-01T10:00:00Z',
+      sets: [
+        { set_index: 0, values: { weight: 100, reps: 12 }, set_type: 'working', is_completed: true },
+        { set_index: 1, values: { weight: 100, reps: 12 }, set_type: 'working', is_completed: true },
+        { set_index: 2, values: { weight: 100, reps: 12 }, set_type: 'working', is_completed: true },
+      ],
+    }],
+    unitPreference: 'kg',
+    generatedAt: '2026-08-01T10:00:00Z',
+    muscleGroups: ['chest'],
+    targetRanges: { reps: { min: 8, max: 12 } },
+  });
+
+  assert(progResult !== null, 'Should generate suggestion');
+  assertEqual(progResult!.suggestion.decision, 'progress', 'Should progress (all at ceiling)');
+
+  const perSetTargets = progResult!.suggestion.per_set_targets;
+  assert(perSetTargets !== undefined && perSetTargets.length === 3, 'Should have 3 per-set targets');
+
+  // On a load increase, per_set_targets must carry the CALCULATED NEW load from
+  // next_target — never the old weight — alongside each conservative rep target.
+  // The summary card renders per_set_targets via formatSetValues, so an old
+  // weight here would advertise a non-progression on a "progress" decision.
+  const targetReps = perSetTargets!.map((t) => (t.reps as number));
+  assertEqual(targetReps, [11, 11, 11], 'Per-set target reps are conservative (prior - 1)');
+
+  // next_target carries the new heavier weight
+  const newWeight = progResult!.suggestion.next_target?.values.weight as number;
+  assert(newWeight > 100, `next_target weight (${newWeight}kg) should be heavier than old (100kg)`);
+
+  const targetWeights = perSetTargets!.map((t) => (t.weight as number));
+  assert(
+    targetWeights.every((w) => w > 100),
+    `Every per-set target weight must be heavier than the old 100kg (got ${JSON.stringify(targetWeights)})`,
+  );
+  assertEqual(
+    targetWeights,
+    [newWeight, newWeight, newWeight],
+    'Per-set target weights must match the calculated next_target load',
+  );
+  console.log(`  ✓ Summary card target: ${newWeight}kg (heavier than Last weight 100kg)`);
+  console.log(`  ✓ Per-set targets: ${newWeight}kg × [11, 11, 11] (new load, conservative reps)`);
+
+  // Last column must display the OLD weight via buildPrefilledSets
+  const lastPerfData = [
+    { set_index: 0, values: { weight: 100, reps: 12 }, set_type: 'working' as const },
+    { set_index: 1, values: { weight: 100, reps: 12 }, set_type: 'working' as const },
+    { set_index: 2, values: { weight: 100, reps: 12 }, set_type: 'working' as const },
+  ];
+  const prefilled = buildPrefilledSets(3, lastPerfData);
+  prefilled.forEach((ps, i) => {
+    assert((ps.values.weight as number) === 100, `Prefilled set ${i} should show Last weight 100kg`);
+    assert((ps.values.reps as number) === 12, `Prefilled set ${i} should show Last reps 12`);
+  });
+  console.log('  ✓ Last column correctly displays 100kg × 12 (old performance, not new target)');
+  console.log('  ✓ Editable inputs start blank per store-hydration contract (not shown here)');
+}
+
+// Test 11: Heaviest-first sort — keeps Last display + orange target paired after sorting
+{
+  console.log('\nTest 11: Heaviest-first sort — Last + orange paired after sorting');
+
+  // Warmup 60kg + 3 working sets with mixed weights
+  const lastPerfData = [
+    { set_index: 0, values: { weight: 60, reps: 8 }, set_type: 'warmup' as const },
+    { set_index: 1, values: { weight: 80, reps: 10 }, set_type: 'working' as const },
+    { set_index: 2, values: { weight: 100, reps: 8 }, set_type: 'working' as const },
+    { set_index: 3, values: { weight: 90, reps: 9 }, set_type: 'working' as const },
+  ];
+
+  const { sorted, originalQualifyingOrder } = sortLastPerformanceForPrefill(lastPerfData, true);
+
+  assert(sorted !== null, 'Sorted should not be null');
+  assertEqual(sorted!.length, 4, 'Should have 4 sets (1 warmup + 3 sorted working)');
+
+  // Warmup must remain first, unchanged
+  assertEqual(sorted![0].set_type, 'warmup', 'First set should be warmup');
+  assert(sorted![0].set_index === 0, 'Warmup set_index should be 0');
+
+  // Working sets sorted heaviest-first: 100kg, 90kg, 80kg
+  assertEqual(sorted![1].values.weight, 100, 'First working set should be 100kg (heaviest)');
+  assertEqual(sorted![2].values.weight, 90, 'Second working set should be 90kg');
+  assertEqual(sorted![3].values.weight, 80, 'Third working set should be 80kg (lightest)');
+
+  // originalQualifyingOrder: sorted working [100(qual_idx 1), 90(qual_idx 2), 80(qual_idx 0)]
+  assertEqual(originalQualifyingOrder, [1, 2, 0], 'originalQualifyingOrder should remap correctly');
+
+  // Build prefilled sets (Last display) from sorted data
+  // buildPrefilledSets(count=3) yields sets matching set_index 0, 1, 2:
+  // [0:warmup], [1:100kg], [2:90kg] — the 80kg set (set_index 3) is outside count
+  const prefilled = buildPrefilledSets(3, sorted);
+  assertEqual(prefilled[0].values.weight, 60, 'Prefilled[0] Last shows warmup 60kg (index 0)');
+  assertEqual(prefilled[1].values.weight, 100, 'Prefilled[1] Last shows 100kg (index 1, heaviest)');
+  assertEqual(prefilled[2].values.weight, 90, 'Prefilled[2] Last shows 90kg (index 2)');
+
+  // Simulate hook's per_set_targets reorder: original per_set_targets [80×11, 100×7, 90×9]
+  // After reorder by [1, 2, 0]: [100×7, 90×9, 80×11]
+  const mockPerSet = [
+    { weight: 80, reps: 11 },   // qual idx 0 → sorted working 0 (80kg)
+    { weight: 100, reps: 7 },    // qual idx 1 → sorted working 2 (100kg)
+    { weight: 90, reps: 9 },     // qual idx 2 → sorted working 1 (90kg)
+  ];
+  const reordered = originalQualifyingOrder.map((idx) => mockPerSet[idx]);
+  assertEqual(reordered[0].weight, 100, 'Reordered[0] = 100kg target (pairs with heaviest Last)');
+  assertEqual(reordered[1].weight, 90, 'Reordered[1] = 90kg target');
+  assertEqual(reordered[2].weight, 80, 'Reordered[2] = 80kg target');
+
+  console.log('  ✓ Sorted order: warmup, 100kg, 90kg, 80kg');
+  console.log('  ✓ originalQualifyingOrder: [1, 2, 0]');
+  console.log('  ✓ After reorder: per_set_targets align with sorted Last (100→7, 90→9, 80→11)');
+}
+
+// Test 12: Equal weight sets sort by reps descending
+{
+  console.log('\nTest 12: Equal weight sets sort by reps descending');
+
+  // Same weight (80kg), different reps — with a warmup
+  const lastPerfData = [
+    { set_index: 0, values: { weight: 40, reps: 10 }, set_type: 'warmup' as const },
+    { set_index: 1, values: { weight: 80, reps: 8 }, set_type: 'working' as const },
+    { set_index: 2, values: { weight: 80, reps: 12 }, set_type: 'working' as const },
+    { set_index: 3, values: { weight: 80, reps: 10 }, set_type: 'working' as const },
+  ];
+
+  const { sorted, originalQualifyingOrder } = sortLastPerformanceForPrefill(lastPerfData, true);
+
+  assert(sorted !== null, 'Sorted should not be null');
+
+  // Warmup must remain first
+  assertEqual(sorted![0].set_type, 'warmup', 'First set should be warmup');
+
+  // Equal weight → sort by reps DESC: 12, 10, 8
+  assertEqual(sorted![1].values.reps, 12, 'First working set should have 12 reps (highest)');
+  assertEqual(sorted![2].values.reps, 10, 'Second working set should have 10 reps');
+  assertEqual(sorted![3].values.reps, 8, 'Third working set should have 8 reps (lowest)');
+
+  // Warmups unchanged
+  assertEqual(sorted![0].values.weight, 40, 'Warmup weight unchanged');
+  assertEqual(sorted![0].values.reps, 10, 'Warmup reps unchanged');
+
+  // Original order: [80×8(qual 0), 80×12(qual 1), 80×10(qual 2)]
+  // Sorted by reps desc: [80×12(qual 1), 80×10(qual 2), 80×8(qual 0)]
+  // So originalQualifyingOrder = [1, 2, 0]
+  assertEqual(originalQualifyingOrder, [1, 2, 0], 'Equal-weight sort: originalQualifyingOrder [1, 2, 0]');
+
+  console.log('  ✓ Equal-weight sets sorted: 12 reps, 10 reps, 8 reps (descending)');
+  console.log('  ✓ Warmup preserved at leading position, weight unchanged');
+
+  // Verify sorting is disabled when heaviestFirst=false
+  const { sorted: unsorted } = sortLastPerformanceForPrefill(lastPerfData, false);
+  assert(unsorted !== null, 'Unsorted should not be null');
+  // Should preserve original order
+  assertEqual(unsorted![1].values.reps, 8, 'Unsorted[1] still 8 reps (original order preserved)');
+  assertEqual(unsorted![2].values.reps, 12, 'Unsorted[2] still 12 reps');
+  console.log('  ✓ heaviestFirst=false preserves original order');
+}
+
+// Test 13: Regression — mixed warmup/working/top/drop/failure sets only remap qualifying sets
+{
+  console.log('\nTest 13: originalQualifyingOrder only tracks working/top sets, not drop/failure');
+  console.log('  Sets: [warmup(60), working(80), top(100), drop(70), failure(50)]');
+
+  const lastPerfData = [
+    { set_index: 0, values: { weight: 60, reps: 8 }, set_type: 'warmup' as const },
+    { set_index: 1, values: { weight: 80, reps: 10 }, set_type: 'working' as const },
+    { set_index: 2, values: { weight: 100, reps: 6 }, set_type: 'top' as const },
+    { set_index: 3, values: { weight: 70, reps: 12 }, set_type: 'drop' as const },
+    { set_index: 4, values: { weight: 50, reps: 15 }, set_type: 'failure' as const },
+  ];
+
+  const { sorted, originalQualifyingOrder } = sortLastPerformanceForPrefill(lastPerfData, true);
+
+  if (!sorted) throw new Error('Sorted should not be null');
+  assertEqual(sorted.length, 5, 'All 5 sets preserved in sorted output');
+
+  // Warmup remains first
+  assertEqual(sorted[0].set_type, 'warmup', 'Position 0 is warmup');
+  assertEqual(sorted[0].values.weight, 60, 'Warmup weight unchanged');
+
+  // Non-warmup sorted by weight DESC: 100 (top), 80 (working), 70 (drop), 50 (failure)
+  assertEqual(sorted[1].values.weight, 100, 'Position 1 is top 100kg');
+  assertEqual(sorted[1].set_type, 'top', 'Position 1 set_type top');
+  assertEqual(sorted[2].values.weight, 80, 'Position 2 is working 80kg');
+  assertEqual(sorted[2].set_type, 'working', 'Position 2 set_type working');
+  assertEqual(sorted[3].values.weight, 70, 'Position 3 is drop 70kg');
+  assertEqual(sorted[3].set_type, 'drop', 'Position 3 set_type drop');
+  assertEqual(sorted[4].values.weight, 50, 'Position 4 is failure 50kg');
+  assertEqual(sorted[4].set_type, 'failure', 'Position 4 set_type failure');
+
+  // originalQualifyingOrder must only track the 2 qualifying sets (working, top)
+  assertEqual(originalQualifyingOrder.length, 2, 'Only 2 qualifying entries (working + top)');
+
+  // Original qualifying order: [working(80@idx1), top(100@idx2)]
+  // Sorted qualifying: 100(top) then 80(working)
+  // Sorted qualifying pos 0 (top 100) had original qual index 1
+  // Sorted qualifying pos 1 (working 80) had original qual index 0
+  assertEqual(originalQualifyingOrder, [1, 0], 'originalQualifyingOrder [1, 0]: top(qual1), working(qual0)');
+
+  // Simulate hook's reorder: per_set_targets [working→targetA, top→targetB]
+  // After reorder by [1, 0]: [top→targetB, working→targetA]
+  const mockPerSetTargets = [
+    { weight: 85, reps: 10 },   // original qual idx 0 → working (80→85)
+    { weight: 105, reps: 6 },    // original qual idx 1 → top (100→105)
+  ];
+  const reordered = originalQualifyingOrder.map((idx) => mockPerSetTargets[idx]);
+  assertEqual(reordered[0].weight, 105, 'Reordered[0] = 105kg (top target, heaviest)');
+  assertEqual(reordered[1].weight, 85, 'Reordered[1] = 85kg (working target)');
+  assertEqual(reordered.length, mockPerSetTargets.length, 'Reordered length matches per_set_targets length');
+
+  console.log('  ✓ All 5 sets sorted correctly (warmup + 100/80/70/50)');
+  console.log('  ✓ originalQualifyingOrder has 2 entries (only working + top)');
+  console.log('  ✓ After reorder: top target pairs with heaviest sorted row, working with second');
+  console.log('  ✓ Drop (70kg) and failure (50kg) excluded from remapping — no length mismatch');
+}
+
+console.log('\n✅ All 13 progression tests passed!');
 console.log('Coverage verified:');
 console.log('  ✓ Global preferred range (3-8) honored');
 console.log('  ✓ Template range overrides global');
@@ -426,3 +653,7 @@ console.log('  ✓ Per-set targets mapped to distinct SetRow instances');
 console.log('  ✓ Store hydration preserves prefilled values');
 console.log('  ✓ UI target display with different per-set values');
 console.log('  ✓ Warmup/drop/failure sets excluded from per-set targets');
+console.log('  ✓ Load increase — Last column shows old weight, orange targets show new');
+console.log('  ✓ Heaviest-first sort keeps Last display + orange target paired');
+console.log('  ✓ Equal-weight sets sort by reps descending');
+console.log('  ✓ Mixed types (warmup/top/working/drop/failure) — only working/top in originalQualifyingOrder');
