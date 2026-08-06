@@ -1,11 +1,20 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
-import { SetTypeSchema, TrackingSchemaValidator, AISuggestionDataSchema } from '@/lib/validation';
+import {
+  CompleteWorkoutRequestSchema,
+  TrackingSchemaValidator,
+  AISuggestionDataSchema,
+} from '@/lib/validation';
 import {
   buildGuidedSuggestion,
   parsePreviousProgressionHistory,
 } from '@/lib/workout/guided-progression';
+import {
+  normalizeTrainingPhase,
+  persistWorkoutCompletion,
+  type SetEntryUpsertInput,
+} from '@/lib/workout/complete-workout-persistence';
 import { loadHistorySessions } from '@/lib/workout/load-history';
 import {
   computeVolumeKg,
@@ -18,24 +27,6 @@ import type {
   UnitPreference,
 } from '@/types/app';
 import type { Json } from '@/types/database';
-
-const SetPayloadSchema = z.object({
-  setIndex: z.number().int().min(0),
-  values: z.record(z.string(), z.union([z.number(), z.string()])),
-  setType: SetTypeSchema,
-  isCompleted: z.boolean(),
-  notes: z.string().nullable().optional(),
-  loggedAt: z.string().nullable().optional(),
-});
-
-const CompleteWorkoutRequestSchema = z.object({
-  sessionId: z.string().uuid(),
-  isLightSession: z.boolean().optional().default(false),
-  exercises: z.array(z.object({
-    sessionExerciseId: z.string().uuid(),
-    sets: z.array(SetPayloadSchema).max(100),
-  })).max(100),
-});
 
 type PersonalRecordType =
   | 'best_weight'
@@ -394,7 +385,7 @@ export async function POST(request: Request) {
 
     const [{ data: authData, error: authError }, { data: userRow, error: userError }] = await Promise.all([
       supabase.auth.getUser(),
-      supabase.from('users').select('unit_preference, training_goals, experience_level, preferred_rep_range').single(),
+      supabase.from('users').select('unit_preference, training_goals, experience_level, preferred_rep_range, training_phase').single(),
     ]);
 
     if (authError || !authData.user) {
@@ -406,6 +397,11 @@ export async function POST(request: Request) {
     const trainingGoals: string[] = (userRow as { training_goals?: string[] } | null)?.training_goals ?? [];
     const experienceLevel: string = (userRow as { experience_level?: string } | null)?.experience_level ?? 'intermediate';
     const preferredRepRange = (userRow as { preferred_rep_range?: { min: number; max: number } | null } | null)?.preferred_rep_range ?? null;
+    // A failed or empty preferences read leaves this null. The column's `build`
+    // default is the database's to apply, never this route's to guess.
+    const phaseAtSession = normalizeTrainingPhase(
+      (userRow as { training_phase?: unknown } | null)?.training_phase,
+    );
 
     if (userError) {
       console.warn('[api/workouts/complete] failed to load user preferences', userError);
@@ -441,50 +437,59 @@ export async function POST(request: Request) {
 
     if (sessionExercisesError) throw sessionExercisesError;
 
-    const validSessionExerciseIds = new Set((sessionExercises ?? []).map((row) => row.id));
-    const setsToSave = payload.exercises.flatMap((exercise) => {
-      if (!validSessionExerciseIds.has(exercise.sessionExerciseId)) {
-        throw new Error('Workout payload included an exercise that does not belong to this session.');
-      }
-
-      return exercise.sets.map((set) => ({
-        session_exercise_id: exercise.sessionExerciseId,
-        set_index: set.setIndex,
-        values: set.values as Json,
-        set_type: set.setType,
-        is_completed: set.isCompleted,
-        notes: set.notes ?? null,
-      }));
-    });
-
-    if (setsToSave.length > 0) {
-      const { error: saveError } = await supabase
-        .from('set_entries')
-        .upsert(setsToSave, { onConflict: 'session_exercise_id,set_index' });
-      if (saveError) throw saveError;
-    }
-
-    const completedAt = new Date().toISOString();
-    const exercisesAfterSave = await loadSessionContext(supabase, session.id);
-    const baseSummary = buildSummary(session.started_at, exercisesAfterSave, completedAt);
-    const previousTotals = await loadPreviousSessionTotals(
-      supabase,
-      user.id,
-      session.template_id,
-      session.id,
+    // Ownership check, set write, clock, post-save context, completion — the
+    // ordering lives in `persistWorkoutCompletion` so it is testable without a
+    // database. The phase it stamps is the one read from `users` above; the
+    // client never gets to name its own.
+    const { context, patch: completionPatch } = await persistWorkoutCompletion(
+      {
+        async saveSetEntries(rows) {
+          const { error: saveError } = await supabase
+            .from('set_entries')
+            .upsert(rows, { onConflict: 'session_exercise_id,set_index' });
+          if (saveError) throw saveError;
+        },
+        // Read once the sets have landed, exactly as this route read it before
+        // the sequence moved into its own module.
+        now: () => new Date().toISOString(),
+        async loadPostSaveContext(completedAt) {
+          const loadedExercises = await loadSessionContext(supabase, session.id);
+          const baseSummary = buildSummary(session.started_at, loadedExercises, completedAt);
+          const previousTotals = await loadPreviousSessionTotals(
+            supabase,
+            user.id,
+            session.template_id,
+            session.id,
+          );
+          return {
+            exercisesAfterSave: loadedExercises,
+            summary: { ...baseSummary, previous: previousTotals },
+          };
+        },
+        durationSeconds: (loaded) => loaded.summary.duration_seconds,
+        async completeSession(patch) {
+          const { error: sessionUpdateError } = await supabase
+            .from('workout_sessions')
+            .update(patch)
+            .eq('id', session.id);
+          if (sessionUpdateError) throw sessionUpdateError;
+        },
+      },
+      {
+        exercises: payload.exercises as SetEntryUpsertInput[],
+        ownedSessionExerciseIds: (sessionExercises ?? []).map((row) => row.id),
+        isLightSession: payload.isLightSession,
+        readiness: payload.readiness,
+        phaseAtSession,
+      },
     );
-    const summary = { ...baseSummary, previous: previousTotals };
 
-    const { error: sessionUpdateError } = await supabase
-      .from('workout_sessions')
-      .update({
-        completed_at: completedAt,
-        duration_seconds: summary.duration_seconds,
-        is_light_session: payload.isLightSession,
-      })
-      .eq('id', session.id);
+    // The instant that was actually stamped on the session. Everything below —
+    // the template's last_used_at, the snapshots, the suggestion provenance and
+    // its expiry — has always used the same value the session carries.
+    const completedAt = completionPatch.completed_at;
 
-    if (sessionUpdateError) throw sessionUpdateError;
+    const { exercisesAfterSave, summary } = context;
 
     if (session.template_id) {
       const { error: templateError } = await supabase

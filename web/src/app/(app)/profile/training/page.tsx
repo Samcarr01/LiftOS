@@ -6,6 +6,14 @@ import { BackButton } from '@/components/ui/back-button';
 import { SelectableRow } from '@/components/ui/selectable-row';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
+import {
+  createTrainingPreferencesAdapter,
+  formatBodyWeightInput,
+  localCalendarDay,
+  parseBodyWeightKg,
+  saveTrainingPreferences,
+} from '@/lib/profile/save-training-preferences';
+import type { TrainingPreferencesClient } from '@/lib/profile/save-training-preferences';
 import { useAuthStore } from '@/store/auth-store';
 import { useUnitStore } from '@/store/unit-store';
 
@@ -79,6 +87,16 @@ export default function TrainingPreferencesPage() {
   const [weeklyTarget, setWeeklyTarget] = useState(4);
   const [loaded, setLoaded] = useState(false);
 
+  // The canonical kg last written to `users.body_weight_kg`. A weigh-in is a
+  // change against *this*, not against whatever is in the input — the autosave
+  // re-fires on every unrelated edit with the same number still in the field.
+  const lastSavedBodyWeightKg = useRef<number | null>(null);
+  // Autosaves are serialised through one chain, so an older network write can
+  // never land after a newer one, and numbered so a save that is overtaken
+  // mid-flight knows to stay quiet.
+  const saveChain = useRef<Promise<void>>(Promise.resolve());
+  const saveGeneration = useRef(0);
+
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
@@ -97,8 +115,11 @@ export default function TrainingPreferencesPage() {
         } | null;
         setGoals(row?.training_goals ?? []);
         setExperience(mapOldStageToNew(row?.experience_level as string) ?? 'intermediate');
+        lastSavedBodyWeightKg.current = row?.body_weight_kg ?? null;
         if (row?.body_weight_kg) {
-          setBodyWeight(unit === 'lb' ? String(Math.round(row.body_weight_kg * 2.205)) : String(row.body_weight_kg));
+          // The exact inverse of the parse the autosave applies, so simply
+          // looking at this screen in pounds is never mistaken for a weigh-in.
+          setBodyWeight(formatBodyWeightInput(row.body_weight_kg, unit));
         }
         if (row?.preferred_rep_range) {
           setRepMin(String(row.preferred_rep_range.min));
@@ -114,13 +135,6 @@ export default function TrainingPreferencesPage() {
     () => {
       if (!user || !loaded) return;
       const supabase = createClient();
-      let bodyWeightKg: number | null = null;
-      if (bodyWeight.trim()) {
-        const parsed = parseFloat(bodyWeight);
-        if (!isNaN(parsed) && parsed > 0) {
-          bodyWeightKg = unit === 'lb' ? Math.round((parsed / 2.205) * 10) / 10 : parsed;
-        }
-      }
       const parsedMin = parseInt(repMin);
       const parsedMax = parseInt(repMax);
       const preferredRepRange =
@@ -128,19 +142,52 @@ export default function TrainingPreferencesPage() {
           ? { min: parsedMin, max: parsedMax }
           : null;
 
-      void supabase
-        .from('users')
-        .update({
-          training_goals: goals,
-          experience_level: experience,
-          body_weight_kg: bodyWeightKg,
-          preferred_rep_range: preferredRepRange,
-          prefill_sort_heaviest_first: heaviestFirst,
-          weekly_workout_target: weeklyTarget,
-        })
-        .eq('id', user.id)
-        .then(({ error }) => {
-          if (!error) {
+      const savedAt = new Date();
+
+      // A weigh-in, not a keystroke: history is written only when the canonical
+      // number differs from what actually reached the column last time.
+      const canonicalBodyWeightKg = parseBodyWeightKg(bodyWeight, unit);
+      const isWeighIn = canonicalBodyWeightKg !== lastSavedBodyWeightKg.current;
+
+      const generation = saveGeneration.current + 1;
+      saveGeneration.current = generation;
+
+      saveChain.current = saveChain.current
+        .catch(() => undefined)
+        .then(() =>
+          // The generated Supabase types resolve a query builder per relation,
+          // and handing the full client to the adapter makes TypeScript
+          // instantiate that whole relation graph (TS2589). The adapter only
+          // ever calls `from('users')` and `from('body_weight_logs')`, so the
+          // cast is narrowed to exactly that at this one explicit boundary.
+          saveTrainingPreferences(
+            createTrainingPreferencesAdapter(supabase as unknown as TrainingPreferencesClient),
+            {
+              userId: user.id,
+              goals,
+              experience,
+              preferredRepRange,
+              prefillSortHeaviestFirst: heaviestFirst,
+              weeklyWorkoutTarget: weeklyTarget,
+              unit,
+              bodyWeight,
+              loggedOn: localCalendarDay(savedAt),
+              now: savedAt.toISOString(),
+              recordBodyWeightHistory: isWeighIn,
+              isCurrent: () => saveGeneration.current === generation,
+            },
+          ),
+        )
+        .then((result) => {
+          // Overtaken mid-flight: not a success to announce, not a failure to
+          // report. The save that replaced it owns the toast.
+          if (result.superseded) return;
+
+          if (result.ok) {
+            lastSavedBodyWeightKg.current = canonicalBodyWeightKg;
+            if (result.warning !== null) {
+              console.warn('[profile/training] body weight saved but not logged:', result.warning);
+            }
             toast.success('Saved', { duration: 2000 });
           } else {
             toast.error('Failed to save');

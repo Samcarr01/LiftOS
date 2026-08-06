@@ -130,6 +130,44 @@ export const StartWorkoutPayloadSchema = z.object({
 
 export const SetTypeSchema = z.enum(['warmup', 'working', 'top', 'drop', 'failure']);
 
+// ── Training context vocabulary ───────────────────────────────────────────────
+// Cut-Aware Progression v1. Each schema is strict on its own; the *fields* that
+// use them are optional and self-healing, so a value we cannot read costs the
+// signal and never the workout.
+
+/** Optional per-session readiness. Absent means "never asked", not "bad day". */
+export const ReadinessSchema = z.enum(['high', 'normal', 'low', 'very_low']);
+
+/** The lifter's current training phase. */
+export const TrainingPhaseSchema = z.enum(['build', 'maintain', 'cut']);
+
+/** Reps in reserve on a set. `3` means "3 or more"; `0` means "nothing left". */
+export const RirSchema = z.number().int().min(0).max(3);
+
+// ── Workout completion payload ────────────────────────────────────────────────
+// Every context field is `.nullish().catch(null)`: an old client that omits it,
+// and a rogue client that sends nonsense, both still complete their workout.
+
+export const SetPayloadSchema = z.object({
+  setIndex:    z.number().int().min(0),
+  values:      z.record(z.string(), z.union([z.number(), z.string()])),
+  setType:     SetTypeSchema,
+  isCompleted: z.boolean(),
+  notes:       z.string().nullable().optional(),
+  loggedAt:    z.string().nullable().optional(),
+  rir:         RirSchema.nullish().catch(null),
+});
+
+export const CompleteWorkoutRequestSchema = z.object({
+  sessionId:      z.string().uuid(),
+  isLightSession: z.boolean().optional().default(false),
+  readiness:      ReadinessSchema.nullish().catch(null),
+  exercises: z.array(z.object({
+    sessionExerciseId: z.string().uuid(),
+    sets: z.array(SetPayloadSchema).max(100),
+  })).max(100),
+});
+
 // ── Last performance snapshot sets_data ───────────────────────────────────────
 
 export const LastPerformanceSetSchema = z.object({

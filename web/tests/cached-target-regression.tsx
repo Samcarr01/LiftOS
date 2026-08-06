@@ -50,6 +50,8 @@ function runTest() {
       duration_seconds: null,
       notes: null,
       is_light_session: false,
+      readiness: null,
+      phase_at_session: null,
     },
     exercises: [
       {

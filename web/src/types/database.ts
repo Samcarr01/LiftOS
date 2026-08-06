@@ -10,7 +10,8 @@
  *
  * Re-generate with: `supabase gen types typescript --project-id <project-id>`
  *
- * Last updated: 2026-07-31 (migration 20260731120000_reconcile_schema_gap)
+ * Last updated: 2026-08-06 (migrations 20260806090000_add_training_phase_readiness_rir,
+ * 20260806090100_create_body_weight_logs)
  */
 
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
@@ -34,6 +35,8 @@ export interface Database {
           avatar_url: string | null;
           prefill_sort_heaviest_first: boolean;
           weekly_workout_target: number;
+          training_phase: 'build' | 'maintain' | 'cut';
+          training_phase_started_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -51,6 +54,8 @@ export interface Database {
           avatar_url?: string | null;
           prefill_sort_heaviest_first?: boolean;
           weekly_workout_target?: number;
+          training_phase?: 'build' | 'maintain' | 'cut';
+          training_phase_started_at?: string | null;
         };
         Update: {
           id?: string;
@@ -66,6 +71,8 @@ export interface Database {
           avatar_url?: string | null;
           prefill_sort_heaviest_first?: boolean;
           weekly_workout_target?: number;
+          training_phase?: 'build' | 'maintain' | 'cut';
+          training_phase_started_at?: string | null;
         };
         Relationships: [];
       };
@@ -182,6 +189,8 @@ export interface Database {
           duration_seconds: number | null;
           notes: string | null;
           is_light_session: boolean;
+          readiness: 'high' | 'normal' | 'low' | 'very_low' | null;
+          phase_at_session: 'build' | 'maintain' | 'cut' | null;
           created_at: string;
         };
         Insert: {
@@ -194,6 +203,8 @@ export interface Database {
           duration_seconds?: number | null;
           notes?: string | null;
           is_light_session?: boolean;
+          readiness?: 'high' | 'normal' | 'low' | 'very_low' | null;
+          phase_at_session?: 'build' | 'maintain' | 'cut' | null;
         };
         Update: {
           user_id?: string;
@@ -204,6 +215,8 @@ export interface Database {
           duration_seconds?: number | null;
           notes?: string | null;
           is_light_session?: boolean;
+          readiness?: 'high' | 'normal' | 'low' | 'very_low' | null;
+          phase_at_session?: 'build' | 'maintain' | 'cut' | null;
         };
         Relationships: [];
       };
@@ -249,6 +262,7 @@ export interface Database {
           set_type: 'warmup' | 'working' | 'top' | 'drop' | 'failure';
           is_completed: boolean;
           notes: string | null;
+          rir: number | null;
           logged_at: string;
         };
         Insert: {
@@ -258,6 +272,7 @@ export interface Database {
           set_type?: 'warmup' | 'working' | 'top' | 'drop' | 'failure';
           is_completed?: boolean;
           notes?: string | null;
+          rir?: number | null;
         };
         Update: {
           session_exercise_id?: string;
@@ -266,6 +281,7 @@ export interface Database {
           set_type?: 'warmup' | 'working' | 'top' | 'drop' | 'failure';
           is_completed?: boolean;
           notes?: string | null;
+          rir?: number | null;
         };
         Relationships: [];
       };
@@ -384,6 +400,28 @@ export interface Database {
         Relationships: [];
       };
 
+      // ── body_weight_logs ────────────────────────────────────────────────────
+      body_weight_logs: {
+        Row: {
+          id: string;
+          user_id: string;
+          logged_on: string;
+          weight_kg: number;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          logged_on: string;
+          weight_kg: number;
+        };
+        Update: {
+          user_id?: string;
+          logged_on?: string;
+          weight_kg?: number;
+        };
+        Relationships: [];
+      };
+
       // ── ai_rate_limits ───────────────────────────────────────────────────────
       ai_rate_limits: {
         Row: {
@@ -428,4 +466,5 @@ export type LastPerformanceSnapshotRow = Tables['last_performance_snapshots']['R
 export type PersonalRecordRow          = Tables['personal_records']['Row'];
 export type AISuggestionRow            = Tables['ai_suggestions']['Row'];
 export type WeeklySummaryRow           = Tables['weekly_summaries']['Row'];
+export type BodyWeightLogRow           = Tables['body_weight_logs']['Row'];
 export type AiRateLimitRow             = Tables['ai_rate_limits']['Row'];
