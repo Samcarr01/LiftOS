@@ -848,13 +848,17 @@ function buildDoubleProgressionSuggestion(params: {
 
     // Regression guard: if rounding still lands on same weight, fall through to hold
     if (newLoad > currentLoad) {
-      // Build per-set targets for load progression (conservative, shape-preserving)
+      // Build per-set targets for load progression (conservative, shape-preserving).
+      // Each target carries the new load so row guidance and the summary card
+      // never advertise the old weight on a progress decision.
       const perSetTargets = buildPerSetTargets({
         workingSets: latestAnalysis.workingSets,
         repRange,
         allSetsAtCeiling: true,
         isLoadProgression: true,
         schema,
+        loadKey: weightKey,
+        newLoad,
       });
 
       // Universal next_target derived from first per-set target (typical/representative)
@@ -1150,7 +1154,7 @@ function buildFallbackSuggestion(params: {
 /**
  * Compute per-set targets from the actual rep vector.
  * - When not all sets hit ceiling: preserve vector, add exactly one rep to a feasible set.
- * - When all at ceiling: after load increase, use conservative per-set targets.
+ * - When all at ceiling: after load increase, use conservative per-set targets at the new load.
  */
 function buildPerSetTargets(params: {
   workingSets: TrackingSetLike[];
@@ -1158,8 +1162,12 @@ function buildPerSetTargets(params: {
   allSetsAtCeiling: boolean;
   isLoadProgression: boolean;
   schema: TrackingSchema;
+  /** Tracked load field being progressed: 'weight' | 'added_weight' | 'height'. */
+  loadKey?: string;
+  /** Calculated new load — the same value that lands in next_target. */
+  newLoad?: number;
 }): SetValues[] | undefined {
-  const { workingSets, repRange, allSetsAtCeiling, isLoadProgression, schema } = params;
+  const { workingSets, repRange, allSetsAtCeiling, isLoadProgression, schema, loadKey, newLoad } = params;
   const keys = new Set(schema.fields.map((f) => f.key));
   const hasReps = keys.has('reps');
 
@@ -1167,14 +1175,15 @@ function buildPerSetTargets(params: {
 
   // When increasing load, use conservative per-set targets based on prior vector
   if (allSetsAtCeiling && isLoadProgression) {
-    // After load increase, suggest one rep below each prior set's reps, floored at range min.
-    // This preserves the shape of the rep vector while being conservative post-load.
-    // If they did [12, 12, 11], suggest [11, 11, 10] at the higher weight.
-    const reps = workingSets.map((s) => getNumeric(s.values, 'reps'));
+    // After load increase, suggest one rep below each prior set's reps, floored at range min,
+    // paired with the NEW load — never the old one. This preserves the shape of the rep
+    // vector while being conservative post-load.
+    // If they did [12, 12, 11] at 100kg, suggest [11, 11, 10] at 102.5kg.
+    const loadPatch = loadKey && newLoad !== undefined ? { [loadKey]: newLoad } : {};
     return workingSets.map((s) => {
       const priorRep = getNumeric(s.values, 'reps');
       const targetRep = Math.max(repRange.min, priorRep - 1);
-      return { ...s.values, reps: targetRep };
+      return { ...s.values, ...loadPatch, reps: targetRep };
     });
   }
 
