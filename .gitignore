@@ -46,3 +46,4 @@ test-results/
 # Temp / scratch artifacts
 tmp-*
 *.tmp
+.vercel/
