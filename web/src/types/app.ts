@@ -25,6 +25,7 @@ import type {
   ExerciseRow,
 } from './database';
 import type { TrackingSchema } from './tracking';
+import type { Readiness } from './training-context';
 
 // ── Primitive types ───────────────────────────────────────────────────────────
 
@@ -63,6 +64,13 @@ export interface SetEntry {
   isCompleted:          boolean;
   notes:                string | null;
   loggedAt:             string;
+  /**
+   * Reps in reserve, 0…3 where 3 is the UI's "3+". `null` is "not given" —
+   * never 0, which means "nothing left". A first-class `set_entries` column,
+   * so it deliberately lives beside `values` rather than inside it: the
+   * tracking schema describes the lift, not how it felt.
+   */
+  rir:                  number | null;
   /** Present when created offline and not yet flushed to Supabase */
   isPendingSync?:       boolean;
 }
@@ -96,6 +104,13 @@ export interface ActiveWorkoutState {
   elapsedTimer:   number;  // seconds elapsed since session.started_at
   isCompleting:   boolean;
   isLightSession: boolean; // user-tagged "light / off day" — excluded from prefill + AI trend
+  /**
+   * Optional session readiness. `null` means "never asked / skipped" — it is
+   * a property of this session, never a user default.
+   */
+  readiness:                Readiness | null;
+  /** The one-time start strip has been answered or skipped for this workout. */
+  readinessPromptDismissed: boolean;
 }
 
 // ── start-workout Edge Function I/O ──────────────────────────────────────────

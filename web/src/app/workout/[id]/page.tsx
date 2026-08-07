@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { ExerciseCard } from '@/components/workout/exercise-card';
 import { SupersetCard } from '@/components/workout/superset-card';
 import { FinishDialog } from '@/components/workout/finish-dialog';
+import { ReadinessStrip } from '@/components/workout/readiness-strip';
 import { ExerciseSelector, type ExerciseSelectionOptions } from '@/components/exercise-selector';
 import { useActiveWorkoutStore, useWorkoutHydrated } from '@/store/active-workout-store';
 import { useScreenWakeLock } from '@/hooks/use-screen-wake-lock';
@@ -145,6 +146,9 @@ export default function WorkoutPage() {
             />
           </div>
         </header>
+
+        {/* Optional, one-time, and never a gate — see ReadinessStrip. */}
+        <ReadinessStrip />
 
         <main className="mt-5 space-y-5 pb-28">
           {groupExercises(workout.exercises).map((group) => {

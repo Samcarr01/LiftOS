@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Dumbbell, Flame, Heart, Loader2, Timer, Trophy, Zap } from 'lucide-react';
+import { Activity, Dumbbell, Flame, Heart, Loader2, Timer, TrendingDown, TrendingUp, Trophy, Zap } from 'lucide-react';
 import { BackButton } from '@/components/ui/back-button';
 import { SelectableRow } from '@/components/ui/selectable-row';
 import { toast } from 'sonner';
@@ -14,8 +14,10 @@ import {
   saveTrainingPreferences,
 } from '@/lib/profile/save-training-preferences';
 import type { TrainingPreferencesClient } from '@/lib/profile/save-training-preferences';
+import { normalizeTrainingPhase } from '@/lib/workout/complete-workout-persistence';
 import { useAuthStore } from '@/store/auth-store';
 import { useUnitStore } from '@/store/unit-store';
+import type { TrainingPhase } from '@/types/training-context';
 
 const STAGE_IDS = [
   'just-starting',
@@ -61,6 +63,22 @@ const GOALS = [
   { id: 'health', label: 'Health', icon: Heart },
 ] as const;
 
+// Phase describes what the lifter is training *for* right now. It changes the
+// targets they are given, never the history they have logged.
+const PHASES = [
+  { id: 'build',    label: 'Build',    icon: TrendingUp,   description: 'Adding size and strength' },
+  { id: 'maintain', label: 'Maintain', icon: Activity,     description: 'Holding what you have' },
+  { id: 'cut',      label: 'Cut',      icon: TrendingDown, description: 'Losing fat, keeping strength' },
+] as const satisfies ReadonlyArray<{ id: TrainingPhase; label: string; icon: typeof Activity; description: string }>;
+
+/** "7 Aug" for a real stored stamp, or null for anything unreadable. */
+function formatPhaseStart(startedAt: string | null): string | null {
+  if (!startedAt) return null;
+  const date = new Date(startedAt);
+  if (isNaN(date.getTime())) return null;
+  return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
 function useDebouncedEffect(fn: () => void, deps: unknown[], delay: number) {
   const firstRun = useRef(true);
   useEffect(() => {
@@ -85,12 +103,18 @@ export default function TrainingPreferencesPage() {
   const [repMax, setRepMax] = useState('');
   const [heaviestFirst, setHeaviestFirst] = useState(false);
   const [weeklyTarget, setWeeklyTarget] = useState(4);
+  const [phase, setPhase] = useState<TrainingPhase | null>(null);
+  const [phaseStartedAt, setPhaseStartedAt] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   // The canonical kg last written to `users.body_weight_kg`. A weigh-in is a
   // change against *this*, not against whatever is in the input — the autosave
   // re-fires on every unrelated edit with the same number still in the field.
   const lastSavedBodyWeightKg = useRef<number | null>(null);
+  // The phase last known to be stored. `training_phase_started_at` moves only
+  // when the selection differs from *this*, so the debounced autosave — which
+  // re-fires on every unrelated edit — cannot keep resetting "cutting since".
+  const lastSavedPhase = useRef<TrainingPhase | null>(null);
   // Autosaves are serialised through one chain, so an older network write can
   // never land after a newer one, and numbered so a save that is overtaken
   // mid-flight knows to stay quiet.
@@ -102,7 +126,7 @@ export default function TrainingPreferencesPage() {
     const supabase = createClient();
     void supabase
       .from('users')
-      .select('training_goals, experience_level, body_weight_kg, preferred_rep_range, prefill_sort_heaviest_first, weekly_workout_target')
+      .select('training_goals, experience_level, body_weight_kg, preferred_rep_range, prefill_sort_heaviest_first, weekly_workout_target, training_phase, training_phase_started_at')
       .single()
       .then(({ data }) => {
         const row = data as {
@@ -112,6 +136,8 @@ export default function TrainingPreferencesPage() {
           preferred_rep_range: { min: number; max: number } | null;
           prefill_sort_heaviest_first: boolean | null;
           weekly_workout_target: number | null;
+          training_phase: string | null;
+          training_phase_started_at: string | null;
         } | null;
         setGoals(row?.training_goals ?? []);
         setExperience(mapOldStageToNew(row?.experience_level as string) ?? 'intermediate');
@@ -127,6 +153,13 @@ export default function TrainingPreferencesPage() {
         }
         setHeaviestFirst(row?.prefill_sort_heaviest_first ?? false);
         setWeeklyTarget(row?.weekly_workout_target ?? 4);
+        // The server value wins on reload. An unreadable one selects nothing
+        // rather than guessing Build — the column's default is the database's
+        // to apply, and a cutting lifter must not silently be shown Build.
+        const storedPhase = normalizeTrainingPhase(row?.training_phase);
+        setPhase(storedPhase);
+        lastSavedPhase.current = storedPhase;
+        setPhaseStartedAt(row?.training_phase_started_at ?? null);
         setLoaded(true);
       });
   }, [user, unit]);
@@ -152,15 +185,26 @@ export default function TrainingPreferencesPage() {
       const generation = saveGeneration.current + 1;
       saveGeneration.current = generation;
 
+      // The baseline this save is compared against, read where the save is
+      // performed rather than where it is enqueued, and kept so the toast half
+      // below can tell whether the helper stamped.
+      let baselinePhase: TrainingPhase | null = null;
+
       saveChain.current = saveChain.current
         .catch(() => undefined)
-        .then(() =>
+        .then(() => {
+          // Thumbs are faster than networks. Tapping Cut and then Build again
+          // inside one slow round trip queues this save while the first is
+          // still in flight, so the phase on screen when the debounce fired is
+          // not the phase the row holds by the time we run.
+          baselinePhase = lastSavedPhase.current;
+
           // The generated Supabase types resolve a query builder per relation,
           // and handing the full client to the adapter makes TypeScript
           // instantiate that whole relation graph (TS2589). The adapter only
           // ever calls `from('users')` and `from('body_weight_logs')`, so the
           // cast is narrowed to exactly that at this one explicit boundary.
-          saveTrainingPreferences(
+          return saveTrainingPreferences(
             createTrainingPreferencesAdapter(supabase as unknown as TrainingPreferencesClient),
             {
               userId: user.id,
@@ -173,18 +217,31 @@ export default function TrainingPreferencesPage() {
               bodyWeight,
               loggedOn: localCalendarDay(savedAt),
               now: savedAt.toISOString(),
+              phase,
+              currentPhase: baselinePhase,
               recordBodyWeightHistory: isWeighIn,
               isCurrent: () => saveGeneration.current === generation,
             },
-          ),
-        )
+          );
+        })
         .then((result) => {
+          // The authoritative write is never rolled back, so once it lands the
+          // row holds this phase whether or not a newer save has taken over the
+          // screen. The baseline advances on that fact alone — leaving it
+          // behind on a superseded save is what made the save queued behind it
+          // read cut→build as build→build and stamp nothing.
+          if (result.ok && phase !== null) lastSavedPhase.current = phase;
+
           // Overtaken mid-flight: not a success to announce, not a failure to
           // report. The save that replaced it owns the toast.
           if (result.superseded) return;
 
           if (result.ok) {
             lastSavedBodyWeightKg.current = canonicalBodyWeightKg;
+            // The stamp the helper just wrote, against the baseline it was
+            // actually given — so an unrelated keystroke can no longer look
+            // like a phase change.
+            if (phase !== null && phase !== baselinePhase) setPhaseStartedAt(savedAt.toISOString());
             if (result.warning !== null) {
               console.warn('[profile/training] body weight saved but not logged:', result.warning);
             }
@@ -194,9 +251,11 @@ export default function TrainingPreferencesPage() {
           }
         });
     },
-    [goals, experience, bodyWeight, repMin, repMax, heaviestFirst, weeklyTarget],
+    [goals, experience, bodyWeight, repMin, repMax, heaviestFirst, weeklyTarget, phase],
     600,
   );
+
+  const phaseStartLabel = formatPhaseStart(phaseStartedAt);
 
   return (
     <div className="page-shell">
@@ -210,6 +269,30 @@ export default function TrainingPreferencesPage() {
           </div>
           {!loaded && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         </div>
+
+        {/* Training phase — one selection, saved by the same autosave as
+            everything else on this screen. Changing it affects future targets
+            only; a completed session keeps the phase it was performed in. */}
+        <section aria-label="Training phase" className="space-y-2.5">
+          <div>
+            <span className="text-sm font-semibold">Training phase</span>
+            {phaseStartLabel && (
+              <p className="mt-0.5 text-xs text-muted-foreground">Current phase since {phaseStartLabel}</p>
+            )}
+          </div>
+          <div className="space-y-2.5">
+            {PHASES.map((option) => (
+              <SelectableRow
+                key={option.id}
+                icon={option.icon}
+                title={option.label}
+                subtitle={option.description}
+                selected={phase === option.id}
+                onSelect={() => setPhase(option.id)}
+              />
+            ))}
+          </div>
+        </section>
 
         <div className="space-y-2">
           <div className="content-card !px-4 flex items-center justify-between gap-3">

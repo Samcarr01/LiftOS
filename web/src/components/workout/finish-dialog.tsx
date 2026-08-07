@@ -9,11 +9,68 @@ import { addToQueue } from '@/lib/offline';
 import { createClient } from '@/lib/supabase/client';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { useCompletionStore } from '@/store/completion-store';
-import type { ActiveWorkoutState, CompleteWorkoutResponse } from '@/types/app';
+import type { ActiveWorkoutState, CompleteWorkoutResponse, SetType, SetValues } from '@/types/app';
+import type { Readiness } from '@/types/training-context';
 
 interface FinishDialogProps {
   open: boolean;
   onClose: () => void;
+}
+
+/** Exactly what the browser is allowed to send to `POST /api/workouts/complete`. */
+export interface CompleteWorkoutRequestBody {
+  sessionId: string;
+  isLightSession: boolean;
+  readiness: Readiness | null;
+  exercises: Array<{
+    sessionExerciseId: string;
+    sets: Array<{
+      setIndex: number;
+      values: SetValues;
+      setType: SetType;
+      isCompleted: boolean;
+      notes: string | null;
+      loggedAt: string | null;
+      rir: number | null;
+    }>;
+  }>;
+}
+
+/**
+ * The online completion request, built from the active workout and nothing else.
+ *
+ * Two properties are worth stating, because both are load-bearing:
+ *
+ *   1. No phase field is sent, in any form. `phase_at_session` is read from the
+ *      authenticated user row by the route (`api/workouts/complete/route.ts`)
+ *      and stamped there. A browser that could name its own phase could
+ *      relabel a session's history, so the browser is never asked.
+ *   2. `readiness` and every `rir` key are always present, `null` included.
+ *      `buildSetEntryUpsertRows` bulk-upserts these rows through PostgREST,
+ *      which derives its column list from the first row — an omitted `rir`
+ *      would silently drop the column for the whole batch.
+ *
+ * Pure, so the shape is testable without a network, a store or a dialog.
+ */
+export function buildCompleteWorkoutRequestBody(workout: ActiveWorkoutState): CompleteWorkoutRequestBody {
+  return {
+    sessionId: workout.session.id,
+    isLightSession: workout.isLightSession,
+    // Skipped or never asked is null — never a fabricated "normal".
+    readiness: workout.readiness ?? null,
+    exercises: workout.exercises.map((exercise) => ({
+      sessionExerciseId: exercise.sessionExercise.id,
+      sets: exercise.sets.map((set) => ({
+        setIndex: set.setIndex,
+        values: set.values,
+        setType: set.setType,
+        isCompleted: set.isCompleted,
+        notes: set.notes,
+        loggedAt: set.loggedAt || null,
+        rir: set.rir ?? null,
+      })),
+    })),
+  };
 }
 
 function computeSummary(workout: ActiveWorkoutState) {
@@ -75,21 +132,7 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          sessionId: workout.session.id,
-          isLightSession: workout.isLightSession,
-          exercises: workout.exercises.map((exercise) => ({
-            sessionExerciseId: exercise.sessionExercise.id,
-            sets: exercise.sets.map((set) => ({
-              setIndex: set.setIndex,
-              values: set.values,
-              setType: set.setType,
-              isCompleted: set.isCompleted,
-              notes: set.notes,
-              loggedAt: set.loggedAt || null,
-            })),
-          })),
-        }),
+        body: JSON.stringify(buildCompleteWorkoutRequestBody(workout)),
       });
 
       const body = await response.json().catch(() => null) as CompleteWorkoutResponse | { error?: string } | null;

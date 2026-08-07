@@ -66,6 +66,7 @@ import {
 // The module's whole surface, so S14 can state what is missing from it as an
 // assertion rather than dying at the import and taking the file down with it.
 import * as savePreferencesModule from '../save-training-preferences';
+import type { TrainingPhase } from '@/types/training-context';
 
 // ── Assertion helpers (same plain style as progression-cycle-1.spec.ts) ───────
 
@@ -952,6 +953,362 @@ async function testPoundsRoundTripIsNotAWeighIn() {
   console.log('  ✓ stored kg → pounds field → parsed back is unchanged; a real change still logs');
 }
 
+// ── S15: the page's own baseline, over a whole autosave session ──────────────
+// Cycle 3, plan Risk 2. S8 pins the helper: an unchanged phase is not stamped.
+// This pins the *caller* contract that makes S8 true in the app — the profile
+// screen keeps a `lastSavedPhase` ref and advances it after every successful
+// save, so the second, third and fourth debounce of a session compare against
+// what was actually stored rather than against the phase loaded on mount.
+async function testAutosaveSessionStampsOncePerRealChange() {
+  console.log('\nS15: over a session of autosaves, only a real phase change stamps a start date');
+
+  // Exactly what `app/(app)/profile/training/page.tsx` does, in eight lines:
+  // pass the baseline in, advance it on success.
+  let lastSavedPhase: TrainingPhase | null = 'build';  // loaded from the server
+  const stamps: Array<string | undefined> = [];
+
+  async function autosave(selectedPhase: TrainingPhase | null, now: string) {
+    const adapter = createFakeAdapter();
+    const result = await saveTrainingPreferences(adapter, {
+      ...BASE_INPUT,
+      now,
+      phase: selectedPhase,
+      currentPhase: lastSavedPhase,
+    });
+    stamps.push(adapter.userPatches[0].training_phase_started_at);
+    if (result.ok && selectedPhase !== null) lastSavedPhase = selectedPhase;
+    return adapter.userPatches[0];
+  }
+
+  // 1. A goal toggle right after load. Same phase, nothing to stamp.
+  const goalEdit = await autosave('build', '2026-08-07T09:00:00.000Z');
+  assert(!('training_phase_started_at' in goalEdit), 'An unrelated edit after load does not stamp a start date');
+  assertEqual(goalEdit.training_phase, 'build', 'The phase column is still written — the update stays idempotent');
+
+  // 2. The user taps Cut. This is the change, and the only stamp of the session.
+  const changed = await autosave('cut', '2026-08-07T09:01:00.000Z');
+  assertEqual(changed.training_phase_started_at, '2026-08-07T09:01:00.000Z', 'The real change is stamped');
+
+  // 3. Three more debounces from unrelated typing — a rep-range keystroke, a
+  //    weekly-target tap, a body-weight edit. Without the advanced baseline
+  //    each of these would look like build→cut again and reset "cutting since".
+  const after = [
+    await autosave('cut', '2026-08-07T09:02:00.000Z'),
+    await autosave('cut', '2026-08-08T18:00:00.000Z'),
+    await autosave('cut', '2026-08-14T07:30:00.000Z'),
+  ];
+  for (const patch of after) {
+    assert(
+      !('training_phase_started_at' in patch),
+      'A later unrelated autosave never rewrites the start date, even a week into the cut',
+    );
+    assertEqual(patch.training_phase, 'cut', 'And it still saves the phase the user is in');
+  }
+
+  // 4. Switching back is a change again.
+  const back = await autosave('build', '2026-08-21T08:00:00.000Z');
+  assertEqual(back.training_phase_started_at, '2026-08-21T08:00:00.000Z', 'Cut → build starts a new phase');
+
+  assertEqual(
+    stamps.filter((stamp) => stamp !== undefined).length,
+    2,
+    'Six saves, two real changes, two stamps',
+  );
+
+  // A failed save must not advance the baseline: the change never landed, so
+  // the retry has to stamp it.
+  let failedBaseline: TrainingPhase | null = 'build';
+  const failing = createFakeAdapter({ userError: 'offline' });
+  const failedResult = await saveTrainingPreferences(failing, {
+    ...BASE_INPUT,
+    phase: 'cut',
+    currentPhase: failedBaseline,
+    now: '2026-08-07T10:00:00.000Z',
+  });
+  if (failedResult.ok) failedBaseline = 'cut';
+  assertEqual(failedResult.ok, false, 'The write failed');
+  assertEqual(failedBaseline, 'build', 'So the baseline stays where it was');
+
+  const retry = createFakeAdapter();
+  await saveTrainingPreferences(retry, {
+    ...BASE_INPUT,
+    phase: 'cut',
+    currentPhase: failedBaseline,
+    now: '2026-08-07T10:00:05.000Z',
+  });
+  assertEqual(
+    retry.userPatches[0].training_phase_started_at,
+    '2026-08-07T10:00:05.000Z',
+    'The retry after a failure stamps the change that never landed',
+  );
+
+  console.log('  ✓ six autosaves, two changes, two stamps; a failed save does not advance the baseline');
+}
+
+// ── S16: two phase changes across one in-flight save ─────────────────────────
+// Cycle 3, independent review. S15 walks a session in which every save settles
+// before the next debounce fires. Thumbs are faster than networks: tapping Cut
+// and then Build again inside one slow round trip enqueues the second autosave
+// while the first is still waiting on the server.
+//
+// The fix is a caller contract, and this test states it as one. Two rules make
+// the serialised queue in `app/(app)/profile/training/page.tsx` sound, and both
+// are mirrored below exactly as that page implements them:
+//
+//   a. The baseline is read where the save is *performed* — inside the chain —
+//      not where it is enqueued. A baseline captured in the debounce body
+//      predates the commit of the save ahead of it in the queue.
+//   b. The baseline advances after every write that *lands*, including one
+//      whose result came back `superseded`. The authoritative write is never
+//      rolled back, so the row holds that phase whether or not the caller went
+//      on to show a toast.
+//
+// Without (a) or (b), cut→build reads as build→build, stamps nothing, and the
+// stored row says "Build, started the day the cut began". With both, the phase
+// the row holds and the phase the caller passes as `currentPhase` never
+// diverge — which is why the helper has no business remembering a phase of its
+// own between calls (S17).
+
+interface GatedAdapter {
+  adapter: TrainingPreferencesAdapter;
+  /** The recording fake underneath, so the patch it received is still readable. */
+  recorder: FakeAdapter;
+  /** The server finally answering the authoritative write. */
+  release: () => void;
+  settled: () => boolean;
+}
+
+/** A fake adapter whose users write is issued at once and then hangs. */
+function createGatedAdapter(): GatedAdapter {
+  const recorder = createFakeAdapter();
+  let open!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    open = resolve;
+  });
+  let settled = false;
+
+  return {
+    recorder,
+    release: open,
+    settled: () => settled,
+    adapter: {
+      ...recorder,
+      async updateUser(userId: string, patch: UserPreferencesUpdate) {
+        // The patch leaves for the server immediately — it is already decided,
+        // and already contains (or omits) the stamp — and only the *answer* is
+        // deferred, exactly as a slow round trip defers it.
+        const outcome = await recorder.updateUser(userId, patch);
+        await gate;
+        settled = true;
+        return outcome;
+      },
+    },
+  };
+}
+
+/** Drains the microtask queue so a queued chain can reach its next await. */
+function flush(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+async function testOverlappingPhaseChangesEachStartTheirOwnPhase() {
+  console.log('\nS16: a second phase change made while the first save is in flight starts its own phase');
+
+  // The page's autosave machinery, mirrored: one serialised chain, a generation
+  // counter, and a `lastSavedPhase` baseline advanced after every write that
+  // lands — superseded or not.
+  let lastSavedPhase: TrainingPhase | null = 'build'; // loaded from the server
+  let chain: Promise<void> = Promise.resolve();
+  let generation = 0;
+  /** The generations whose results came back superseded, so (b) is observable. */
+  const supersededGenerations: number[] = [];
+  /** What each save was actually compared against, in the order they ran. */
+  const baselines: Array<TrainingPhase | null> = [];
+
+  function enqueue(selectedPhase: TrainingPhase, now: string, adapter: TrainingPreferencesAdapter) {
+    generation += 1;
+    const thisGeneration = generation;
+
+    chain = chain
+      .catch(() => undefined)
+      .then(() => {
+        // (a) Read here, where the save runs. By the time this link of the
+        // chain is reached, the save ahead of it has committed, and its phase
+        // is what the row holds.
+        const baselinePhase = lastSavedPhase;
+        baselines.push(baselinePhase);
+        return saveTrainingPreferences(adapter, {
+          ...BASE_INPUT,
+          now,
+          phase: selectedPhase,
+          currentPhase: baselinePhase,
+          isCurrent: () => generation === thisGeneration,
+        });
+      })
+      .then((result) => {
+        // (b) The authoritative write is never rolled back, so once it lands
+        // the row holds this phase whether or not a newer save has taken over
+        // the screen. The baseline advances on that fact alone.
+        if (result.ok) lastSavedPhase = selectedPhase;
+
+        // Only what the *user* sees — the toast, the displayed start date —
+        // belongs to whoever is current.
+        if (result.superseded) supersededGenerations.push(thisGeneration);
+      });
+  }
+
+  // 09:00:00 — the user taps Cut. The autosave fires and the write leaves.
+  const cut = createGatedAdapter();
+  enqueue('cut', '2026-08-07T09:00:00.000Z', cut.adapter);
+  await flush();
+  assertEqual(cut.recorder.userPatches.length, 1, 'The Cut save has issued its authoritative write');
+  assert(!cut.settled(), 'And that write is still in flight — the server has not answered yet');
+
+  // 09:00:20 — before the answer arrives the user changes their mind and taps
+  // Build. A second, distinct transition, decided against a phase the user can
+  // see on the screen: Cut.
+  const build = createGatedAdapter();
+  enqueue('build', '2026-08-07T09:00:20.000Z', build.adapter);
+  await flush();
+  assertEqual(
+    build.recorder.userPatches.length,
+    0,
+    'The second save waits behind the first — the chain serialises them, so neither write can land out of order',
+  );
+
+  // The server answers both, oldest first.
+  cut.release();
+  await flush();
+  build.release();
+  await chain;
+
+  const cutPatch = cut.recorder.userPatches[0];
+  const buildPatch = build.recorder.userPatches[0];
+
+  assertEqual(
+    [cutPatch.training_phase, buildPatch.training_phase],
+    ['cut', 'build'],
+    'Both transitions were committed, in the order the user made them',
+  );
+  assertEqual(
+    cutPatch.training_phase_started_at,
+    '2026-08-07T09:00:00.000Z',
+    'build → cut starts the cut at the moment it was chosen',
+  );
+  assertEqual(
+    buildPatch.training_phase_started_at,
+    '2026-08-07T09:00:20.000Z',
+    'cut → build is a second, distinct change: it starts its own phase, rather than inheriting a baseline captured before the cut was committed',
+  );
+  assert(
+    cutPatch.training_phase_started_at !== buildPatch.training_phase_started_at,
+    'Two committed transitions, two start dates — one stamp for two changes would date the new phase from the old one',
+  );
+
+  assertEqual(buildPatch.training_phase, 'build', 'Build is the last word: it is the phase the user is left in');
+  assertEqual(lastSavedPhase, 'build', 'And the baseline settles on the phase that was committed last');
+
+  // The two caller rules, stated as observations rather than as arrangement.
+  assertEqual(
+    supersededGenerations,
+    [1],
+    'The Cut save was the one overtaken — it is the only result the caller threw away',
+  );
+  assertEqual(
+    baselines,
+    ['build', 'cut'],
+    'Rule (a) and rule (b) together: the second save was compared against Cut, the phase the first one had already committed — not against Build, the phase on screen when its debounce fired',
+  );
+
+  console.log('  ✓ build→cut and cut→build across one in-flight write → two stamps, final phase build');
+}
+
+// ── S17: a superseded write leaves no memory behind it (RED) ─────────────────
+// Cycle 3, independent review. S16 establishes that the caller's `currentPhase`
+// is authoritative: the page reads it inside the queue and advances it after
+// every write that lands, superseded included, so it and the row can never
+// disagree. A helper that *also* remembers the phase a superseded save
+// committed is therefore holding a duplicate of a fact it was already being
+// told — and a duplicate that nothing reliably clears.
+//
+// The copy is module-global and keyed only by user id, so it outlives the
+// screen that created it. Tap Cut, be overtaken, navigate away; come back to
+// Profile → Training later in the same session and the page re-reads the row
+// from the server, so the baseline it passes is authoritative by construction.
+// If that remembered phase is consulted in preference to it, the transition the
+// user just made is read as "no change", no `training_phase_started_at` is
+// written, and "cutting since" silently dates from whatever the row held
+// before. The user is owed a stamp and does not get one.
+//
+// The rule this pins is narrow and absolute: the phase a save compares against
+// is the phase its caller passed. Nothing a previous call did may override it.
+async function testSupersededWriteDoesNotOverrideAFreshBaseline() {
+  console.log('\nS17: a superseded write never overrides the baseline a later caller passes');
+
+  // 09:00 — the user taps Cut. The write lands, and is never rolled back, but a
+  // newer save has taken the screen, so this result is thrown away unshown.
+  const overtaken = createFakeAdapter();
+  const overtakenResult = await saveTrainingPreferences(overtaken, {
+    ...BASE_INPUT,
+    phase: 'cut',
+    currentPhase: 'build',
+    now: '2026-08-07T09:00:00.000Z',
+    isCurrent: () => false,
+  });
+
+  assertEqual(overtakenResult.superseded, true, 'That save was overtaken — the caller shows nothing');
+  assertEqual(overtakenResult.ok, true, 'Its authoritative write landed all the same');
+  assertEqual(overtaken.userPatches[0].training_phase, 'cut', 'And it did commit Cut to the row');
+  assertEqual(
+    overtaken.userPatches[0].training_phase_started_at,
+    '2026-08-07T09:00:00.000Z',
+    'build → cut was a real change, so it was stamped',
+  );
+
+  // 11:15 — a fresh save, with a baseline its caller vouches for: the row holds
+  // Build. Selecting Cut against it is a real transition and must start its own
+  // phase, exactly as the identical inputs do in S8.
+  const fresh = createFakeAdapter();
+  const freshResult = await saveTrainingPreferences(fresh, {
+    ...BASE_INPUT,
+    phase: 'cut',
+    currentPhase: 'build',
+    now: '2026-08-07T11:15:00.000Z',
+    isCurrent: () => true,
+  });
+
+  const freshPatch = fresh.userPatches[0];
+  assertEqual(freshPatch.training_phase, 'cut', 'The selected phase is stored');
+  assertEqual(freshResult.superseded, false, 'This save is the current one');
+  assertEqual(freshResult.ok, true, 'And it landed');
+  assertEqual(
+    freshPatch.training_phase_started_at,
+    '2026-08-07T11:15:00.000Z',
+    'build → cut is stamped from the caller\'s own baseline — a phase committed by an earlier, discarded save is not a substitute for what this caller was able to read',
+  );
+  assert(
+    freshPatch.training_phase_started_at !== '2026-08-07T09:00:00.000Z',
+    'And it is this transition\'s clock, not the earlier one\'s — inheriting that stamp would date the cut from a save the user never saw complete',
+  );
+
+  // The converse, so the rule cannot be satisfied by stamping unconditionally:
+  // a baseline that really does equal the selection is still not a change.
+  const unchanged = createFakeAdapter();
+  await saveTrainingPreferences(unchanged, {
+    ...BASE_INPUT,
+    phase: 'cut',
+    currentPhase: 'cut',
+    now: '2026-08-07T11:20:00.000Z',
+    isCurrent: () => true,
+  });
+  assert(
+    !('training_phase_started_at' in unchanged.userPatches[0]),
+    'Trusting the caller cuts both ways: cut → cut is not a change and is not stamped, whatever went before',
+  );
+
+  console.log('  ✓ superseded build→cut, then a fresh build→cut → its own stamp; cut→cut still unstamped');
+}
+
 async function main() {
   await testBlankBodyWeight();
   await testKilogramsDualWrite();
@@ -967,6 +1324,9 @@ async function main() {
   await testLocalCalendarDayUsesLocalGetters();
   await testAdapterForwardsToTheRightRelations();
   await testPoundsRoundTripIsNotAWeighIn();
+  await testAutosaveSessionStampsOncePerRealChange();
+  await testOverlappingPhaseChangesEachStartTheirOwnPhase();
+  await testSupersededWriteDoesNotOverrideAFreshBaseline();
 
   console.log('\n✅ All Training preferences save (Cycle 2) tests passed!');
   console.log('Coverage verified:');
@@ -983,6 +1343,9 @@ async function main() {
   console.log('  ✓ localCalendarDay reads local getters only — never the UTC ones');
   console.log('  ✓ The adapter writes users.update().eq(id) and body_weight_logs.upsert(onConflict user_id,logged_on)');
   console.log('  ✓ A stored weight redisplayed in pounds round-trips, so it is not mistaken for a weigh-in');
+  console.log('  ✓ A session of autosaves stamps once per real phase change, and a failed save keeps the baseline');
+  console.log('  ✓ Two phase changes across one in-flight save each start their own phase, ending in the last one chosen');
+  console.log('  ✓ The phase a save is compared against is the one its caller passed — a superseded write leaves nothing behind that can override it');
 }
 
 main().catch((error) => {

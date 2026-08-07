@@ -3,7 +3,7 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { ArrowRight, ChevronDown, ChevronUp, Minus, Plus, TrendingDown, TrendingUp, X } from 'lucide-react';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
-import { useActiveWorkoutStore } from '@/store/active-workout-store';
+import { eligibleRirSetId, useActiveWorkoutStore } from '@/store/active-workout-store';
 import { logSetEntry } from '@/lib/offline';
 import { formatSetValues } from '@/lib/workout/formatting';
 import type { ActiveExerciseState, SetEntry, SetValues } from '@/types/app';
@@ -42,6 +42,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   const updateSet = useActiveWorkoutStore((store) => store.updateSet);
   const deleteSet = useActiveWorkoutStore((store) => store.deleteSet);
   const completeSet = useActiveWorkoutStore((store) => store.completeSet);
+  const setSetRir = useActiveWorkoutStore((store) => store.setSetRir);
   const startRestTimer = useActiveWorkoutStore((store) => store.startRestTimer);
   const dismissSuggestion = useActiveWorkoutStore((store) => store.dismissSuggestion);
   const completedCount = sets.filter((set) => set.isCompleted).length;
@@ -76,6 +77,12 @@ export const ExerciseCard = memo(function ExerciseCard({
   }, [updateSet, exerciseIndex]);
 
   const handleAddSet = useCallback(() => addSet(exerciseIndex), [addSet, exerciseIndex]);
+
+  // The one set that may be asked "how many left in the tank?" — the last
+  // working/top set, and only once it is completed. The store answers the same
+  // question with the same function when the value is written, so the control
+  // can never appear on a row the store would refuse.
+  const rirSetId = useMemo(() => eligibleRirSetId(sets), [sets]);
 
   const handleRemoveSet = useCallback(() => {
     // Remove the last uncompleted set; if all are completed, remove the very last one
@@ -240,6 +247,8 @@ export const ExerciseCard = memo(function ExerciseCard({
               onUpdate={(patch) => handleUpdate(set.id, patch)}
               onComplete={() => handleComplete(set.id)}
               onDelete={() => deleteSet(exerciseIndex, set.id)}
+              showRir={set.id === rirSetId}
+              onRirChange={(rir) => setSetRir(exerciseIndex, set.id, rir)}
             />
           );
         })}

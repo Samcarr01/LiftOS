@@ -1,8 +1,10 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import type { StateStorage } from 'zustand/middleware';
 import { TrackingSchemaValidator } from '@/lib/validation';
+import { normalizeReadiness, normalizeRir } from '@/lib/workout/complete-workout-persistence';
 import type {
   ActiveWorkoutState,
   ActiveExerciseState,
@@ -12,6 +14,7 @@ import type {
   StartWorkoutResponse,
 } from '@/types/app';
 import type { SessionExerciseRow } from '@/types/database';
+import type { Readiness } from '@/types/training-context';
 
 // ── Global rest timer (one at a time, persists across scroll) ─────────────────
 
@@ -37,11 +40,16 @@ interface ActiveWorkoutStore {
   // Exercise mutations
   addExercise: (sessionExercise: SessionExerciseRow, exercise: ExerciseWithSchema, setCount: number) => void;
 
+  // Workout context (optional; never gates logging)
+  setReadiness:           (value: Readiness | null) => void;
+  dismissReadinessPrompt: () => void;
+
   // Set mutations
   addSet:      (exerciseIndex: number) => void;
   updateSet:   (exerciseIndex: number, setId: string, patch: { values?: SetValues; setType?: SetEntry['setType']; notes?: string | null }) => void;
   deleteSet:   (exerciseIndex: number, setId: string) => void;
   completeSet: (exerciseIndex: number, setId: string) => void;
+  setSetRir:   (exerciseIndex: number, setId: string, rir: number | null) => void;
 
   // AI suggestion
   dismissSuggestion: (exerciseIndex: number) => void;
@@ -61,12 +69,79 @@ function makeEmptySet(sessionExerciseId: string, setIndex: number): SetEntry {
     values:            {},
     setType:           'working',
     isCompleted:       false,
+    rir:               null,
     notes:             null,
     loggedAt:          '',
   };
 }
 
 const DEFAULT_REST: GlobalRestTimer = { isRunning: false, startedAt: null, duration: 0 };
+
+/**
+ * `localStorage`, looked up per call rather than once at module load.
+ *
+ * Zustand's default storage reads `window.localStorage` while the store is
+ * being created, so anywhere `window` is absent at that instant — a server
+ * render, a plain-node test that installs its storage on `globalThis` — the
+ * middleware silently detaches itself and `useActiveWorkoutStore.persist`
+ * never exists. Resolving late keeps the browser behaviour byte-identical and
+ * leaves the persist API observable everywhere else.
+ */
+const LAZY_LOCAL_STORAGE: StateStorage = {
+  getItem:    (name) => globalThis.localStorage?.getItem(name) ?? null,
+  setItem:    (name, value) => { globalThis.localStorage?.setItem(name, value); },
+  removeItem: (name) => { globalThis.localStorage?.removeItem(name); },
+};
+
+// ── RIR eligibility ───────────────────────────────────────────────────────────
+// One optional rating per exercise, and it belongs to the set the lifter
+// actually finished on: the last working/top set, once it is completed. A
+// warmup, drop or failure row never carries it, and neither does a qualifying
+// row that still has a qualifying row after it.
+
+const RIR_SET_TYPES = new Set<SetEntry['setType']>(['working', 'top']);
+
+/**
+ * The only set that may hold RIR right now, or null when there is none.
+ *
+ * Exported so the card that renders the control and the store that stores the
+ * value answer "which set?" from one definition rather than two.
+ */
+export function eligibleRirSetId(sets: SetEntry[]): string | null {
+  for (let i = sets.length - 1; i >= 0; i -= 1) {
+    const set = sets[i];
+    if (RIR_SET_TYPES.has(set.setType)) {
+      // The last qualifying set owns the question. Until it is completed,
+      // nothing in the exercise is eligible — an earlier set is not "final".
+      return set.isCompleted ? set.id : null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Drop any RIR that is no longer on the eligible set.
+ *
+ * Clearing, never re-attributing: a 1 the lifter recorded against their top
+ * single must not become the rating of a back-off set they added afterwards.
+ */
+function clearIneligibleRir(sets: SetEntry[]): SetEntry[] {
+  const eligibleId = eligibleRirSetId(sets);
+  let changed = false;
+  const next = sets.map((set) => {
+    if (set.rir !== null && set.rir !== undefined && set.id !== eligibleId) {
+      changed = true;
+      return { ...set, rir: null };
+    }
+    return set;
+  });
+  return changed ? next : sets;
+}
+
+/** Replace one exercise's sets, keeping the RIR invariant true afterwards. */
+function withSets(exercise: ActiveExerciseState, sets: SetEntry[]): ActiveExerciseState {
+  return { ...exercise, sets: clearIneligibleRir(sets) };
+}
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 
@@ -90,6 +165,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
         isCompleted:       false,
         notes:             null,
         loggedAt:          '',
+        rir:               null,  // Explicitly "not given" — absence is not RIR 0
       }));
 
       return {
@@ -109,6 +185,10 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
         elapsedTimer:   0,
         isCompleting:   false,
         isLightSession: false,
+        // Readiness belongs to this session: a new workout is always unasked,
+        // never yesterday's answer.
+        readiness:                null,
+        readinessPromptDismissed: false,
       },
       restTimer:            DEFAULT_REST,
       dismissedSuggestions: [],
@@ -132,6 +212,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
         isCompleted: false,
         notes: null,
         loggedAt: '',
+        rir: null,
       }));
       const newExercise: ActiveExerciseState = {
         sessionExercise,
@@ -158,6 +239,21 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
     set((s) => s.workout ? { workout: { ...s.workout, isLightSession: v } } : {});
   },
 
+  /**
+   * Store the answer and nothing else. An unreadable value is dropped rather
+   * than mapped onto the nearest level — it would only fail
+   * `chk_session_readiness` on arrival, and a guessed readiness is worse than
+   * none. Choosing a level leaves the strip on screen so it stays correctable.
+   */
+  setReadiness(value) {
+    set((s) => s.workout ? { workout: { ...s.workout, readiness: normalizeReadiness(value) } } : {});
+  },
+
+  /** Collapse the one-time strip. Answering it and dismissing it are separate acts. */
+  dismissReadinessPrompt() {
+    set((s) => s.workout ? { workout: { ...s.workout, readinessPromptDismissed: true } } : {});
+  },
+
   addSet(exerciseIndex) {
     set((s) => {
       if (!s.workout) return {};
@@ -175,9 +271,15 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
         isCompleted:       false,
         notes:             null,
         loggedAt:          '',
+        rir:               null,
       };
 
-      exercises[exerciseIndex] = { ...ex, sets: [...ex.sets, newSet] };
+      // Growing the exercise puts "which set was final?" back in question, so
+      // any rating already given is cleared rather than left attached to a set
+      // the lifter may no longer regard as their last one.
+      const sets = [...ex.sets, newSet].map((st) => (st.rir === null ? st : { ...st, rir: null }));
+
+      exercises[exerciseIndex] = { ...ex, sets };
       return { workout: { ...s.workout, exercises } };
     });
   },
@@ -189,7 +291,9 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
       const ex = exercises[exerciseIndex];
       if (!ex) return {};
       const sets = ex.sets.map((st) => st.id === setId ? { ...st, ...patch } : st);
-      exercises[exerciseIndex] = { ...ex, sets };
+      // `patch` never carries `rir` — retyping a set out of working/top is the
+      // only way this write touches it, and then only to clear it.
+      exercises[exerciseIndex] = withSets(ex, sets);
       return { workout: { ...s.workout, exercises } };
     });
   },
@@ -203,7 +307,9 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
       const sets = ex.sets
         .filter((st) => st.id !== setId)
         .map((st, i) => ({ ...st, setIndex: i }));
-      exercises[exerciseIndex] = { ...ex, sets };
+      // A deleted set takes its rating with it; the set before it is not
+      // retroactively rated.
+      exercises[exerciseIndex] = withSets(ex, sets);
       return { workout: { ...s.workout, exercises } };
     });
   },
@@ -221,7 +327,29 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
             : { ...st, isCompleted: true, loggedAt: new Date().toISOString() }
           : st,
       );
-      exercises[exerciseIndex] = { ...ex, sets };
+      // Re-opening a set drops its RIR: the rating describes a set that was
+      // performed, and a stray 0 in particular must not survive as "nothing left".
+      exercises[exerciseIndex] = withSets(ex, sets);
+      return { workout: { ...s.workout, exercises } };
+    });
+  },
+
+  /**
+   * Record, change or clear the optional RIR on the final completed working/top
+   * set. Anything else is ignored: a rating given for one set is never quietly
+   * attached to another, and an unusable value is `null`, never a rounded guess.
+   */
+  setSetRir(exerciseIndex, setId, rir) {
+    set((s) => {
+      if (!s.workout) return {};
+      const exercises = [...s.workout.exercises];
+      const ex = exercises[exerciseIndex];
+      if (!ex) return {};
+      if (eligibleRirSetId(ex.sets) !== setId) return {};
+
+      const value = normalizeRir(rir);
+      const sets = ex.sets.map((st) => (st.id === setId ? { ...st, rir: value } : st));
+      exercises[exerciseIndex] = withSets(ex, sets);
       return { workout: { ...s.workout, exercises } };
     });
   },
@@ -241,6 +369,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
   },
 }), {
   name: 'liftos-active-workout',
+  storage: createJSONStorage(() => LAZY_LOCAL_STORAGE),
   partialize: (state) => ({
     workout: state.workout,
     dismissedSuggestions: state.dismissedSuggestions,

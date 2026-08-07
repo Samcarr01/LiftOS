@@ -54,7 +54,21 @@ interface SetRowProps {
   onComplete: () => void;
   onDelete: () => void;
   borderless?: boolean;
+  /**
+   * Show the optional "Final set RIR" line. The caller decides eligibility —
+   * only the final completed working/top set of an exercise ever gets it.
+   */
+  showRir?: boolean;
+  onRirChange?: (rir: number | null) => void;
 }
+
+/** Stored values, with 3 standing for the displayed "3+". */
+const RIR_CHOICES: Array<{ value: number; label: string }> = [
+  { value: 0, label: '0' },
+  { value: 1, label: '1' },
+  { value: 2, label: '2' },
+  { value: 3, label: '3+' },
+];
 
 const PROGRESSION_SET_TYPES = new Set(['working', 'top']);
 
@@ -81,6 +95,8 @@ export const SetRow = memo(function SetRow({
   onUpdate,
   onComplete,
   borderless,
+  showRir,
+  onRirChange,
 }: SetRowProps) {
   const isPrefilled = set.loggedAt === '' && !set.isCompleted;
 
@@ -162,6 +178,47 @@ export const SetRow = memo(function SetRow({
           <Check className="h-5 w-5" />
         </button>
       </div>
+
+      {/* Optional RIR — a second line, never a column beside Last / inputs /
+          check. It writes its own `set_entries` column and touches nothing the
+          lifter typed: no value handler, no focus, no number pad. */}
+      {showRir && (
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 border-t border-white/[0.06] pt-2">
+          <span className="shrink-0 text-xs font-medium text-muted-foreground">Final set RIR</span>
+          <div className="flex flex-1 flex-wrap items-center justify-end gap-1">
+            {RIR_CHOICES.map((choice) => {
+              const selected = set.rir === choice.value;
+              return (
+                <button
+                  key={choice.value}
+                  type="button"
+                  aria-pressed={selected}
+                  aria-label={choice.value === 3 ? 'RIR 3 or more' : `RIR ${choice.value}`}
+                  onClick={() => onRirChange?.(selected ? null : choice.value)}
+                  className={cn(
+                    'flex h-10 min-w-10 items-center justify-center rounded-xl border px-2 text-sm font-semibold tabular-nums transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                    selected
+                      ? 'border-primary bg-primary/15 text-foreground'
+                      : 'border-white/10 text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {choice.label}
+                </button>
+              );
+            })}
+            {set.rir !== null && set.rir !== undefined && (
+              <button
+                type="button"
+                onClick={() => onRirChange?.(null)}
+                aria-label="Clear RIR"
+                className="flex h-10 items-center justify-center rounded-xl px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 });

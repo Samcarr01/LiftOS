@@ -265,9 +265,16 @@ export async function saveTrainingPreferences(
   const phase = normalizeTrainingPhase(input.phase);
   if (phase) {
     patch.training_phase = phase;
+    // What the row holds is what the caller says it holds, every time. The
+    // caller reads its baseline inside the same serialised queue that issues
+    // these writes and advances it after every write that lands — a superseded
+    // one included — so the two can never disagree. Remembering a phase here
+    // instead would outlive the screen that produced it and, keyed only by user
+    // id, would later be preferred over a baseline read fresh from the row.
+    const storedPhase = normalizeTrainingPhase(input.currentPhase);
     // The autosave re-fires on every unrelated keystroke. Re-stamping here
     // would reset "how long have I been cutting" each time.
-    if (normalizeTrainingPhase(input.currentPhase) !== phase) {
+    if (storedPhase !== phase) {
       patch.training_phase_started_at = input.now;
     }
   }
@@ -285,7 +292,9 @@ export async function saveTrainingPreferences(
 
   // Consulted here and nowhere else: the authoritative write has landed and is
   // never rolled back, but everything after it belongs to whoever is current.
-  if (input.isCurrent && !input.isCurrent()) {
+  const superseded = input.isCurrent ? !input.isCurrent() : false;
+
+  if (superseded) {
     return { ok: true, bodyWeightLogged: false, warning: null, error: null, superseded: true };
   }
 
