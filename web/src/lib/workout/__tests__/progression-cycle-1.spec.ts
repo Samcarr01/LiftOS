@@ -642,7 +642,24 @@ console.log('Running Progression Cycle 1 tests...\n');
   console.log('  ✓ Drop (70kg) and failure (50kg) excluded from remapping — no length mismatch');
 }
 
-console.log('\n✅ All 13 progression tests passed!');
+// Test 14: persisted keys may be sparse after deletion, but next-session Last remains positional
+{
+  console.log('\nTest 14: sparse persisted keys prefill consecutive next-session rows');
+
+  const sparseLastPerformance = [
+    { set_index: 3, values: { weight: 90, reps: 7 }, set_type: 'working' as const },
+    { set_index: 0, values: { weight: 70, reps: 10 }, set_type: 'warmup' as const },
+    { set_index: 1, values: { weight: 85, reps: 8 }, set_type: 'working' as const },
+  ];
+
+  const prefilled = buildPrefilledSets(3, sparseLastPerformance);
+  assertEqual(prefilled[0].values, { weight: 70, reps: 10 }, 'Row 1 receives the chronological warmup, not only key 0 by coincidence');
+  assertEqual(prefilled[1].values, { weight: 85, reps: 8 }, 'Row 2 receives persisted key 1');
+  assertEqual(prefilled[2].values, { weight: 90, reps: 7 }, 'Row 3 receives persisted key 3 rather than showing blank because key 2 was retired');
+  console.log('  ✓ Sparse keys 0, 1, 3 render as three consecutive Last rows');
+}
+
+console.log('\n✅ All 14 progression tests passed!');
 console.log('Coverage verified:');
 console.log('  ✓ Global preferred range (3-8) honored');
 console.log('  ✓ Template range overrides global');

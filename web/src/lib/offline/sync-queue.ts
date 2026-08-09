@@ -38,6 +38,40 @@ export async function addToQueue(mutation: NewMutation): Promise<void> {
   }
 }
 
+/** The pair the server upserts a set on, and therefore the set's real identity. */
+export type SetEntryKey = { sessionExerciseId: string; setIndex: number };
+
+function isSetEntryFor(m: QueuedMutation, key: SetEntryKey): boolean {
+  if (m.table !== 'set_entries') return false;
+  const d = m.data as { session_exercise_id?: unknown; set_index?: unknown };
+  return d.session_exercise_id === key.sessionExerciseId && d.set_index === key.setIndex;
+}
+
+/**
+ * Withdraw every queued write for one set, by its persisted key.
+ *
+ * Queued set writes retry forever — `backoffMutation` caps at five minutes and
+ * never gives up, and `processQueue` even revives rows parked as `failed`. So a
+ * set the user deleted before it synced would be upserted back into the workout
+ * on the next drain unless its rows are taken out of the queue first.
+ *
+ * Keyed by (session_exercise_id, set_index) rather than by row id because one
+ * set can hold several rows: complete → un-complete → complete enqueues the
+ * same key each time, and a single survivor is enough to resurrect the set.
+ *
+ * Returns the number of rows removed. Cancelling a set that was never queued is
+ * a no-op — the common case, since most deleted sets were never completed.
+ */
+export async function cancelQueuedSetEntry(key: SetEntryKey): Promise<number> {
+  if (typeof window === 'undefined') return 0;
+  try {
+    return await db.syncQueue.filter((m) => isSetEntryFor(m, key)).delete();
+  } catch (err) {
+    console.error('[LiftOS offline] cancelQueuedSetEntry failed:', err);
+    return 0;
+  }
+}
+
 export async function getQueueSize(): Promise<number> {
   if (typeof window === 'undefined') return 0;
   return db.syncQueue.where('status').anyOf(['pending', 'failed']).count();

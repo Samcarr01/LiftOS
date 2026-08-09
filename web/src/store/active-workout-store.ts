@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { StateStorage } from 'zustand/middleware';
 import { TrackingSchemaValidator } from '@/lib/validation';
+import { deleteSetEntry } from '@/lib/offline';
 import { normalizeReadiness, normalizeRir } from '@/lib/workout/complete-workout-persistence';
 import type {
   ActiveWorkoutState,
@@ -76,6 +77,63 @@ function makeEmptySet(sessionExerciseId: string, setIndex: number): SetEntry {
 }
 
 const DEFAULT_REST: GlobalRestTimer = { isRunning: false, startedAt: null, duration: 0 };
+
+// ── Persisted set keys ────────────────────────────────────────────────────────
+// `setIndex` is not this set's position in the list. It is half of
+// (session_exercise_id, set_index) — the pair `logSetEntry` queues under and the
+// server upserts on — so it is a key that may already be in flight the instant a
+// set is completed. Renumbering it would point one set's queued write at another
+// set's row; re-issuing it would point a new set at a deleted row.
+//
+// The high-watermark of issued keys therefore lives in the persisted workout
+// (`issuedSetIndexHighWatermarks`), not in module memory: closing the PWA loses
+// module memory while the Dexie queue survives it, and a watermark that reset on
+// reload would re-issue keys the surviving queue still refers to.
+
+type SetIndexWatermarks = Record<string, number>;
+
+/** The highest key a set list currently holds, or -1 when it holds none. */
+function highestSetIndex(sets: SetEntry[]): number {
+  return sets.reduce((max, st) => Math.max(max, st.setIndex), -1);
+}
+
+/**
+ * Fold exercises into a watermark record without ever lowering one.
+ *
+ * Used to seed a fresh workout and to admit a newly added exercise. Deletion
+ * never calls this: a deleted set's key stays retired for the life of the
+ * workout, which is the whole point of recording it.
+ */
+function seedWatermarks(
+  exercises: ActiveExerciseState[],
+  base: SetIndexWatermarks = {},
+): SetIndexWatermarks {
+  const next: SetIndexWatermarks = { ...base };
+  for (const ex of exercises) {
+    const id = ex.sessionExercise.id;
+    next[id] = Math.max(next[id] ?? -1, highestSetIndex(ex.sets));
+  }
+  return next;
+}
+
+/**
+ * The highest key issued for one exercise so far.
+ *
+ * A workout persisted before this field existed rehydrates without it, so the
+ * keys its sets still hold are the floor — the best evidence available, and
+ * never lower than what the old `sets.length` allocation would have produced.
+ */
+function issuedWatermark(
+  watermarks: SetIndexWatermarks | undefined,
+  sessionExerciseId: string,
+  sets: SetEntry[],
+): number {
+  const recorded = watermarks?.[sessionExerciseId];
+  const derived = highestSetIndex(sets);
+  return typeof recorded === 'number' && Number.isFinite(recorded)
+    ? Math.max(recorded, derived)
+    : derived;
+}
 
 /**
  * `localStorage`, looked up per call rather than once at module load.
@@ -189,6 +247,9 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
         // never yesterday's answer.
         readiness:                null,
         readinessPromptDismissed: false,
+        // A new session starts a new key space — the previous workout's
+        // exercises are gone and their watermarks with them.
+        issuedSetIndexHighWatermarks: seedWatermarks(exercises),
       },
       restTimer:            DEFAULT_REST,
       dismissedSuggestions: [],
@@ -226,6 +287,10 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
         workout: {
           ...s.workout,
           exercises: [...s.workout.exercises, newExercise],
+          issuedSetIndexHighWatermarks: seedWatermarks(
+            [newExercise],
+            s.workout.issuedSetIndexHighWatermarks,
+          ),
         },
       };
     });
@@ -262,10 +327,17 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
       if (!ex) return {};
 
       const lastSet = ex.sets[ex.sets.length - 1];
+      const nextSetIndex = issuedWatermark(
+        s.workout.issuedSetIndexHighWatermarks,
+        ex.sessionExercise.id,
+        ex.sets,
+      ) + 1;
       const newSet: SetEntry = {
         id:                crypto.randomUUID(),
         sessionExerciseId: ex.sessionExercise.id,
-        setIndex:          ex.sets.length,
+        // A fresh key, never `ex.sets.length` — after a deletion that number is
+        // already owned by a set whose write is queued under it.
+        setIndex:          nextSetIndex,
         values:            {},
         setType:           lastSet?.setType ?? 'working',
         isCompleted:       false,
@@ -280,7 +352,16 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
       const sets = [...ex.sets, newSet].map((st) => (st.rir === null ? st : { ...st, rir: null }));
 
       exercises[exerciseIndex] = { ...ex, sets };
-      return { workout: { ...s.workout, exercises } };
+      return {
+        workout: {
+          ...s.workout,
+          exercises,
+          issuedSetIndexHighWatermarks: {
+            ...s.workout.issuedSetIndexHighWatermarks,
+            [ex.sessionExercise.id]: nextSetIndex,
+          },
+        },
+      };
     });
   },
 
@@ -304,9 +385,24 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
       const exercises = [...s.workout.exercises];
       const ex = exercises[exerciseIndex];
       if (!ex) return {};
-      const sets = ex.sets
-        .filter((st) => st.id !== setId)
-        .map((st, i) => ({ ...st, setIndex: i }));
+
+      const removed = ex.sets.find((st) => st.id === setId);
+      // Every survivor keeps the key it already holds. Renumbering here used to
+      // point each later set at the row in front of it: a queued write would
+      // land on a neighbour's row, overwriting a set the lifter really did.
+      const sets = ex.sets.filter((st) => st.id !== setId);
+
+      // Every deletion is mirrored to the offline queue. For a set that was
+      // never logged, cancellation is a no-op and the server delete finds no
+      // row, which is safely idempotent. This deliberately avoids inferring
+      // history from `isCompleted`: a lifter can complete, reopen, then delete
+      // a set, and its earlier queued write must still be withdrawn.
+      if (removed) {
+        void deleteSetEntry(removed).catch((err) => {
+          console.error('[LiftOS offline] deleteSetEntry failed:', err);
+        });
+      }
+
       // A deleted set takes its rating with it; the set before it is not
       // retroactively rated.
       exercises[exerciseIndex] = withSets(ex, sets);

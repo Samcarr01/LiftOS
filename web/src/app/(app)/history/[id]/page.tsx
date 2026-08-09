@@ -41,14 +41,16 @@ function formatPrValue(recordType: string, recordValue: number): string {
 function SetLine({
   set,
   trackingSchema,
+  displayIndex,
 }: {
   set: SessionDetailSet;
   trackingSchema: TrackingSchema;
+  displayIndex: number;
 }) {
   return (
     <div className={`flex items-center gap-3 rounded-xl border border-white/8 px-3 py-2 ${!set.is_completed ? 'opacity-50' : ''}`}>
       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[oklch(0.75_0.18_55/0.12)] text-xs font-semibold text-[oklch(0.80_0.16_55)]">
-        {set.set_index + 1}
+        {displayIndex + 1}
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-sm text-muted-foreground">
@@ -102,8 +104,13 @@ function ExerciseBlock({ exercise }: { exercise: SessionDetailExercise }) {
       )}
 
       <div className="mt-3 space-y-1.5">
-        {exercise.sets.map((set) => (
-          <SetLine key={set.id} set={set} trackingSchema={exercise.tracking_schema} />
+        {exercise.sets.map((set, displayIndex) => (
+          <SetLine
+            key={set.id}
+            set={set}
+            trackingSchema={exercise.tracking_schema}
+            displayIndex={displayIndex}
+          />
         ))}
       </div>
     </div>
@@ -144,7 +151,7 @@ function SupersetBlock({ exercises }: { exercises: SessionDetailExercise[] }) {
               return (
                 <div key={ex.session_exercise_id}>
                   <span className={`text-xs font-semibold ${color.text}`}>{ex.exercise_name}</span>
-                  <SetLine set={set} trackingSchema={ex.tracking_schema} />
+                  <SetLine set={set} trackingSchema={ex.tracking_schema} displayIndex={roundIndex} />
                 </div>
               );
             })}

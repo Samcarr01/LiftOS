@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Loader2, Plus, Sparkles, Timer } from 'lucide-react';
 import { BackButton } from '@/components/ui/back-button';
 import { createClient } from '@/lib/supabase/client';
+import { createWorkoutDiscarder } from '@/lib/workout/discard-workout';
 import { toast } from 'sonner';
 import { ExerciseCard } from '@/components/workout/exercise-card';
 import { SupersetCard } from '@/components/workout/superset-card';
@@ -60,6 +61,20 @@ export default function WorkoutPage() {
   const hydrated = useWorkoutHydrated();
   const [finishOpen, setFinishOpen] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
+  const discarder = useMemo(() => {
+    if (!workout) return null;
+    return createWorkoutDiscarder({
+      sessionId: workout.session.id,
+      deleteSession: async (sessionId) => {
+        const { error } = await createClient().from('workout_sessions').delete().eq('id', sessionId);
+        return { error };
+      },
+      clearWorkout,
+      navigateHome: () => router.replace('/'),
+      onError: (message) => toast.error("Couldn't discard workout", { description: message }),
+    });
+  }, [workout?.session.id, clearWorkout, router]);
 
   // Keep the screen on while a session is loaded. Released automatically on
   // unmount and when the tab is hidden; re-acquired when the tab comes back.
@@ -255,13 +270,19 @@ export default function WorkoutPage() {
               </button>
               <button
                 onClick={async () => {
-                  const supabase = createClient();
-                  await supabase.from('workout_sessions').delete().eq('id', workout.session.id);
-                  clearWorkout();
-                  router.replace('/');
+                  if (!discarder) return;
+                  setDiscarding(true);
+                  const result = await discarder.discard();
+                  setDiscarding(false);
+                  // A failed discard leaves the dialog open with the workout
+                  // still in the store — the toast says why, and the button is
+                  // live again for a retry.
+                  if (result.discarded) setShowLeaveDialog(false);
                 }}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-500/90 text-sm font-semibold text-white transition-all duration-150 hover:bg-red-500 active:scale-[0.98]"
+                disabled={discarding}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-500/90 text-sm font-semibold text-white transition-all duration-150 hover:bg-red-500 active:scale-[0.98] disabled:opacity-60 disabled:hover:bg-red-500/90"
               >
+                {discarding ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Discard
               </button>
               <button

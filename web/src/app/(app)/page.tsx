@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -21,6 +21,8 @@ import { formatShortDate } from '@/lib/format-date';
 import { useTutorialStore } from '@/store/tutorial-store';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { createClient } from '@/lib/supabase/client';
+import { createWorkoutDiscarder } from '@/lib/workout/discard-workout';
+import { toast } from 'sonner';
 import GettingStartedTutorial from '@/components/tutorial/getting-started-tutorial';
 import { StreakHeatmap } from '@/components/home/streak-heatmap';
 import { LevelChip } from '@/components/home/level-chip';
@@ -53,6 +55,19 @@ function ResumeWorkoutBanner() {
   const [hydrated, setHydrated] = useState(false);
   const [discarding, setDiscarding] = useState(false);
   const [elapsed, setElapsed] = useState('');
+  const discarder = useMemo(() => {
+    if (!workout) return null;
+    return createWorkoutDiscarder({
+      sessionId: workout.session.id,
+      deleteSession: async (sessionId) => {
+        const { error } = await createClient().from('workout_sessions').delete().eq('id', sessionId);
+        return { error };
+      },
+      clearWorkout,
+      navigateHome: () => {},
+      onError: (message) => toast.error("Couldn't discard workout", { description: message }),
+    });
+  }, [workout?.session.id, clearWorkout]);
 
   useEffect(() => {
     // Wait for Zustand persist to rehydrate from localStorage
@@ -112,10 +127,10 @@ function ResumeWorkoutBanner() {
         </button>
         <button
           onClick={async () => {
+            if (!discarder) return;
             setDiscarding(true);
-            const supabase = createClient();
-            await supabase.from('workout_sessions').delete().eq('id', workout.session.id);
-            clearWorkout();
+            await discarder.discard();
+            setDiscarding(false);
           }}
           disabled={discarding}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 text-muted-foreground transition-colors duration-150 hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"

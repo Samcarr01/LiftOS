@@ -111,6 +111,24 @@ export interface ActiveWorkoutState {
   readiness:                Readiness | null;
   /** The one-time start strip has been answered or skipped for this workout. */
   readinessPromptDismissed: boolean;
+  /**
+   * Highest `set_index` ever issued per `session_exercise_id`, so a persisted
+   * key is never handed out twice.
+   *
+   * `set_index` is half of the pair the offline queue writes under and the
+   * server upserts on, so a key belongs to the set that was issued it even after
+   * that set is deleted — the queued write, or the row it already created, still
+   * refers to it. Re-issuing it would point a new set at a deleted row.
+   *
+   * This lives in persisted state rather than in module memory because the two
+   * have different lifetimes: closing a PWA loses module memory, while the Dexie
+   * queue survives. A watermark that resets on reload would start handing out
+   * keys that rows in the surviving queue still claim.
+   *
+   * Optional: workouts persisted before this field existed rehydrate without it,
+   * and the store derives a safe floor from the keys their sets still hold.
+   */
+  issuedSetIndexHighWatermarks?: Record<string, number>;
 }
 
 // ── start-workout Edge Function I/O ──────────────────────────────────────────

@@ -25,6 +25,19 @@ const EXERCISE_COLORS = [
   { bg: 'bg-[oklch(0.80_0.16_85/0.12)]', text: 'text-[oklch(0.85_0.15_85)]', border: 'border-[oklch(0.80_0.16_85/0.20)]' },
 ];
 
+/**
+ * Superset rounds are visual positions. They must never use `setIndex`, which
+ * is now an immutable persistence key and may have gaps after a deletion.
+ */
+export function isSupersetRoundComplete(
+  exercises: ReadonlyArray<Pick<ActiveExerciseState, 'sets'>>,
+  roundPosition: number,
+): boolean {
+  return exercises.length > 0 && exercises.every(
+    (exercise) => exercise.sets[roundPosition]?.isCompleted === true,
+  );
+}
+
 export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardProps) {
   const addSet = useActiveWorkoutStore((store) => store.addSet);
   const updateSet = useActiveWorkoutStore((store) => store.updateSet);
@@ -61,11 +74,13 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
       // set at this round index is done). Otherwise you'd be resting between
       // the A and B halves of the round.
       if (completedSet.isCompleted) {
-        const roundIndex = completedSet.setIndex;
-        const roundDone = exercises.every((ex) => {
-          const fresh = freshWorkout?.exercises[ex.exerciseIndex];
-          return fresh?.sets[roundIndex]?.isCompleted;
-        });
+        const roundPosition = updatedExercise?.sets.findIndex((set) => set.id === setId) ?? -1;
+        const freshRoundExercises = exercises
+          .map((exercise) => freshWorkout?.exercises[exercise.exerciseIndex])
+          .filter((exercise): exercise is ActiveExerciseState => exercise !== undefined);
+        const roundDone = roundPosition >= 0
+          && freshRoundExercises.length === exercises.length
+          && isSupersetRoundComplete(freshRoundExercises, roundPosition);
         const restSeconds = updatedExercise?.sessionExercise.rest_seconds ?? 0;
         if (roundDone && restSeconds > 0) {
           startRestTimer(restSeconds);

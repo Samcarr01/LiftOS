@@ -37,8 +37,16 @@ export function buildPrefilledSets(
   count: number,
   lastPerformance: LastPerformanceSet[] | null,
 ): PrefilledSet[] {
+  // `set_index` is an immutable persistence key and may now contain gaps after
+  // a deletion. The next template's rows are positional, so prefill from the
+  // previous session's chronological row order rather than matching a sparse
+  // persistence key to a new array position.
+  const orderedLastPerformance = lastPerformance
+    ? [...lastPerformance].sort((a, b) => a.set_index - b.set_index)
+    : null;
+
   return Array.from({ length: count }, (_, index) => {
-    const lastSet = lastPerformance?.find((s) => s.set_index === index);
+    const lastSet = orderedLastPerformance?.[index];
     return {
       setIndex: index,
       values: lastSet?.values ?? {},
