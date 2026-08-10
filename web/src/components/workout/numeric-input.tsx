@@ -78,17 +78,47 @@ function DesktopInput({ value, onChange, field, disabled }: NumericInputProps) {
   );
 }
 
+// ── Draft resolution ──────────────────────────────────────────────────────────
+
+/** How the numpad was closed. Only one of these means "save this". */
+export type NumpadAction = 'confirm' | 'cancel' | 'backdrop' | 'escape';
+
+/**
+ * What a set should hold once the numpad closes.
+ *
+ * The pad keeps what is being typed in local state, so the saved value only
+ * ever changes on an explicit confirm. Tapping the backdrop, pressing Cancel
+ * and hitting Escape are all the same answer — the draft is abandoned and the
+ * previous value stands, including when that value was blank. Confirming an
+ * empty or unusable draft is the one way to clear a set, because that is the
+ * one case where the lifter asked for it.
+ */
+export function resolveNumpadDraft({
+  savedValue, draft, action,
+}: {
+  savedValue: number | '';
+  draft: string;
+  action: NumpadAction;
+}): { value: number | ''; committed: boolean } {
+  if (action !== 'confirm') return { value: savedValue, committed: false };
+
+  const parsed = parseFloat(draft);
+  const usable = !isNaN(parsed) && isFinite(parsed) && parsed >= 0;
+  return { value: usable ? parsed : '', committed: true };
+}
+
 // ── Mobile numpad ─────────────────────────────────────────────────────────────
 
 const NUM_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3'] as const;
 
 function MobileNumpad({
-  field, value, onChange, onClose,
+  field, value, onChange, onClose, onCancel,
 }: {
   field: TrackingField;
   value: number | '';
   onChange: (v: number | '') => void;
   onClose: () => void;
+  onCancel: () => void;
 }) {
   const step = getStep(field);
   const [str, setStr] = useState(value === '' ? '' : String(value));
@@ -108,19 +138,33 @@ function MobileNumpad({
     setStr(String(Math.max(0, Math.round((n + delta) * 100) / 100)));
   }, [str]);
 
+  // The only path that writes. Digits, ± steps and backspace move `str` alone,
+  // so nothing reaches the store until the lifter presses check.
   const confirm = useCallback(() => {
-    const n = parseFloat(str);
-    onChange(isNaN(n) || !isFinite(n) || n < 0 ? '' : n);
+    const resolved = resolveNumpadDraft({ savedValue: value, draft: str, action: 'confirm' });
+    onChange(resolved.value);
     onClose();
-  }, [str, onChange, onClose]);
+  }, [str, value, onChange, onClose]);
+
+  // Escape is a dismissal, never a commit — same answer as the backdrop.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      onCancel();
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onCancel]);
 
   const displayLabel = field.unit ? `${field.label} (${field.unit})` : field.label;
   const showDecimal  = field.type === 'number' && getStep(field) !== 1;
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex flex-col justify-end">
-      {/* Backdrop */}
-      <div className="flex-1" onClick={onClose} />
+      {/* Backdrop — tapping away abandons the draft, it never saves it */}
+      <div className="flex-1" onClick={onCancel} />
 
       {/* Numpad panel */}
       <div className="rounded-t-2xl border-t border-border bg-white/[0.10] backdrop-blur-2xl px-4 pt-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
@@ -199,6 +243,17 @@ function MobileNumpad({
           </button>
         )}
 
+        {/* A discoverable way out. The backdrop does the same thing, but it is
+            not something a lifter can be expected to find mid-set. */}
+        <button
+          type="button"
+          onClick={onCancel}
+          aria-label="Cancel"
+          className="mt-2 flex h-11 w-full items-center justify-center rounded-xl text-sm font-semibold text-muted-foreground active:bg-secondary/70"
+        >
+          Cancel
+        </button>
+
       </div>
     </div>,
     document.body,
@@ -276,6 +331,7 @@ export function NumericInput({ value, onChange, field, disabled }: NumericInputP
           value={value}
           onChange={onChange}
           onClose={() => setNumpadOpen(false)}
+          onCancel={() => setNumpadOpen(false)}
         />
       )}
     </>

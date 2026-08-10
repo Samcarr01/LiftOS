@@ -11,6 +11,7 @@ import { ExerciseCard } from '@/components/workout/exercise-card';
 import { SupersetCard } from '@/components/workout/superset-card';
 import { FinishDialog } from '@/components/workout/finish-dialog';
 import { ReadinessStrip } from '@/components/workout/readiness-strip';
+import { RestTimer } from '@/components/workout/rest-timer';
 import { ExerciseSelector, type ExerciseSelectionOptions } from '@/components/exercise-selector';
 import { useActiveWorkoutStore, useWorkoutHydrated } from '@/store/active-workout-store';
 import { useScreenWakeLock } from '@/hooks/use-screen-wake-lock';
@@ -245,6 +246,11 @@ export default function WorkoutPage() {
           )}
         </main>
       </div>
+
+      {/* One countdown for the session, mounted at the route root rather than
+          inside the exercise list — the timer it renders is a single store
+          value, so a per-exercise mount would stack identical copies. */}
+      <RestTimer />
 
       <FinishDialog open={finishOpen} onClose={() => setFinishOpen(false)} />
 
