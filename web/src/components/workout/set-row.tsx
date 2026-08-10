@@ -123,10 +123,10 @@ export const SetRow = memo(function SetRow({
         !set.isCompleted && !borderless && isPrefilled && 'border-primary/15',
       )}
     >
-      {/* Phones wrap this into two lines — chip + Last, then the editable
-          fields + the tick. Source order is untouched, so the row still reads
-          and tabs the same way; from sm: up it is the single line it was. */}
-      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+      {/* One line at every width. Chip and tick hold their 44px, Last holds a
+          fixed compact slot, and the editable fields take what is left and
+          shrink into it — a set stays one scannable band on a phone. */}
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={cycleType}
@@ -143,7 +143,7 @@ export const SetRow = memo(function SetRow({
           </span>
         </button>
 
-        <div className="min-w-0 flex-1 sm:min-w-[60px] sm:flex-none">
+        <div className="min-w-[60px] shrink-0">
           <p className="text-sm text-muted-foreground">Last</p>
           <p className="text-sm font-medium text-foreground">{lastValues ? formatLast(lastValues, fields) : '—'}</p>
           {aiTarget && !set.isCompleted && PROGRESSION_SET_TYPES.has(set.setType) && (
@@ -153,9 +153,7 @@ export const SetRow = memo(function SetRow({
           )}
         </div>
 
-        {/* basis leaves exactly the tick's 44px + the 8px gap on its line, so
-            the fields wrap down with the completion action beside them. */}
-        <div className="flex min-w-0 basis-[calc(100%_-_3.25rem)] gap-1.5 sm:basis-0 sm:flex-1">
+        <div className="flex min-w-0 flex-1 gap-1.5">
           {fields.map((field) => (
             <div key={field.key} className="min-w-0 flex-1">
               <span className="block text-sm font-medium text-muted-foreground truncate">{field.label}</span>

@@ -1,16 +1,24 @@
 /**
- * Cycle 2 — Task 2: a typed numpad draft is committed only by an explicit confirm
+ * Cycle 2 (+ compact rollback) — a typed numpad draft is committed only by an
+ * explicit confirm, and the way out of the pad costs no vertical space
  *
  * Run with: npx tsx src/components/workout/__tests__/numeric-input-draft.spec.ts
  *
  * Plan: .hermes/plans/2026-08-09_220224-cycle-2-mobile-logging-loop.md Task 2.
+ * The draft rule below is exactly as Cycle 2 shipped it and is not up for
+ * revision. What the rollback changes is only where the Cancel affordance sits:
+ * Cycle 2 put it in a full-width row underneath the keypad, which pushed the
+ * whole pad up the screen and moved the check key under the thumb's reach on a
+ * small phone. Dismissal stays discoverable and stays safe — it moves into the
+ * pad's header, beside the field label, leaving the keypad as the last thing on
+ * screen and the pad as short as its keys.
  *
  * The mobile numpad holds what the lifter is typing in local `str` state and
  * has exactly one exit that means anything: the check key. Every other way out
- * — the backdrop, and (once they exist) a Cancel control and the Escape key —
- * must leave the saved set value exactly as it was. There is no third outcome:
- * a dismissal never half-commits, and a confirm always commits, including the
- * deliberate commit of a blank.
+ * — the backdrop, the Cancel control and the Escape key — must leave the saved
+ * set value exactly as it was. There is no third outcome: a dismissal never
+ * half-commits, and a confirm always commits, including the deliberate commit
+ * of a blank.
  *
  * That rule is a pure function of (saved value, draft string, how the pad was
  * closed), so this suite states it as one: `resolveNumpadDraft`. Keeping it out
@@ -34,6 +42,10 @@
  *   2. 30, type 32.5, backdrop/Cancel/Esc → 30
  *   3. blank, type a draft, dismiss      → blank
  *   4. blank/invalid + confirm           → blank, and only then
+ *
+ * And the shape of the pad around that rule:
+ *   5. Cancel is labelled and lives in the header, never a row under the keys
+ *   6. the keypad is the final block, so the check key stays thumb-height
  */
 
 // ── The module under contract ────────────────────────────────────────────────
@@ -111,6 +123,23 @@ function balancedSpan(text: string, anchor: string): { start: number; end: numbe
     }
   }
   throw new Error(`Unbalanced parentheses after ${JSON.stringify(anchor)}`);
+}
+
+/** Offset of `anchor` inside a span, as a stated failure rather than a -1. */
+function anchorIn(text: string, anchor: string): number {
+  const at = text.indexOf(anchor);
+  assert(at !== -1, `Expected to find ${JSON.stringify(anchor)} in MobileNumpad`);
+  return at;
+}
+
+/** The `<button …>…</button>` (or `<element …>`) surrounding an offset. */
+function enclosingElement(text: string, at: number): { start: number; text: string } {
+  const start = text.lastIndexOf('<button', at);
+  assert(start !== -1, `Expected offset ${at} to sit inside a <button> in MobileNumpad`);
+  const close = text.indexOf('</button>', at);
+  const selfClose = text.indexOf('/>', at);
+  const end = close === -1 ? (selfClose === -1 ? text.length : selfClose) : close;
+  return { start, text: text.slice(start, end) };
 }
 
 console.log('Running mobile numpad draft (Cycle 2) contract...\n');
@@ -256,16 +285,55 @@ check('P7: the numpad has an explicit cancel path, and the backdrop uses it', ()
   );
 });
 
-check('P8: an accessible Cancel control exists', () => {
+check('P8: a labelled Cancel sits in the header, not in a row beneath the keypad', () => {
   const body = mobileNumpadBody();
+
+  /** Where the keypad machinery starts. Everything above it is header/label. */
+  const stepRow = anchorIn(body, 'adjustStep(-step)');
+
+  const cancels = [...body.matchAll(/aria-label=["']Cancel["']|>\s*Cancel\s*</g)]
+    .map((match) => enclosingElement(body, match.index ?? 0));
+
   assert(
-    /aria-label=["']Cancel["']/.test(body) || />\s*Cancel\s*</.test(body),
+    cancels.length > 0,
     'The numpad offers a labelled Cancel control. A backdrop tap is not discoverable, and it is the only ' +
       'way to abandon a typed draft with one thumb.',
   );
+
+  for (const cancel of cancels) {
+    assert(
+      cancel.start < stepRow,
+      'The Cancel control sits in the pad header — the top region holding the field label and the running value — ' +
+        'so dismissing is reachable without the pad growing a row to hold it. A Cancel below the keypad adds a ' +
+        `band of height to every open pad and shifts the keys the thumb is aiming at.\n      (found at offset ` +
+        `${cancel.start}, keypad starts at ${stepRow})`,
+    );
+    assert(
+      !/(?:^|\s)(?:[a-z0-9-]+:)*(?:w-full|basis-full)(?:\s|["'])/.test(cancel.text),
+      'The Cancel control is a header affordance, not a full-width row. Claiming the whole line is what made it ' +
+        `a block of its own rather than a label-height control.\n      (found: ${JSON.stringify(cancel.text.slice(0, 200))})`,
+    );
+  }
 });
 
-check('P9: Escape closes without committing', () => {
+check('P9: the keypad is the last block in the pad', () => {
+  const body = mobileNumpadBody();
+  const confirmKey = anchorIn(body, 'onClick={confirm}');
+
+  const trailing = [...body.slice(confirmKey).matchAll(/<button\b/g)]
+    .map((match) => enclosingElement(body, confirmKey + (match.index ?? 0) + 1));
+
+  for (const control of trailing) {
+    assert(
+      /backspace/.test(control.text),
+      'Nothing but keypad keys follows the digit grid — the grid ends the pad, so its bottom row (0, decimal or ' +
+        'backspace, and the check) sits closest to the thumb. The only control allowed to trail the grid is the ' +
+        `extra backspace the decimal layout needs.\n      (found: ${JSON.stringify(control.text.slice(0, 200))})`,
+    );
+  }
+});
+
+check('P10: Escape closes without committing', () => {
   const body = mobileNumpadBody();
   assert(
     /['"]Escape['"]/.test(body) && /keydown/.test(body),
@@ -274,7 +342,7 @@ check('P9: Escape closes without committing', () => {
   );
 });
 
-check('P10: the desktop input keeps its live-typing model', () => {
+check('P11: the desktop input keeps its live-typing model', () => {
   assert(
     /function DesktopInput\(/.test(source) && /onChange\(/.test(source.slice(source.indexOf('function DesktopInput('), source.indexOf('// ── Mobile numpad'))),
     'DesktopInput still writes as the user types — the draft/confirm contract is the mobile pad\'s alone, ' +
@@ -295,5 +363,6 @@ if (failures.length > 0) {
   console.log('  ✓ Backdrop, Cancel and Escape preserve the previous value, including a blank one');
   console.log('  ✓ Blank is committed only when the lifter explicitly confirms it');
   console.log('  ✓ Typing, stepping and backspacing never reach the store');
-  console.log('  ✓ A labelled Cancel control and an Escape handler exist; desktop typing is unchanged');
+  console.log('  ✓ A labelled Cancel sits in the header and the keypad ends the pad');
+  console.log('  ✓ An Escape handler exists; desktop typing is unchanged');
 }

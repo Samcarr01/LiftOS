@@ -168,8 +168,21 @@ function MobileNumpad({
 
       {/* Numpad panel */}
       <div className="rounded-t-2xl border-t border-border bg-white/[0.10] backdrop-blur-2xl px-4 pt-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-        {/* Label + display */}
-        <p className="mb-2 text-center text-sm font-medium text-muted-foreground">{displayLabel}</p>
+        {/* Header: what is being edited, and a discoverable way out. Cancel
+            sits here rather than under the keys so the pad stays as short as
+            its keypad — it is the same dismissal the backdrop and Escape use,
+            and it never commits the draft. */}
+        <div className="relative mb-2 flex min-h-11 items-center justify-center">
+          <p className="text-sm font-medium text-muted-foreground">{displayLabel}</p>
+          <button
+            type="button"
+            onClick={onCancel}
+            aria-label="Cancel"
+            className="absolute right-0 top-1/2 flex h-11 -translate-y-1/2 items-center justify-center rounded-xl px-3 text-sm font-semibold text-muted-foreground active:bg-secondary/70"
+          >
+            Cancel
+          </button>
+        </div>
         <div
           className="mb-4 flex min-h-14 items-center justify-end rounded-xl bg-muted px-4 text-3xl font-bold tracking-tight"
         >
@@ -242,18 +255,6 @@ function MobileNumpad({
             <Delete className="h-5 w-5" />
           </button>
         )}
-
-        {/* A discoverable way out. The backdrop does the same thing, but it is
-            not something a lifter can be expected to find mid-set. */}
-        <button
-          type="button"
-          onClick={onCancel}
-          aria-label="Cancel"
-          className="mt-2 flex h-11 w-full items-center justify-center rounded-xl text-sm font-semibold text-muted-foreground active:bg-secondary/70"
-        >
-          Cancel
-        </button>
-
       </div>
     </div>,
     document.body,
