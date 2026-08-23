@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Barlow, Barlow_Condensed, Geist_Mono } from 'next/font/google';
+import { Barlow, Barlow_Condensed } from 'next/font/google';
 import { AuthGate } from '@/components/layout/auth-gate';
 import { OfflineProvider } from '@/components/layout/offline-indicator';
 import { Toaster } from '@/components/ui/sonner';
@@ -10,20 +10,15 @@ const barlow = Barlow({
   variable: '--font-barlow',
   subsets: ['latin'],
   display: 'swap',
-  weight: ['300', '400', '500', '600', '700'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-  display: 'swap',
+  weight: ['400', '600', '700'],
 });
 
 const barlowCondensed = Barlow_Condensed({
   variable: '--font-barlow-condensed',
   subsets: ['latin'],
   display: 'swap',
-  weight: ['400', '500', '600', '700'],
+  weight: ['700'],
+  preload: false,
 });
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://liftos.app';
@@ -106,7 +101,7 @@ export default function RootLayout({
         {/* Splash screens — iOS 15+ uses the manifest theme_color; older devices */}
         <meta name="msapplication-TileColor" content="#1a1a2e" />
       </head>
-      <body className={`${barlow.variable} ${barlowCondensed.variable} ${geistMono.variable} min-h-[100dvh] antialiased`}>
+      <body className={`${barlow.variable} ${barlowCondensed.variable} min-h-[100dvh] antialiased`}>
         <OfflineProvider />
         <AuthGate>
           {children}
