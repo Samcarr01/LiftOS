@@ -667,4 +667,12 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  .page-reveal {
+    animation: none;
+  }
+
+  .delay-1, .delay-2, .delay-3, .delay-4 {
+    animation-delay: 0s;
+  }
 }
