@@ -3,7 +3,8 @@
 import { use } from 'react';
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
-import { redirect, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -65,7 +66,6 @@ const PR_FORMAT: Record<string, (v: number) => string> = {
 
 export default function ExerciseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
   const { data, loading, error } = useExerciseInsights(id);
   const [range, setRange] = useState<TimeRange>('3m');
   const [showCharts, setShowCharts] = useState(false);
@@ -178,10 +178,10 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
             <p className="max-w-xs text-sm text-muted-foreground">
               Complete a workout with {exercise.name} to see your stats, personal records, and progress trends here.
             </p>
-            <button onClick={() => router.push('/')} className="premium-button mt-1">
+            <Link href="/" className="premium-button tappable mt-1">
               <Play className="h-4 w-4" />
               Start Workout
-            </button>
+            </Link>
           </div>
         )}
 
@@ -384,10 +384,10 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
             <h3 className="section-title mb-3">Recent Sessions</h3>
             <div className="space-y-2">
               {recentSessions.map((session) => (
-                <button
+                <Link
                   key={session.session_id}
-                  onClick={() => router.push(`/history/${session.session_id}`)}
-                  className="action-card group flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left"
+                  href={`/history/${session.session_id}`}
+                  className="action-card tappable group flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left"
                 >
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-primary/70">
                     <Calendar className="h-4 w-4" />
@@ -398,7 +398,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
                       {session.set_count} set{session.set_count !== 1 ? 's' : ''} · Best: {session.top_set_display}
                     </p>
                   </div>
-                </button>
+                </Link>
               ))}
             </div>
           </div>

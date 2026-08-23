@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   AlertTriangle,
@@ -143,6 +142,7 @@ function LinkRow({
   icon,
   label,
   description,
+  href,
   onClick,
   loading,
   destructive,
@@ -151,18 +151,16 @@ function LinkRow({
   icon: ReactNode;
   label: string;
   description?: string;
+  /** Renders a real <Link> (prefetch, middle-click, long-press) instead of a button. */
+  href?: string;
   onClick?: () => void;
   loading?: boolean;
   destructive?: boolean;
   right?: ReactNode;
 }) {
-  const Wrapper = onClick ? 'button' : 'div';
-  return (
-    <Wrapper
-      onClick={onClick}
-      disabled={loading}
-      className={`list-row w-full ${destructive ? 'text-destructive' : ''}`}
-    >
+  const className = `list-row w-full ${destructive ? 'text-destructive' : ''}`;
+  const body = (
+    <>
       <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
         destructive ? 'bg-[oklch(0.65_0.20_25/0.12)] text-[oklch(0.72_0.18_25)]' : 'bg-white/6 text-muted-foreground'
       }`}>
@@ -172,7 +170,18 @@ function LinkRow({
         <p className="text-sm font-semibold">{label}</p>
         {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>
-      {right ?? (onClick && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />)}
+      {right ?? ((href || onClick) && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />)}
+    </>
+  );
+
+  if (href) {
+    return <Link href={href} className={`${className} tappable`}>{body}</Link>;
+  }
+
+  const Wrapper = onClick ? 'button' : 'div';
+  return (
+    <Wrapper onClick={onClick} disabled={loading} className={className}>
+      {body}
     </Wrapper>
   );
 }
@@ -183,7 +192,6 @@ function formatMemberSince(iso?: string | null): string {
 }
 
 export default function ProfilePage() {
-  const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);
   const { unit, setUnit } = useUnitStore();
@@ -544,7 +552,7 @@ export default function ProfilePage() {
             <LinkRow
               icon={<KeyRound className="h-4 w-4" />}
               label="Change password"
-              onClick={() => router.push('/profile/password')}
+              href="/profile/password"
             />
             <button
               onClick={() => setSignOutOpen(true)}
@@ -578,7 +586,7 @@ export default function ProfilePage() {
               icon={<HelpCircle className="h-4 w-4" />}
               label="Help & Getting Started"
               description="Tutorials, guides, and FAQ"
-              onClick={() => router.push('/help')}
+              href="/help"
             />
             {isInstallable && !isDismissed && !isInstalled && (
               <LinkRow

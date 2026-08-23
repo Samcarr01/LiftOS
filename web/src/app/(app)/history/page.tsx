@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Calendar, CalendarClock, ChevronRight, Loader2 } from 'lucide-react';
 import { useHistory } from '@/hooks/use-history';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,19 +19,13 @@ function groupByMonth(sessions: HistorySessionSummary[]): [string, HistorySessio
   return Array.from(map.entries());
 }
 
-function SessionRow({
-  session,
-  onClick,
-}: {
-  session: HistorySessionSummary;
-  onClick: () => void;
-}) {
+function SessionRow({ session }: { session: HistorySessionSummary }) {
   const name = session.template_name ?? 'Custom Workout';
 
   return (
-    <button
-      onClick={onClick}
-      className="action-card flex items-center gap-3 w-full text-left"
+    <Link
+      href={`/history/${session.id}`}
+      className="action-card tappable flex items-center gap-3 w-full text-left"
     >
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.12)] text-[oklch(0.80_0.16_55)]">
         <Calendar className="h-4 w-4" />
@@ -52,13 +46,12 @@ function SessionRow({
       </div>
 
       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
-    </button>
+    </Link>
   );
 }
 
 export default function HistoryPage() {
   const { sessions, loading, error, hasMore, refresh, loadMore } = useHistory();
-  const router = useRouter();
 
   useEffect(() => {
     void refresh();
@@ -107,7 +100,7 @@ export default function HistoryPage() {
             <p className="text-sm text-muted-foreground">
               Finish a workout and it will show up here.
             </p>
-            <a href="/" className="premium-button mt-1">Start Your First Workout</a>
+            <Link href="/" className="premium-button mt-1">Start Your First Workout</Link>
             <p className="mx-auto mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground/50">
               Your training log lives here. Every session you finish builds the history the AI uses to set your next targets.
             </p>
@@ -123,11 +116,7 @@ export default function HistoryPage() {
 
             <div className="space-y-2">
               {items.map((session) => (
-                <SessionRow
-                  key={session.id}
-                  session={session}
-                  onClick={() => router.push(`/history/${session.id}`)}
-                />
+                <SessionRow key={session.id} session={session} />
               ))}
             </div>
 

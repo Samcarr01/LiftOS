@@ -2,14 +2,19 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import { Home, Dumbbell, TrendingUp, ClockArrowUp, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isNavItemActive, NAV_ITEMS } from './nav-items';
+import { NavPendingDot } from './nav-pending';
 
 const ICONS = { Home, Dumbbell, TrendingUp, ClockArrowUp, User } as const;
 
 export function BottomNav() {
   const pathname = usePathname();
+  const [pendingNavigation, setPendingNavigation] = useState<{ href: string; pathname: string } | null>(null);
+
+  const activePath = pendingNavigation?.pathname === pathname ? pendingNavigation.href : pathname;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden">
@@ -17,21 +22,18 @@ export function BottomNav() {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
         {NAV_ITEMS.map(({ href, label, icon }) => {
           const Icon = ICONS[icon];
-          const isActive = isNavItemActive(href, pathname);
+          const isActive = isNavItemActive(href, activePath);
           return (
-            <Link
-              key={href}
-              href={href}
-              aria-label={label}
+            <Link key={href} href={href} aria-label={label}
+              aria-current={isActive ? 'page' : undefined}
+              onNavigate={() => setPendingNavigation({ href, pathname })}
               className={cn(
-                'relative flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1 transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
-                isActive
-                  ? 'text-primary-bright'
-                  : 'text-muted-foreground active:text-foreground',
-              )}
-            >
+                'tappable relative flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1 transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                isActive ? 'text-primary-bright' : 'text-muted-foreground active:text-foreground',
+              )}>
               <Icon className="h-[22px] w-[22px]" />
               <span className={cn('text-[11px] leading-none', isActive ? 'font-semibold' : 'font-medium')}>{label}</span>
+              <NavPendingDot />
             </Link>
           );
         })}
