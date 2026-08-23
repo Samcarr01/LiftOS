@@ -15,9 +15,9 @@ import type {
 import { LastPerformanceSetsDataSchema } from '@/lib/validation';
 import { TrackingSchemaValidator } from '@/lib/validation';
 import { buildGuidedSuggestion, type ProgressHistorySession } from '@/lib/workout/guided-progression';
-import { loadHistorySessions } from '@/lib/workout/load-history';
+import { loadHistorySessionsForExercises } from '@/lib/workout/load-history';
 import { buildPrefilledSets, sortLastPerformanceForPrefill } from '@/lib/workout/prefill-sort';
-import type { ExerciseWithSchema, PrefilledSet, LastPerformanceSet, UnitPreference } from '@/types/app';
+import type { ExerciseWithSchema, LastPerformanceSet, UnitPreference } from '@/types/app';
 
 interface RawTemplateExercise extends TemplateExerciseRow {
   exercise: ExerciseRow;
@@ -108,7 +108,7 @@ export function useStartWorkout() {
         historySessionsByExercise: Map<string, ProgressHistorySession[]>;
       }> = exerciseIds.length > 0
         ? (async () => {
-            const [lp, prefRow, historyEntries] = await Promise.all([
+            const [lp, prefRow, historySessionsByExercise] = await Promise.all([
               supabase
                 .from('last_performance_snapshots')
                 .select('exercise_id, sets_data')
@@ -119,10 +119,7 @@ export function useStartWorkout() {
                 .select('prefill_sort_heaviest_first, unit_preference, training_goals, experience_level, preferred_rep_range')
                 .eq('id', user.id)
                 .single(),
-              Promise.all(exerciseIds.map(async (exerciseId) => ([
-                exerciseId,
-                await loadHistorySessions(supabase, exerciseId),
-              ] as const))),
+              loadHistorySessionsForExercises(supabase, exerciseIds),
             ]);
             if (lp.error) throw lp.error;
             if (prefRow.error) throw prefRow.error;
@@ -140,7 +137,7 @@ export function useStartWorkout() {
               trainingGoals: preferences?.training_goals ?? [],
               experienceLevel: preferences?.experience_level ?? 'intermediate',
               preferredRepRange: preferences?.preferred_rep_range ?? null,
-              historySessionsByExercise: new Map(historyEntries),
+              historySessionsByExercise,
             };
           })()
         : Promise.resolve({

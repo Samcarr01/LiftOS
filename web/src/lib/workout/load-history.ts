@@ -112,6 +112,31 @@ export function mapHistoryRows(rows: HistoryRow[]): HistoryContextResult {
   };
 }
 
+/**
+ * Isolate a batch query's rows by exercise before mapping them into progression
+ * input. Every requested exercise receives an entry, including first-time
+ * exercises whose history is empty.
+ */
+export function mapHistoryRowsByExercise(
+  rows: HistoryRow[],
+  exerciseIds: string[],
+): Map<string, ProgressHistorySession[]> {
+  const rowsByExercise = new Map<string, HistoryRow[]>(
+    exerciseIds.map((exerciseId) => [exerciseId, []]),
+  );
+
+  for (const row of rows) {
+    rowsByExercise.get(row.exercise_id)?.push(row);
+  }
+
+  return new Map(
+    [...rowsByExercise].map(([exerciseId, exerciseRows]) => [
+      exerciseId,
+      mapHistoryRows(exerciseRows).sessions,
+    ]),
+  );
+}
+
 // ── Loading ──────────────────────────────────────────────────────────────────
 
 /** Fetch rows, then map them. One injectable seam, so tests need no client. */
@@ -169,4 +194,53 @@ export async function loadHistorySessions(
     exerciseId,
   );
   return sessions;
+}
+
+/**
+ * Load bounded, newest-first progression history for all selected exercises in
+ * one RLS-protected query. Guided progression only consumes recent sessions, so
+ * retain a six-month / 20-per-exercise window rather than fetching all time.
+ */
+export async function loadHistorySessionsForExercises(
+  supabase: SupabaseClient,
+  exerciseIds: string[],
+): Promise<Map<string, ProgressHistorySession[]>> {
+  const uniqueExerciseIds = [...new Set(exerciseIds)];
+  if (uniqueExerciseIds.length === 0) return new Map();
+
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+  const { data, error } = await supabase
+    .from('session_exercises')
+    .select(`
+      session_id,
+      exercise_id,
+      workout_sessions!inner (
+        completed_at,
+        is_light_session,
+        readiness,
+        phase_at_session
+      ),
+      set_entries (
+        set_index,
+        values,
+        set_type,
+        is_completed,
+        logged_at,
+        rir
+      )
+    `)
+    .in('exercise_id', uniqueExerciseIds)
+    .not('workout_sessions.completed_at', 'is', null)
+    .gte('workout_sessions.completed_at', sixMonthsAgo.toISOString())
+    .order('workout_sessions(completed_at)', { ascending: false })
+    .limit(20 * uniqueExerciseIds.length);
+
+  if (error) throw error;
+
+  return mapHistoryRowsByExercise(
+    (data ?? []) as unknown as HistoryRow[],
+    uniqueExerciseIds,
+  );
 }
