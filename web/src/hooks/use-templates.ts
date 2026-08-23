@@ -1,6 +1,6 @@
 /**
  * useTemplates — CRUD hook for workout_templates.
- * Each template is enriched with exercise_count (single bulk query).
+ * Each template is enriched with exercise_count from a bounded aggregate join.
  */
 
 'use client';
@@ -28,6 +28,10 @@ export interface UseTemplatesReturn {
 
 const cachedTemplatesByUser = new Map<string, TemplateWithCount[]>();
 
+type TemplateAggregateRow = WorkoutTemplateRow & {
+  template_exercises: { count: number }[] | null;
+};
+
 export function useTemplates(): UseTemplatesReturn {
   const user = useAuthStore((s) => s.user);
   const userId = user?.id ?? null;
@@ -39,57 +43,41 @@ export function useTemplates(): UseTemplatesReturn {
   const [error, setError] = useState<string | null>(null);
   const [templatesUserId, setTemplatesUserId] = useState<string | null>(userId);
   const activeUserId = useRef(userId);
+  const supabaseRef = useRef(supabase);
   activeUserId.current = userId;
 
   const fetchTemplates = useCallback(async (options?: { silent?: boolean }): Promise<void> => {
-    if (!user) {
-      setTemplates([]);
-      setIsLoading(false);
-      return;
-    }
-    if (!options?.silent || !cachedTemplatesByUser.has(user.id)) setIsLoading(true);
+    // Do not wait for the auth store's getSession() round-trip: Supabase applies
+    // RLS using its already-restored browser session. Capture the identity for
+    // this request so a late response can never populate another user's state.
+    const requestUserId = activeUserId.current;
+    if (!options?.silent || !requestUserId || !cachedTemplatesByUser.has(requestUserId)) setIsLoading(true);
     setError(null);
     try {
-      const { data: tmplData, error: tmplErr } = await supabase
+      const { data, error: tmplErr } = await supabaseRef.current
         .from('workout_templates')
-        .select('*')
-        .eq('user_id', user.id)
+        .select('*, template_exercises(count)')
         .order('is_pinned', { ascending: false })
         .order('last_used_at', { ascending: false, nullsFirst: false })
-        .order('created_at', { ascending: false }) as {
-        data: WorkoutTemplateRow[] | null; error: unknown;
-      };
+        .order('created_at', { ascending: false })
+        .limit(50) as unknown as { data: TemplateAggregateRow[] | null; error: unknown };
 
       if (tmplErr) throw tmplErr;
-      const rows = tmplData ?? [];
-
-      let countMap: Record<string, number> = {};
-      if (rows.length > 0) {
-        const { data: exData } = await supabase
-          .from('template_exercises')
-          .select('template_id')
-          .in('template_id', rows.map((t) => t.id)) as {
-          data: { template_id: string }[] | null; error: unknown;
-        };
-
-        countMap = (exData ?? []).reduce<Record<string, number>>((acc, row) => {
-          acc[row.template_id] = (acc[row.template_id] ?? 0) + 1;
-          return acc;
-        }, {});
-      }
-
-      const enriched = rows.map((t) => ({ ...t, exercise_count: countMap[t.id] ?? 0 }));
-      if (activeUserId.current !== user.id) return;
-      cachedTemplatesByUser.set(user.id, enriched);
-      setTemplatesUserId(user.id);
+      const enriched = (data ?? []).map(({ template_exercises, ...template }) => ({
+        ...template,
+        exercise_count: template_exercises?.[0]?.count ?? 0,
+      }));
+      if (activeUserId.current !== requestUserId) return;
+      if (requestUserId) cachedTemplatesByUser.set(requestUserId, enriched);
+      setTemplatesUserId(requestUserId);
       setTemplates(enriched);
     } catch (err: unknown) {
-      if (activeUserId.current !== user.id) return;
+      if (activeUserId.current !== requestUserId) return;
       setError((err as { message?: string }).message ?? 'Failed to load templates.');
     } finally {
-      if (activeUserId.current === user.id) setIsLoading(false);
+      if (activeUserId.current === requestUserId) setIsLoading(false);
     }
-  }, [user, supabase]);
+  }, []);
 
   const createTemplate = useCallback(async (name: string): Promise<TemplateWithCount> => {
     if (!user) throw new Error('Not authenticated');
