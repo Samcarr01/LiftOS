@@ -4,8 +4,7 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import {
-  computeXp, levelFromXp, tierForLevel,
-  type XpInputSession, type XpInputPR,
+  levelFromXp, tierForLevel,
 } from '@/lib/leveling/xp';
 import {
   TierIcon,
@@ -13,25 +12,23 @@ import {
 } from '@/lib/leveling/tier-visuals';
 
 interface LevelChipProps {
-  sessions:     XpInputSession[];
-  prs:          XpInputPR[];
-  weeklyTarget: number;
+  xpTotal: number;
+  xpLevel: number;
 }
 
-export function LevelChip({ sessions, prs, weeklyTarget }: LevelChipProps) {
+export function LevelChip({ xpTotal, xpLevel }: LevelChipProps) {
   const { tier, level, progressPct, total, intoLevel, nextLevelAt } = useMemo(() => {
-    const breakdown = computeXp(sessions, prs, weeklyTarget);
-    const ls = levelFromXp(breakdown.total);
-    const t = tierForLevel(ls.level);
+    const ls = levelFromXp(xpTotal);
+    const t = tierForLevel(xpLevel);
     return {
       tier:        t,
-      level:       ls.level,
+      level:       xpLevel,
       progressPct: ls.progressPct,
-      total:       breakdown.total,
+      total:       xpTotal,
       intoLevel:   ls.xpIntoLevel,
       nextLevelAt: ls.xpAtNextLevel - ls.xpAtLevel,
     };
-  }, [sessions, prs, weeklyTarget]);
+  }, [xpLevel, xpTotal]);
 
   const accent = `oklch(${tier.color})`;
   const remaining = Math.max(0, nextLevelAt - intoLevel);

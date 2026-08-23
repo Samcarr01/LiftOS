@@ -302,12 +302,11 @@ export default function HomePage() {
             what you do next. Tap to drill into the full tier ladder. */}
         {loading ? (
           <Skeleton className="h-[88px] rounded-2xl" />
-        ) : (data?.xpSessions?.length ?? 0) > 0 ? (
+        ) : (data?.sessionCount ?? 0) > 0 ? (
           <div className="page-reveal">
             <LevelChip
-              sessions={data!.xpSessions}
-              prs={data!.xpPRs}
-              weeklyTarget={data!.weeklyTarget}
+              xpTotal={data!.xpTotal}
+              xpLevel={data!.xpLevel}
             />
           </div>
         ) : null}
@@ -487,10 +486,12 @@ export default function HomePage() {
         )}
       </div>
 
-      <StartWorkoutSheet
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-      />
+      {sheetOpen && (
+        <StartWorkoutSheet
+          open
+          onClose={() => setSheetOpen(false)}
+        />
+      )}
     </div>
     </>
   );
