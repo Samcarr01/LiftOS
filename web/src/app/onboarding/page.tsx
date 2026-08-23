@@ -184,8 +184,9 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center px-5 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
-      <div className="w-full max-w-md">
+    <div className="page-shell min-h-dvh">
+      <div className="relative z-10 flex min-h-dvh flex-col items-center justify-center px-5 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
+        <div className="w-full max-w-md">
 
         {/* Progress bar (hidden on welcome and summary) */}
         {currentStep !== 'welcome' && currentStep !== 'summary' && (
@@ -609,6 +610,7 @@ export default function OnboardingPage() {
             </button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

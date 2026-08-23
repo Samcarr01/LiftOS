@@ -227,8 +227,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="relative flex min-h-[100dvh] items-center overflow-hidden px-4 py-10">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.75_0.18_55/0.18),transparent_38%),radial-gradient(circle_at_bottom_right,oklch(0.72_0.15_155/0.12),transparent_30%)]" />
+    <div className="page-shell relative flex min-h-[100dvh] items-center overflow-hidden px-4 py-10">
       <div className="page-content relative grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
         <section className="page-reveal hidden lg:block">
           <span className="hero-kicker">Premium Athletic Logging</span>
@@ -264,7 +263,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="pointer-events-none absolute bottom-8 left-1/2 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/20 px-4 py-2 text-xs uppercase tracking-[0.06em] text-muted-foreground backdrop-blur md:flex">
+      <div className="pointer-events-none absolute bottom-8 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/20 px-4 py-2 text-xs uppercase tracking-[0.06em] text-muted-foreground backdrop-blur md:flex">
         <Sparkles className="h-3.5 w-3.5" />
         LiftOS Web App
       </div>
