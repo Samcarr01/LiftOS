@@ -93,7 +93,7 @@ function CropDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && !busy && onCancel()}>
-      <DialogContent className="sm:max-w-md border-white/[0.07] bg-card p-0 text-foreground">
+      <DialogContent className="sm:max-w-md p-0 text-foreground">
         <DialogHeader className="px-5 pt-5">
           <DialogTitle className="text-base">Crop photo</DialogTitle>
         </DialogHeader>

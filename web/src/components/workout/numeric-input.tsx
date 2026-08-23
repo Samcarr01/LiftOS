@@ -170,7 +170,7 @@ function MobileNumpad({
       <div className="flex-1" onClick={onCancel} />
 
       {/* Numpad panel */}
-      <div className="rounded-t-2xl border-t border-border bg-[oklch(0.16_0.015_260)] px-4 pt-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+      <div className="modal-surface rounded-t-2xl border-x-0 border-b-0 px-4 pt-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
         {/* Header: what is being edited, and a discoverable way out. Cancel
             sits here rather than under the keys so the pad stays as short as
             its keypad — it is the same dismissal the backdrop and Escape use,

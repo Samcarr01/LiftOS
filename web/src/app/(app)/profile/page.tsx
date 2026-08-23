@@ -77,7 +77,7 @@ function DeleteAccountDialog({
 
   return (
     <Dialog open={open} onOpenChange={(value) => !value && handleClose()}>
-      <DialogContent className="sm:max-w-md border-white/[0.07] bg-card text-foreground">
+      <DialogContent className="sm:max-w-md text-foreground">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg text-destructive">
             <AlertTriangle className="h-5 w-5" />
@@ -632,7 +632,7 @@ export default function ProfilePage() {
       <DeleteAccountDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} />
 
       <Dialog open={signOutOpen} onOpenChange={(value) => !value && setSignOutOpen(false)}>
-        <DialogContent className="sm:max-w-sm border-white/[0.07] bg-card text-foreground">
+        <DialogContent className="sm:max-w-sm text-foreground">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
               <LogOut className="h-5 w-5" />

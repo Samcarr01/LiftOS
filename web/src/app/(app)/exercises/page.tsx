@@ -172,7 +172,7 @@ export default function ExercisesPage() {
       {/* Delete confirmation — modal, consistent with templates & history */}
       {confirmDeleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="w-full max-w-sm rounded-2xl border border-white/[0.10] bg-[oklch(0.16_0.015_260)] p-5 space-y-4">
+          <div className="modal-surface w-full max-w-sm rounded-2xl p-5 space-y-4">
             <h3 className="font-display text-lg font-bold">Delete exercise?</h3>
             <p className="text-sm text-muted-foreground">
               &ldquo;{exercises.find((e) => e.id === confirmDeleteId)?.name ?? 'This exercise'}&rdquo; will be
