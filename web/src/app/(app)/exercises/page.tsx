@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { BarChart3, Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
@@ -15,7 +14,6 @@ import {
 } from '@/lib/workout/formatting';
 
 export default function ExercisesPage() {
-  const router = useRouter();
   const {
     exercises,
     isLoading,
@@ -68,13 +66,13 @@ export default function ExercisesPage() {
               </span>
             )}
           </div>
-          <button
-            onClick={() => router.push('/exercises/new')}
-            className="flex h-9 cursor-pointer items-center gap-1.5 rounded-2xl bg-primary px-3 text-xs font-semibold text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          <Link
+            href="/exercises/new"
+            className="tappable flex h-9 cursor-pointer items-center gap-1.5 rounded-2xl bg-primary px-3 text-xs font-semibold text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             <Plus className="h-3.5 w-3.5" />
             New
-          </button>
+          </Link>
         </div>
 
         {/* Search */}
@@ -149,13 +147,13 @@ export default function ExercisesPage() {
                     >
                       <BarChart3 className="h-4 w-4" />
                     </Link>
-                    <button
-                      onClick={() => router.push(`/exercises/${exercise.id}/edit`)}
+                    <Link
+                      href={`/exercises/${exercise.id}/edit`}
                       aria-label="Edit exercise"
-                      className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 text-foreground/70 active:bg-white/[0.08] hover:bg-white/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                      className="tappable flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 text-foreground/70 active:bg-white/[0.08] hover:bg-white/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     >
                       <Pencil className="h-4 w-4" />
-                    </button>
+                    </Link>
                     <button
                       onClick={() => setConfirmDeleteId(exercise.id)}
                       aria-label="Delete exercise"

@@ -2,14 +2,19 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import { Home, Dumbbell, TrendingUp, ClockArrowUp, User, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isNavItemActive, NAV_ITEMS } from './nav-items';
+import { NavPendingDot } from './nav-pending';
 
 const ICONS = { Home, Dumbbell, TrendingUp, ClockArrowUp, User } as const;
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const [pendingNavigation, setPendingNavigation] = useState<{ href: string; pathname: string } | null>(null);
+
+  const activePath = pendingNavigation?.pathname === pathname ? pendingNavigation.href : pathname;
 
   return (
     <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-white/[0.12] bg-white/[0.06] backdrop-blur-xl saturate-150 md:flex">
@@ -23,11 +28,12 @@ export function SidebarNav() {
       <nav className="flex flex-1 flex-col gap-0.5 px-3 pt-2">
         {NAV_ITEMS.map(({ href, label, icon }) => {
           const Icon = ICONS[icon];
-          const isActive = isNavItemActive(href, pathname);
+          const isActive = isNavItemActive(href, activePath);
           return (
             <Link
               key={href}
               href={href}
+              onNavigate={() => setPendingNavigation({ href, pathname })}
               className={cn(
                 'relative flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium transition-colors duration-150',
                 isActive
@@ -40,6 +46,7 @@ export function SidebarNav() {
               )}
               <Icon className="h-[18px] w-[18px] flex-shrink-0" />
               <span>{label}</span>
+              <NavPendingDot />
             </Link>
           );
         })}

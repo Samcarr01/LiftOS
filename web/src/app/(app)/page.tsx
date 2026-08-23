@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Calendar,
@@ -49,7 +48,6 @@ function formatToday(): string {
 /* ── Resume Workout Banner ──────────────────────────────────── */
 
 function ResumeWorkoutBanner() {
-  const router = useRouter();
   const workout = useActiveWorkoutStore((s) => s.workout);
   const clearWorkout = useActiveWorkoutStore((s) => s.clearWorkout);
   const [hydrated, setHydrated] = useState(false);
@@ -117,14 +115,14 @@ function ResumeWorkoutBanner() {
         </div>
       </div>
       <div className="mt-3 flex gap-2">
-        <button
-          onClick={() => router.push(`/workout/${workout.session.id}`)}
-          className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-primary-foreground transition-all duration-150 active:scale-[0.98]"
+        <Link
+          href={`/workout/${workout.session.id}`}
+          className="tappable flex h-10 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-primary-foreground transition-all duration-150 active:scale-[0.98]"
           style={{ background: 'linear-gradient(135deg, oklch(0.75 0.18 55), oklch(0.62 0.17 40))' }}
         >
           <Play className="h-3.5 w-3.5" />
           Continue
-        </button>
+        </Link>
         <button
           onClick={async () => {
             if (!discarder) return;
@@ -148,11 +146,9 @@ function ResumeWorkoutBanner() {
 function StartWorkoutSheet({
   open,
   onClose,
-  onCreateWorkout,
 }: {
   open: boolean;
   onClose: () => void;
-  onCreateWorkout: () => void;
 }) {
   const { templates, isLoading } = useTemplates();
   const { startWorkout } = useStartWorkout();
@@ -183,13 +179,14 @@ function StartWorkoutSheet({
           ) : templates.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <p className="text-sm text-muted-foreground">No workouts saved yet.</p>
-              <button
-                onClick={() => { onClose(); onCreateWorkout(); }}
-                className="premium-button"
+              <Link
+                href="/templates?create=1"
+                onClick={onClose}
+                className="premium-button tappable"
               >
                 <Plus className="h-4 w-4" />
                 Create Workout
-              </button>
+              </Link>
             </div>
           ) : (
             <div className="space-y-2">
@@ -230,7 +227,6 @@ export default function HomePage() {
   const [starting, setStarting] = useState<string | null>(null);
   const { data, loading, refresh } = useHomeData();
   const { startWorkout } = useStartWorkout();
-  const router = useRouter();
   const { hasSeenTutorial, markTutorialSeen } = useTutorialStore();
   const [showTutorial, setShowTutorial] = useState(false);
 
@@ -239,7 +235,9 @@ export default function HomePage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('tutorial') === '1' && !hasSeenTutorial) {
       setShowTutorial(true);
-      window.history.replaceState({}, '', '/');
+      // Preserve Next's router tree (`__NA`, `__PRIVATE_NEXTJS_INTERNALS_TREE`)
+      // — passing `{}` wipes it and can turn Back into a hard document load.
+      window.history.replaceState(window.history.state, '', '/');
     }
   }, [hasSeenTutorial]);
 
@@ -429,13 +427,13 @@ export default function HomePage() {
                   </div>
                 </button>
               ))}
-              <button
-                onClick={() => router.push('/templates?create=1')}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] px-4 py-3.5 text-sm font-semibold text-muted-foreground transition-all duration-150 hover:border-white/[0.2] hover:bg-white/[0.03] hover:text-foreground active:scale-[0.995]"
+              <Link
+                href="/templates?create=1"
+                className="tappable flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] px-4 py-3.5 text-sm font-semibold text-muted-foreground transition-all duration-150 hover:border-white/[0.2] hover:bg-white/[0.03] hover:text-foreground active:scale-[0.995]"
               >
                 <Plus className="h-4 w-4" />
                 Create new workout
-              </button>
+              </Link>
             </div>
           </section>
         ) : (
@@ -450,13 +448,10 @@ export default function HomePage() {
                   Build a workout and start logging your training.
                 </p>
               </div>
-              <button
-                onClick={() => router.push('/templates?create=1')}
-                className="premium-button"
-              >
+              <Link href="/templates?create=1" className="premium-button tappable">
                 <Plus className="h-4 w-4" />
                 Create Workout
-              </button>
+              </Link>
             </div>
             <p className="mx-auto mt-6 max-w-xs text-center text-sm leading-relaxed text-muted-foreground/50">
               Every strong lifter started with set one. Build your first workout and LiftOS will prefill it from last time, every time.
@@ -473,10 +468,10 @@ export default function HomePage() {
             </div>
             <div className="space-y-2.5">
               {data!.recentSessions.slice(0, 3).map((session) => (
-                <button
+                <Link
                   key={session.id}
-                  onClick={() => router.push(`/history/${session.id}`)}
-                  className="action-card group flex w-full items-center gap-3.5 rounded-2xl px-4 py-3.5 text-left transition-all duration-150 active:scale-[0.995]"
+                  href={`/history/${session.id}`}
+                  className="action-card tappable group flex w-full items-center gap-3.5 rounded-2xl px-4 py-3.5 text-left transition-all duration-150 active:scale-[0.995]"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.75_0.18_55/0.15)] text-primary/70">
                     <Calendar className="h-[18px] w-[18px]" />
@@ -494,7 +489,7 @@ export default function HomePage() {
                     </p>
                   </div>
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40 transition-transform duration-150 group-hover:translate-x-0.5" />
-                </button>
+                </Link>
               ))}
             </div>
           </section>
@@ -504,7 +499,6 @@ export default function HomePage() {
       <StartWorkoutSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        onCreateWorkout={() => router.push('/templates?create=1')}
       />
     </div>
     </>

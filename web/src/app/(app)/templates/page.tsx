@@ -172,6 +172,10 @@ function TemplateRow({
   const [savingRename, setSavingRename] = useState(false);
   const longPress = useLongPress(onOpenActions);
 
+  // This row must stay a <button> — it carries the long-press handler — so it
+  // gets none of <Link>'s automatic prefetching. Warm the route by hand.
+  useEffect(() => { router.prefetch(`/templates/${template.id}`); }, [router, template.id]);
+
   async function handleStart(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
     setStarting(true);
@@ -287,7 +291,9 @@ export default function TemplatesPage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('create') !== '1') return;
     setAutoOpenCreate(true);
-    window.history.replaceState({}, '', '/templates');
+    // Preserve Next's router tree (`__NA`, `__PRIVATE_NEXTJS_INTERNALS_TREE`)
+    // — passing `{}` wipes it and can turn Back into a hard document load.
+    window.history.replaceState(window.history.state, '', '/templates');
   }, []);
 
   const pinned = templates.filter((template) => template.is_pinned);
