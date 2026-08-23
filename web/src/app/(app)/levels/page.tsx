@@ -6,7 +6,7 @@ import {
   Dumbbell, Trophy, Target, Award, Sparkles, Flame, Zap, RotateCcw,
   Repeat, Star, Layers, BrainCircuit,
 } from 'lucide-react';
-import { BackButton } from '@/components/ui/back-button';
+import { PageShell } from '@/components/layout/page-shell';
 import { createClient } from '@/lib/supabase/client';
 import {
   computeXp, levelFromXp, tierForLevel, xpForLevel,
@@ -70,19 +70,11 @@ export default function LevelsPage() {
   }, []);
 
   return (
-    <div className="page-shell">
-      <div className="page-content py-5 md:py-7 space-y-6">
-        {/* Back */}
-        <BackButton href="/" label="Back to home" />
-
-        {/* Header */}
-        <div>
-          <h1 className="font-display text-2xl font-bold">Levels</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Twelve tiers from Bronze to Apex. Earn XP from 12 sources — showing
-            up, intensity, consistency, variety, and more.
-          </p>
-        </div>
+    <PageShell title="Levels" back="/" className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        Twelve tiers from Bronze to Apex. Earn XP from 12 sources — showing up,
+        intensity, consistency, variety, and more.
+      </p>
 
         {state === null ? (
           <div className="flex h-32 items-center justify-center">
@@ -95,8 +87,7 @@ export default function LevelsPage() {
             <TierLadder currentLevel={state.level} />
           </>
         )}
-      </div>
-    </div>
+    </PageShell>
   );
 }
 

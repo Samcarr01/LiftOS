@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BackButton } from '@/components/ui/back-button';
+import { PageShell } from '@/components/layout/page-shell';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import { ChartEmptyState } from '@/components/progress/chart-empty-state';
 import { useExerciseInsights } from '@/hooks/use-exercise-insights';
@@ -79,8 +80,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
 
   if (loading) {
     return (
-      <div className="page-shell">
-        <div className="page-content space-y-5 py-5 md:py-7">
+      <PageShell>
           <div className="flex items-center gap-3">
             <Skeleton className="h-9 w-9 rounded-2xl" />
             <Skeleton className="h-6 w-48 rounded-lg" />
@@ -92,8 +92,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
           </div>
           <Skeleton className="h-32 rounded-2xl" />
           <Skeleton className="h-24 rounded-2xl" />
-        </div>
-      </div>
+      </PageShell>
     );
   }
 
@@ -102,15 +101,13 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
     // a stale link to the literal "new" id lands on the create page, not an error.
     if (id === 'new') redirect('/exercises/new');
     return (
-      <div className="page-shell">
-        <div className="page-content space-y-5 py-5 md:py-7">
+      <PageShell>
           <div className="flex items-center gap-3">
             <BackButton />
             <h1 className="font-display text-lg font-bold">Exercise</h1>
           </div>
           <p className="text-sm text-destructive">{error ?? 'Not found'}</p>
-        </div>
-      </div>
+      </PageShell>
     );
   }
 
@@ -118,8 +115,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
   const isHolding = aiSuggestion?.decision === 'hold';
 
   return (
-    <div className="page-shell">
-      <div className="page-content space-y-5 py-5 md:py-7">
+    <PageShell>
         {/* Header */}
         <div className="flex items-center gap-3">
           <BackButton />
@@ -403,7 +399,6 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </PageShell>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Activity, Dumbbell, Flame, Heart, Loader2, Timer, TrendingDown, TrendingUp, Trophy, Zap } from 'lucide-react';
-import { BackButton } from '@/components/ui/back-button';
+import { PageShell } from '@/components/layout/page-shell';
 import { SelectableRow } from '@/components/ui/selectable-row';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
@@ -258,17 +258,8 @@ export default function TrainingPreferencesPage() {
   const phaseStartLabel = formatPhaseStart(phaseStartedAt);
 
   return (
-    <div className="page-shell">
-      <div className="page-content py-5 md:py-7 space-y-5">
-        <BackButton href="/profile" label="Back to profile" />
-
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-2xl font-bold">Training</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Your goals and defaults. Saves automatically.</p>
-          </div>
-          {!loaded && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-        </div>
+    <PageShell title="Training" back="/profile" action={!loaded && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}>
+      <p className="text-sm text-muted-foreground">Your goals and defaults. Saves automatically.</p>
 
         {/* Training phase — one selection, saved by the same autosave as
             everything else on this screen. Changing it affects future targets
@@ -428,7 +419,6 @@ export default function TrainingPreferencesPage() {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </PageShell>
   );
 }
