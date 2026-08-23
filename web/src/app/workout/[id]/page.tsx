@@ -24,6 +24,24 @@ type ExerciseGroup = {
   exercises: { state: ActiveExerciseState; exerciseIndex: number }[];
 };
 
+function ElapsedClock({ startedAt }: { startedAt: string }) {
+  const [elapsed, setElapsed] = useState('0:00');
+  useEffect(() => {
+    const t0 = new Date(startedAt).getTime();
+    const tick = () => {
+      const diff = Math.floor((Date.now() - t0) / 1000);
+      const h = Math.floor(diff / 3600);
+      const m = Math.floor((diff % 3600) / 60);
+      const s = diff % 60;
+      setElapsed(h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [startedAt]);
+  return <span className="numeric">{elapsed}</span>;
+}
+
 function groupExercises(exercises: ActiveExerciseState[]): ExerciseGroup[] {
   const groups: ExerciseGroup[] = [];
   let current: ExerciseGroup | null = null;
@@ -63,6 +81,7 @@ export default function WorkoutPage() {
   const [finishOpen, setFinishOpen] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [discarding, setDiscarding] = useState(false);
+  const groups = useMemo(() => groupExercises(workout?.exercises ?? []), [workout?.exercises]);
   const discarder = useMemo(() => {
     if (!workout) return null;
     return createWorkoutDiscarder({
@@ -81,23 +100,6 @@ export default function WorkoutPage() {
   // unmount and when the tab is hidden; re-acquired when the tab comes back.
   useScreenWakeLock(workout !== null);
 
-  // Live elapsed timer
-  const [elapsed, setElapsed] = useState('0:00');
-  useEffect(() => {
-    if (!workout) return;
-    const startedAt = new Date(workout.session.started_at).getTime();
-    function tick() {
-      const diff = Math.floor((Date.now() - startedAt) / 1000);
-      const h = Math.floor(diff / 3600);
-      const m = Math.floor((diff % 3600) / 60);
-      const s = diff % 60;
-      setElapsed(h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`);
-    }
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [workout]);
-
   useEffect(() => {
     function onBeforeUnload(event: BeforeUnloadEvent) {
       if (!workout) return;
@@ -106,14 +108,14 @@ export default function WorkoutPage() {
 
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [workout]);
+  }, [workout !== null]);
 
   useEffect(() => {
     // Only redirect after persist has rehydrated from localStorage
-    if (hydrated && workout === null) {
+    if (hydrated && (workout === null || workout.session.id !== params.id)) {
       router.replace('/');
     }
-  }, [workout, router, hydrated]);
+  }, [workout, router, hydrated, params.id]);
 
   if (!workout) {
     return (
@@ -123,14 +125,12 @@ export default function WorkoutPage() {
     );
   }
 
-  if (workout.session.id !== params.id) {
-    router.replace('/');
-    return null;
-  }
+  if (workout.session.id !== params.id) return null;
 
   const templateName = workout.session.template_name ?? (workout.session.template_id ? 'Current Workout' : 'Quick Log');
   const savedSets = workout.exercises.reduce((count, exercise) => count + exercise.sets.filter((set) => set.isCompleted).length, 0);
   const totalSets = workout.exercises.reduce((count, exercise) => count + exercise.sets.length, 0);
+
 
   return (
     <div className="page-shell">
@@ -146,7 +146,7 @@ export default function WorkoutPage() {
                 <span className="text-foreground/30">·</span>
                 <span className="flex items-center gap-1">
                   <Timer className="h-3 w-3" />
-                  {elapsed}
+                  <ElapsedClock startedAt={workout.session.started_at} />
                 </span>
               </div>
             </div>
@@ -167,7 +167,7 @@ export default function WorkoutPage() {
         <ReadinessStrip />
 
         <main className="mt-5 space-y-5 pb-28">
-          {groupExercises(workout.exercises).map((group) => {
+          {groups.map((group) => {
             if (group.type === 'single') {
               const { state, exerciseIndex } = group.exercises[0];
               return (

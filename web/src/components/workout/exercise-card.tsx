@@ -80,6 +80,8 @@ export const ExerciseCard = memo(function ExerciseCard({
   }, [updateSet, exerciseIndex]);
 
   const handleAddSet = useCallback(() => addSet(exerciseIndex), [addSet, exerciseIndex]);
+  const handleDeleteSet = useCallback((setId: string) => deleteSet(exerciseIndex, setId), [deleteSet, exerciseIndex]);
+  const handleRirChange = useCallback((setId: string, rir: number | null) => setSetRir(exerciseIndex, setId, rir), [setSetRir, exerciseIndex]);
 
   // The one set that may be asked "how many left in the tank?" — the last
   // working/top set, and only once it is completed. The store answers the same
@@ -247,11 +249,11 @@ export const ExerciseCard = memo(function ExerciseCard({
               lastValues={lastPerformanceSets?.[index] ?? null}
               fields={fields}
               aiTarget={aiTarget}
-              onUpdate={(patch) => handleUpdate(set.id, patch)}
-              onComplete={() => handleComplete(set.id)}
-              onDelete={() => deleteSet(exerciseIndex, set.id)}
+              onUpdate={handleUpdate}
+              onComplete={handleComplete}
+              onDelete={handleDeleteSet}
               showRir={set.id === rirSetId}
-              onRirChange={(rir) => setSetRir(exerciseIndex, set.id, rir)}
+              onRirChange={handleRirChange}
             />
           );
         })}

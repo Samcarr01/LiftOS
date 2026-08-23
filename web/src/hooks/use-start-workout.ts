@@ -50,6 +50,7 @@ export function useStartWorkout() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const hydrateWorkout = useActiveWorkoutStore((s) => s.hydrateWorkout);
+  const applyPrefillAndSuggestions = useActiveWorkoutStore((s) => s.applyPrefillAndSuggestions);
 
   async function startWorkout(templateId: string | null) {
     const supabase = createClient();
@@ -179,7 +180,19 @@ export function useStartWorkout() {
         return session;
       })();
 
-      const [{
+      const session = await writeBranch;
+      router.prefetch(`/workout/${session.id}`);
+      const skeletonExercises: StartWorkoutExercise[] = templateExercises.map((templateExercise) => ({
+        sessionExercise: sessionExercisesToInsert.find((exercise) => exercise.order_index === templateExercise.order_index)!,
+        exercise: parseExercise(templateExercise.exercise as unknown as Record<string, unknown>),
+        lastPerformance: null,
+        aiSuggestion: null,
+        prefilledSets: buildPrefilledSets(templateExercise.default_set_count ?? 3, null),
+      }));
+      hydrateWorkout({ session, exercises: skeletonExercises });
+      router.push(`/workout/${session.id}`);
+
+      const {
         lastPerformanceRows,
         heaviestFirst,
         unitPreference,
@@ -187,7 +200,7 @@ export function useStartWorkout() {
         experienceLevel,
         preferredRepRange,
         historySessionsByExercise,
-      }, session] = await Promise.all([readBranch, writeBranch]);
+      } = await readBranch;
 
       const sessionExerciseByOrder = new Map(
         sessionExercisesToInsert.map((exercise) => [exercise.order_index, exercise]),
@@ -258,8 +271,12 @@ export function useStartWorkout() {
         }),
       };
 
-      hydrateWorkout(response);
-      router.push(`/workout/${response.session.id}`);
+      applyPrefillAndSuggestions(session.id, response.exercises.map((exercise) => ({
+        sessionExerciseId: exercise.sessionExercise.id,
+        lastPerformanceSets: exercise.lastPerformance?.map((set) => set.values) ?? null,
+        aiSuggestion: exercise.aiSuggestion,
+        setTypes: exercise.prefilledSets.map((set) => set.setType),
+      })));
     } catch (err: unknown) {
       const msg = (err as { message?: string }).message ?? 'Failed to start workout';
       toast.error(msg);

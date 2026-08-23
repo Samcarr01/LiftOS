@@ -51,16 +51,16 @@ interface SetRowProps {
   lastValues: SetValues | null;
   fields: TrackingField[];
   aiTarget?: Record<string, number | string | undefined> | null;
-  onUpdate: (patch: { values?: SetValues; setType?: SetEntry['setType'] }) => void;
-  onComplete: () => void;
-  onDelete: () => void;
+  onUpdate: (setId: string, patch: { values?: SetValues; setType?: SetEntry['setType'] }) => void;
+  onComplete: (setId: string) => void;
+  onDelete: (setId: string) => void;
   borderless?: boolean;
   /**
    * Show the optional "Final set RIR" line. The caller decides eligibility —
    * only the final completed working/top set of an exercise ever gets it.
    */
   showRir?: boolean;
-  onRirChange?: (rir: number | null) => void;
+  onRirChange?: (setId: string, rir: number | null) => void;
 }
 
 /** Stored values, with 3 standing for the displayed "3+". */
@@ -105,12 +105,12 @@ export const SetRow = memo(function SetRow({
     haptic('tap');
     const index = SET_TYPE_CYCLE.indexOf(set.setType);
     const next = SET_TYPE_CYCLE[(index + 1) % SET_TYPE_CYCLE.length];
-    onUpdate({ setType: next });
-  }, [set.setType, onUpdate]);
+    onUpdate(set.id, { setType: next });
+  }, [set.id, set.setType, onUpdate]);
 
   const handleValueChange = useCallback((key: string, value: number | '') => {
-    onUpdate({ values: { ...set.values, [key]: value === '' ? 0 : value } });
-  }, [set.values, onUpdate]);
+    onUpdate(set.id, { values: { ...set.values, [key]: value === '' ? 0 : value } });
+  }, [set.id, set.values, onUpdate]);
 
   return (
     <div
@@ -171,7 +171,7 @@ export const SetRow = memo(function SetRow({
 
         <button
           type="button"
-          onClick={onComplete}
+          onClick={() => onComplete(set.id)}
           aria-label={set.isCompleted ? 'Mark set incomplete' : 'Complete set'}
           className={cn(
             'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border',
@@ -201,7 +201,7 @@ export const SetRow = memo(function SetRow({
                   type="button"
                   aria-pressed={selected}
                   aria-label={choice.value === 3 ? 'RIR 3 or more' : `RIR ${choice.value}`}
-                  onClick={() => onRirChange?.(selected ? null : choice.value)}
+                  onClick={() => onRirChange?.(set.id, selected ? null : choice.value)}
                   className={cn(
                     'tappable flex h-10 min-w-10 items-center justify-center rounded-xl border px-2 text-sm font-semibold tabular-nums transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                     selected
@@ -216,7 +216,7 @@ export const SetRow = memo(function SetRow({
             {set.rir !== null && set.rir !== undefined && (
               <button
                 type="button"
-                onClick={() => onRirChange?.(null)}
+                onClick={() => onRirChange?.(set.id, null)}
                 aria-label="Clear RIR"
                 className="tappable flex h-10 items-center justify-center rounded-xl px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               >

@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { Link2, Minus, Plus } from 'lucide-react';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { logSetEntry } from '@/lib/offline';
@@ -39,7 +40,7 @@ export function isSupersetRoundComplete(
   );
 }
 
-export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardProps) {
+export const SupersetCard = memo(function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardProps) {
   const addSet = useActiveWorkoutStore((store) => store.addSet);
   const updateSet = useActiveWorkoutStore((store) => store.updateSet);
   const deleteSet = useActiveWorkoutStore((store) => store.deleteSet);
@@ -197,7 +198,7 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
                         lastValues={ex.state.lastPerformanceSets?.[roundIndex] ?? null}
                         fields={fields}
                         borderless
-                        onUpdate={(patch) => {
+                        onUpdate={(_, patch) => {
                           updateSet(ex.exerciseIndex, set.id, {
                             ...(patch.values ? { values: patch.values as SetValues } : {}),
                             ...(patch.setType ? { setType: patch.setType } : {}),
@@ -239,4 +240,4 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
       </div>
     </div>
   );
-}
+});
