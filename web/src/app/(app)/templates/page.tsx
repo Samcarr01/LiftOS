@@ -438,7 +438,7 @@ export default function TemplatesPage() {
           onClick={() => setActionsFor(null)}
         >
           <div
-            className="w-full max-w-sm rounded-2xl border border-white/[0.10] bg-[oklch(0.16_0.015_260)] p-2"
+            className="modal-surface w-full max-w-sm rounded-2xl p-2"
             onClick={(event) => event.stopPropagation()}
           >
             <p className="truncate px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -479,7 +479,7 @@ export default function TemplatesPage() {
       {/* Delete confirmation — modal, matching the workout-history pattern */}
       {confirmDeleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="w-full max-w-sm rounded-2xl border border-white/[0.10] bg-[oklch(0.16_0.015_260)] p-5 space-y-4">
+          <div className="modal-surface w-full max-w-sm rounded-2xl p-5 space-y-4">
             <h3 className="font-display text-lg font-bold">Delete workout?</h3>
             <p className="text-sm text-muted-foreground">
               &ldquo;{templates.find((t) => t.id === confirmDeleteId)?.name ?? 'This workout'}&rdquo; and its

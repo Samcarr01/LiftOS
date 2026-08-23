@@ -292,6 +292,14 @@
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 8px 40px -8px rgba(0, 0, 0, 0.5);
   }
 
+  /* Dialogs and sheets are elevated surfaces, not opaque black slabs. Keep the
+     blur in this shared treatment so modal variants retain the same visual
+     depth without adding extra animated or composited layers. */
+  .modal-surface {
+    @apply border border-white/[0.12] bg-white/[0.10] backdrop-blur-xl saturate-150;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 32px -8px rgba(0, 0, 0, 0.5);
+  }
+
   .elevated-surface {
     @apply rounded-2xl border border-white/[0.12];
     transition: background 150ms, border-color 150ms, box-shadow 150ms;
