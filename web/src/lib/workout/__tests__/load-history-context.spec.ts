@@ -30,6 +30,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import {
   mapHistoryRows,
+  mapHistoryRowsByExercise,
   loadHistorySessionsWithContext,
   loadHistorySessions,
   type HistoryRow,
@@ -387,6 +388,39 @@ console.log('Running History context (T9) tests...\n');
   );
 
   console.log('  ✓ light session excluded, array embed handled, null parent skipped');
+}
+
+// ── F2.5: one batch's rows stay grouped by exercise ──────────────────────────
+{
+  console.log('\nF2.5: batch history rows remain isolated and newest-first per exercise');
+
+  const exOneOld = legacyRow('ex-1-old', '2026-07-20T10:00:00.000Z');
+  const exOneNew = legacyRow('ex-1-new', '2026-08-01T10:00:00.000Z');
+  const exTwo = legacyRow('ex-2-only', '2026-07-27T10:00:00.000Z');
+  exTwo.exercise_id = 'ex-2';
+
+  const grouped = mapHistoryRowsByExercise(
+    [exOneOld, exTwo, exOneNew],
+    ['ex-1', 'ex-2', 'ex-without-history'],
+  );
+
+  assertEqual(
+    grouped.get('ex-1')?.map((session) => session.sessionId),
+    ['ex-1-new', 'ex-1-old'],
+    'Each exercise keeps only its rows, newest-first',
+  );
+  assertEqual(
+    grouped.get('ex-2')?.map((session) => session.sessionId),
+    ['ex-2-only'],
+    'Rows for another selected exercise never leak into ex-1 history',
+  );
+  assertEqual(
+    grouped.get('ex-without-history'),
+    [],
+    'Selected first-time exercises receive an empty history array',
+  );
+
+  console.log('  ✓ grouped by exercise with no cross-exercise history leakage');
 }
 
 // ── T9.6: the loader takes one injectable seam and touches no network ────────
