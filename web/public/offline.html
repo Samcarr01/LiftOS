@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#111827" />
+    <title>LiftOS — You’re offline</title>
+    <style>
+      :root { color-scheme: dark; font-family: Arial, sans-serif; }
+      body { align-items: center; background: #111827; color: #f9fafb; display: flex; justify-content: center; margin: 0; min-height: 100vh; padding: 24px; text-align: center; }
+      main { max-width: 360px; }
+      .icon { align-items: center; border: 1px solid #374151; border-radius: 16px; display: flex; font-size: 32px; height: 64px; justify-content: center; margin: 0 auto 20px; width: 64px; }
+      h1 { font-size: 24px; margin: 0 0 12px; }
+      p { color: #9ca3af; line-height: 1.5; margin: 0; }
+      button { background: #f97316; border: 0; border-radius: 16px; color: #111827; cursor: pointer; font-size: 14px; font-weight: 700; margin-top: 24px; min-height: 44px; padding: 0 24px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="icon" aria-hidden="true">⌁</div>
+      <h1>You’re offline</h1>
+      <p>Check your connection and try again. Your logged sets are saved locally and will sync when you’re back online.</p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>
