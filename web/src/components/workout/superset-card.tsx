@@ -3,6 +3,7 @@
 import { Link2, Minus, Plus } from 'lucide-react';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import { logSetEntry } from '@/lib/offline';
+import { haptic } from '@/lib/haptics';
 import type { ActiveExerciseState, SetValues } from '@/types/app';
 import { SetRow } from './set-row';
 import { cn } from '@/lib/utils';
@@ -59,8 +60,10 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
   const allComplete = totalSets > 0 && completedSets === totalSets;
 
   function handleComplete(exerciseIndex: number, setId: string) {
+    // First statement: the buzz must land before the synchronous store write,
+    // not after it.
+    haptic('success');
     completeSet(exerciseIndex, setId);
-    navigator.vibrate?.(50);
 
     // Read freshly post-update so the just-flipped set reflects its new state.
     const freshWorkout = useActiveWorkoutStore.getState().workout;
@@ -218,7 +221,7 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
           <button
             type="button"
             onClick={() => handleDeleteRound(maxRounds - 1)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:border-destructive/30 hover:text-destructive"
+            className="tappable flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:border-destructive/30 hover:text-destructive"
             aria-label="Remove last round"
           >
             <Minus className="h-3.5 w-3.5" />
@@ -228,7 +231,7 @@ export function SupersetCard({ exercises, dismissedSuggestions }: SupersetCardPr
           type="button"
           onClick={handleAddRound}
           aria-label="Add round to superset"
-          className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-2xl border border-white/10 text-sm font-semibold text-muted-foreground hover:text-foreground"
+          className="tappable flex h-10 flex-1 items-center justify-center gap-1.5 rounded-2xl border border-white/10 text-sm font-semibold text-muted-foreground hover:text-foreground"
         >
           <Plus className="h-3.5 w-3.5" />
           Add Round

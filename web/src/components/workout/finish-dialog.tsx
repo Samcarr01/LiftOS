@@ -247,7 +247,7 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
             <button
               onClick={onClose}
               disabled={saving}
-              className="flex h-12 w-full items-center justify-center rounded-2xl border border-white/10 text-sm font-semibold text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground disabled:opacity-60"
+              className="tappable flex h-12 w-full items-center justify-center rounded-2xl border border-white/10 text-sm font-semibold text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground disabled:opacity-60"
             >
               Keep Logging
             </button>

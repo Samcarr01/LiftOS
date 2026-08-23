@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useActiveWorkoutStore } from '@/store/active-workout-store';
+import { haptic } from '@/lib/haptics';
 
 function playBeep() {
   try {
@@ -45,7 +46,7 @@ export function RestTimer() {
       if (remaining <= 0 && !firedRef.current) {
         firedRef.current = true;
         playBeep();
-        navigator.vibrate?.(200);
+        haptic('warn');
         setTimeout(() => stopTimer(), 1500);
       }
     }, 500); // 500ms tick for smooth countdown
@@ -83,7 +84,7 @@ export function RestTimer() {
           <span className="text-sm text-muted-foreground">Rest</span>
           <button
             onClick={stopTimer}
-            className="flex h-9 w-9 items-center justify-center rounded-2xl bg-muted text-muted-foreground hover:bg-muted/80"
+            className="tappable flex h-9 w-9 items-center justify-center rounded-2xl bg-muted text-muted-foreground hover:bg-muted/80"
           >
             <X className="h-4 w-4" />
           </button>

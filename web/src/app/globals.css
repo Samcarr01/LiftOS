@@ -150,22 +150,48 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground overflow-x-hidden;
+    @apply bg-background text-foreground;
+    overflow-x: clip;
   }
   html {
-    @apply font-sans overflow-x-hidden;
-    overscroll-behavior: none;
+    @apply font-sans;
+    overflow-x: clip;
+    overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     scrollbar-gutter: stable;
   }
+  /* `touch-action` does not inherit, so the declaration on `html` never reaches
+     a control. Without this the browser waits to rule out a pan before it
+     commits to a click and applies `:active`. */
+  button, [role="button"], a, label, summary, input, select, textarea {
+    touch-action: manipulation;
+  }
 }
 
 @layer components {
+  /* ── Touch feedback ──────────────────────────────────── */
+
+  /* `-webkit-tap-highlight-color: transparent` on `html` inherits everywhere,
+     so it deletes the platform tap flash from every control. This is what
+     replaces it. */
+  .tappable {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: background-color 150ms, border-color 150ms, color 150ms;
+  }
+
+  .tappable:active {
+    transform: scale(0.96);
+    background-color: rgba(255, 255, 255, 0.14);
+    transition: none;              /* press feedback must NEVER be animated */
+  }
+
   /* ── Page structure ──────────────────────────────────── */
 
   .page-shell {
-    @apply relative overflow-x-hidden;
+    @apply relative;
+    overflow-x: clip;
   }
 
   .page-shell::before {

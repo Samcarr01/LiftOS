@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Delete, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { haptic } from '@/lib/haptics';
 import type { TrackingField } from '@/types/tracking';
 
 interface NumericInputProps {
@@ -124,6 +125,7 @@ function MobileNumpad({
   const [str, setStr] = useState(value === '' ? '' : String(value));
 
   const addChar = useCallback((ch: string) => {
+    haptic('tap');
     setStr((prev) => {
       if (ch === '.' && prev.includes('.')) return prev;
       if (ch === '.' && prev === '') return '0.';
@@ -141,6 +143,7 @@ function MobileNumpad({
   // The only path that writes. Digits, ± steps and backspace move `str` alone,
   // so nothing reaches the store until the lifter presses check.
   const confirm = useCallback(() => {
+    haptic('tap');
     const resolved = resolveNumpadDraft({ savedValue: value, draft: str, action: 'confirm' });
     onChange(resolved.value);
     onClose();
