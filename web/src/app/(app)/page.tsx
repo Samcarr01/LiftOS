@@ -314,7 +314,7 @@ export default function HomePage() {
         {/* ── Start Workout CTA ──────────────────── */}
         <button
           onClick={() => setSheetOpen(true)}
-          className="page-reveal delay-1 group relative w-full overflow-hidden rounded-2xl px-6 py-6 text-left text-primary-foreground shadow-[0_8px_32px_-8px_oklch(0.75_0.18_55/0.4)] transition-all duration-150 hover:shadow-[0_14px_40px_-8px_oklch(0.75_0.18_55/0.5)] active:scale-[0.99] active:brightness-95"
+          className="page-reveal group relative w-full overflow-hidden rounded-2xl px-6 py-6 text-left text-primary-foreground shadow-[0_8px_32px_-8px_oklch(0.75_0.18_55/0.4)] transition-all duration-150 hover:shadow-[0_14px_40px_-8px_oklch(0.75_0.18_55/0.5)] active:scale-[0.99] active:brightness-95"
           style={{ background: 'linear-gradient(135deg, oklch(0.75 0.18 55), oklch(0.56 0.16 40))' }}
         >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.1),transparent_60%)]" />
@@ -340,7 +340,7 @@ export default function HomePage() {
         {loading ? (
           <Skeleton className="h-[180px] rounded-2xl" />
         ) : (data?.activityDates?.length ?? 0) > 0 ? (
-          <div className="page-reveal delay-2">
+          <div className="page-reveal">
             <StreakHeatmap sessions={data!.activityDates} target={data!.weeklyTarget} />
           </div>
         ) : null}
@@ -353,7 +353,7 @@ export default function HomePage() {
             <Skeleton className="h-[72px] w-full rounded-xl" />
           </div>
         ) : (data?.pinned?.length ?? 0) > 0 ? (
-          <section className="page-reveal delay-3">
+          <section className="page-reveal">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="section-title">Favourites</h2>
               <Link href="/templates" className="text-xs font-semibold text-primary hover:underline">View all</Link>
@@ -387,7 +387,7 @@ export default function HomePage() {
             </div>
           </section>
         ) : allTemplates.length > 0 ? (
-          <section className="page-reveal delay-3">
+          <section className="page-reveal">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="section-title">Your workouts</h2>
               <Link href="/templates" className="text-xs font-semibold text-primary hover:underline">View all</Link>
@@ -427,7 +427,7 @@ export default function HomePage() {
             </div>
           </section>
         ) : (
-          <section className="page-reveal delay-2">
+          <section className="page-reveal">
             <div className="content-card flex flex-col items-center gap-4 rounded-2xl px-6 py-10 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[oklch(0.75_0.18_55/0.15)] text-primary">
                 <Dumbbell className="h-6 w-6" />
@@ -451,7 +451,7 @@ export default function HomePage() {
 
         {/* ── Recent Activity ─────────────────────── */}
         {!loading && (data?.recentSessions ?? []).length > 0 && (
-          <section className="page-reveal delay-4">
+          <section className="page-reveal">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="section-title">Recent activity</h2>
               <Link href="/history" className="text-xs font-semibold text-primary hover:underline">View all</Link>
