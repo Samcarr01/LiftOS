@@ -72,8 +72,11 @@ function AnimatedNumber({ value, duration = 700 }: { value: number; duration?: n
   const [display, setDisplay] = useState(() => (prefersReducedMotion() ? value : 0));
 
   useEffect(() => {
-    if (prefersReducedMotion()) { setDisplay(value); return; }
     let raf = 0;
+    if (prefersReducedMotion()) {
+      raf = requestAnimationFrame(() => setDisplay(value));
+      return () => cancelAnimationFrame(raf);
+    }
     const start = performance.now();
     function tick(now: number) {
       const t = Math.min(1, (now - start) / duration);
@@ -368,8 +371,8 @@ export default function WorkoutCompletePage() {
   }
 
   return (
-    <div className="relative flex min-h-[100dvh] flex-col items-center bg-background px-4 pb-8 pt-8">
-      <div className="pointer-events-none absolute inset-0" style={{ background: hasPrs ? 'radial-gradient(circle at 50% 15%, oklch(0.80 0.16 85 / 0.06), transparent 50%)' : 'radial-gradient(circle at 50% 15%, oklch(0.75 0.18 55 / 0.05), transparent 50%)' }} />
+    <div className="page-shell min-h-[100dvh]">
+      <div className="relative z-10 flex min-h-[100dvh] flex-col items-center px-4 pb-8 pt-8">
       {/* Hero */}
       <div
         className={`
@@ -458,6 +461,7 @@ export default function WorkoutCompletePage() {
           onDismiss={() => setPromotionDismissed(true)}
         />
       )}
+      </div>
     </div>
   );
 }
