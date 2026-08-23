@@ -48,7 +48,7 @@ export function ReadinessStrip() {
               dismissPrompt();
             }
           }}
-          className="flex h-11 shrink-0 items-center rounded-xl px-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          className="tappable flex h-11 shrink-0 items-center rounded-xl px-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
           Skip
         </button>
@@ -66,7 +66,7 @@ export function ReadinessStrip() {
               aria-label={option.description}
               onClick={() => setReadiness(selected ? null : option.value)}
               className={cn(
-                'flex h-11 min-w-[68px] flex-1 items-center justify-center rounded-xl border px-2 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                'tappable flex h-11 min-w-[68px] flex-1 items-center justify-center rounded-xl border px-2 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                 selected
                   ? 'border-primary bg-primary/15 text-foreground'
                   : 'border-white/10 bg-white/[0.04] text-muted-foreground hover:text-foreground',

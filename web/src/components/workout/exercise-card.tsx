@@ -5,6 +5,7 @@ import { ArrowRight, ChevronDown, ChevronUp, Minus, Plus, TrendingDown, Trending
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import { eligibleRirSetId, useActiveWorkoutStore } from '@/store/active-workout-store';
 import { logSetEntry } from '@/lib/offline';
+import { haptic } from '@/lib/haptics';
 import { formatSetValues } from '@/lib/workout/formatting';
 import type { ActiveExerciseState, SetEntry, SetValues } from '@/types/app';
 import { SetRow } from './set-row';
@@ -49,8 +50,10 @@ export const ExerciseCard = memo(function ExerciseCard({
   const allComplete = sets.length > 0 && completedCount === sets.length;
 
   const handleComplete = useCallback((setId: string) => {
+    // First statement: the buzz must land before the synchronous store write,
+    // not after it.
+    haptic('success');
     completeSet(exerciseIndex, setId);
-    navigator.vibrate?.(50);
 
     const updatedExercise = useActiveWorkoutStore
       .getState()
@@ -183,7 +186,7 @@ export const ExerciseCard = memo(function ExerciseCard({
                 </div>
                 <button
                   onClick={handleDismiss}
-                  className="-mr-2 -mt-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground/40 transition-colors hover:bg-white/[0.06] hover:text-foreground"
+                  className="tappable -mr-2 -mt-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground/40 transition-colors hover:bg-white/[0.06] hover:text-foreground"
                   aria-label="Hide suggestion"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -259,7 +262,7 @@ export const ExerciseCard = memo(function ExerciseCard({
           <button
             type="button"
             onClick={handleRemoveSet}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:border-destructive/30 hover:text-destructive"
+            className="tappable flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-muted-foreground hover:border-destructive/30 hover:text-destructive"
             aria-label="Remove set"
           >
             <Minus className="h-3.5 w-3.5" />
@@ -268,7 +271,7 @@ export const ExerciseCard = memo(function ExerciseCard({
         <button
           type="button"
           onClick={handleAddSet}
-          className="flex h-10 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl border border-white/10 text-sm font-semibold text-muted-foreground hover:text-foreground"
+          className="tappable flex h-10 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl border border-white/10 text-sm font-semibold text-muted-foreground hover:text-foreground"
         >
           <Plus className="h-3.5 w-3.5 shrink-0" />
           Add Set
@@ -277,7 +280,7 @@ export const ExerciseCard = memo(function ExerciseCard({
         <button
           type="button"
           onClick={() => setNotesOpen((value) => !value)}
-          className="flex h-10 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl border border-white/10 px-3 text-sm font-semibold text-muted-foreground hover:text-foreground"
+          className="tappable flex h-10 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl border border-white/10 px-3 text-sm font-semibold text-muted-foreground hover:text-foreground"
         >
           {notesOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           Notes

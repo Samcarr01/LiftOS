@@ -3,6 +3,7 @@
 import { memo, useCallback } from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { haptic } from '@/lib/haptics';
 import { NumericInput } from './numeric-input';
 import type { SetEntry, SetValues } from '@/types/app';
 import type { TrackingField } from '@/types/tracking';
@@ -101,6 +102,7 @@ export const SetRow = memo(function SetRow({
   const isPrefilled = set.loggedAt === '' && !set.isCompleted;
 
   const cycleType = useCallback(() => {
+    haptic('tap');
     const index = SET_TYPE_CYCLE.indexOf(set.setType);
     const next = SET_TYPE_CYCLE[(index + 1) % SET_TYPE_CYCLE.length];
     onUpdate({ setType: next });
@@ -172,10 +174,12 @@ export const SetRow = memo(function SetRow({
           onClick={onComplete}
           aria-label={set.isCompleted ? 'Mark set incomplete' : 'Complete set'}
           className={cn(
-            'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors duration-150',
+            'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border',
+            'transition-[background-color,border-color] duration-150',
+            'active:scale-[0.88] active:transition-none [touch-action:manipulation]',
             set.isCompleted
               ? 'border-[oklch(0.72_0.19_155/0.25)] bg-[oklch(0.72_0.19_155)] text-white'
-              : 'border-white/10 text-muted-foreground active:bg-primary/10 hover:border-primary/35 hover:bg-primary/10 hover:text-foreground',
+              : 'border-white/20 text-muted-foreground active:bg-primary/35 active:border-primary hover:border-primary/35 hover:bg-primary/10 hover:text-foreground',
           )}
         >
           <Check className="h-5 w-5" />
@@ -199,7 +203,7 @@ export const SetRow = memo(function SetRow({
                   aria-label={choice.value === 3 ? 'RIR 3 or more' : `RIR ${choice.value}`}
                   onClick={() => onRirChange?.(selected ? null : choice.value)}
                   className={cn(
-                    'flex h-10 min-w-10 items-center justify-center rounded-xl border px-2 text-sm font-semibold tabular-nums transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                    'tappable flex h-10 min-w-10 items-center justify-center rounded-xl border px-2 text-sm font-semibold tabular-nums transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                     selected
                       ? 'border-primary bg-primary/15 text-foreground'
                       : 'border-white/10 text-muted-foreground hover:text-foreground',
@@ -214,7 +218,7 @@ export const SetRow = memo(function SetRow({
                 type="button"
                 onClick={() => onRirChange?.(null)}
                 aria-label="Clear RIR"
-                className="flex h-10 items-center justify-center rounded-xl px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                className="tappable flex h-10 items-center justify-center rounded-xl px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               >
                 Clear
               </button>
