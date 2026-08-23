@@ -130,10 +130,10 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
                 });
                 const colors: Record<string, string> = {
                   unfamiliar: 'bg-white/[0.08] text-muted-foreground border-white/10',
-                  familiar: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-                  consistent: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-                  proficient: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-                  mastered: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+                  familiar: 'state-active',
+                  consistent: 'state-success',
+                  proficient: 'state-achievement',
+                  mastered: 'border-[color:var(--chart-5)]/25 bg-[color:var(--chart-5)]/15 text-[color:var(--chart-5)]',
                 };
                 const colorClass = colors[mastery.level.id] ?? colors.unfamiliar;
                 return (
@@ -218,9 +218,9 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
               {records.map((record) => (
                 <div
                   key={record.record_type}
-                  className="flex items-center gap-2.5 rounded-2xl border border-[oklch(0.80_0.16_85/0.25)] bg-[oklch(0.80_0.16_85/0.12)] px-3 py-3"
+                  className="state-achievement flex items-center gap-2.5 rounded-2xl border px-3 py-3"
                 >
-                  <Award className="h-4 w-4 shrink-0 text-[oklch(0.85_0.15_85)]" />
+                  <Award className="h-4 w-4 shrink-0" />
                   <div className="min-w-0">
                     <p className="text-caption">{PR_LABEL[record.record_type] ?? record.record_type}</p>
                     <p className="font-display text-base font-bold">
@@ -236,12 +236,12 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
 
         {/* Status */}
         {aiSuggestion && (
-          <div className={`content-card ${isHolding ? 'border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.08)]' : 'border-[oklch(0.72_0.19_155/0.20)] bg-[oklch(0.72_0.19_155/0.06)]'}`}>
+          <div className={`content-card ${isHolding ? 'state-warning' : 'state-success'}`}>
             <div className="flex items-center gap-2.5">
               {isHolding ? (
-                <AlertTriangle className="h-4 w-4 shrink-0 text-[oklch(0.82_0.15_60)]" />
+                <AlertTriangle className="h-4 w-4 shrink-0" />
               ) : (
-                <TrendingUp className="h-4 w-4 shrink-0 text-[oklch(0.78_0.17_155)]" />
+                <TrendingUp className="h-4 w-4 shrink-0" />
               )}
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">
@@ -267,7 +267,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
             <div className="mt-3 flex items-center gap-2">
               <span className={`rounded-lg px-2 py-1 text-sm font-semibold ${
                 aiSuggestion.decision === 'progress'
-                  ? 'bg-[oklch(0.75_0.18_55/0.15)] text-[oklch(0.80_0.16_55)]'
+                  ? 'state-active'
                   : 'bg-white/[0.08] text-muted-foreground'
               }`}>
                 {aiSuggestion.decision === 'progress' ? (

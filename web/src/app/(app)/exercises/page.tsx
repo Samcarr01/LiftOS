@@ -88,13 +88,13 @@ export default function ExercisesPage() {
 
         {/* Duplicates warning */}
         {duplicateGroups.length > 0 && (
-          <div className="flex items-start gap-3 rounded-2xl border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-4 py-4">
-            <span className="text-xs font-semibold text-[oklch(0.82_0.15_60)]">Duplicates</span>
+          <div className="state-warning flex items-start gap-3 rounded-2xl border px-4 py-4">
+            <span className="text-xs font-semibold">Duplicates</span>
             <div className="flex flex-wrap gap-1.5">
               {duplicateGroups.map((group) => (
                 <span
                   key={group.id}
-                  className="inline-flex items-center rounded-md border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-2 py-0.5 text-xs font-semibold text-[oklch(0.82_0.15_60)]"
+                  className="state-warning inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold"
                 >
                   {group.name} ({group.duplicateCount})
                 </span>
@@ -124,7 +124,7 @@ export default function ExercisesPage() {
                     <div className="flex items-center gap-2">
                       <p className="truncate text-card-title">{exercise.name}</p>
                       {isDuplicate && (
-                        <span className="rounded-md border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-1.5 py-0.5 text-xs font-semibold text-[oklch(0.82_0.15_60)]">
+                        <span className="state-warning rounded-md border px-1.5 py-0.5 text-xs font-semibold">
                           Dup
                         </span>
                       )}
@@ -181,7 +181,7 @@ export default function ExercisesPage() {
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => void handleDelete(confirmDeleteId)}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-500/90 text-sm font-semibold text-white transition-all duration-150 hover:bg-red-500 active:scale-[0.98]"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-destructive text-sm font-semibold text-destructive-foreground transition-all duration-150 hover:bg-destructive/90 active:scale-[0.98]"
               >
                 <Trash2 className="h-4 w-4" />
                 Delete Exercise

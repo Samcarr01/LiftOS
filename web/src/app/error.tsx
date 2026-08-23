@@ -18,8 +18,8 @@ export default function GlobalError({
 
   return (
     <PageShell className="flex min-h-[100dvh] flex-col items-center justify-center gap-5 px-6 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/15">
-        <AlertTriangle className="h-8 w-8 text-destructive" />
+      <div className="state-destructive flex h-16 w-16 items-center justify-center rounded-2xl border">
+        <AlertTriangle className="h-8 w-8" />
       </div>
 
       <div>

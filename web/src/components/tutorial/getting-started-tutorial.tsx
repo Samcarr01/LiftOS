@@ -98,8 +98,8 @@ function StepIllustration({ step }: { step: number }) {
   if (step === 2) {
     return (
       <div className="flex flex-col items-center gap-3">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[oklch(0.72_0.19_155/0.15)]">
-          <Check className="h-8 w-8 text-[oklch(0.78_0.17_155)]" />
+        <div className="state-success flex h-16 w-16 items-center justify-center rounded-2xl border">
+          <Check className="h-8 w-8" />
         </div>
         <div className="flex w-full max-w-[260px] flex-col gap-1.5">
           <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">

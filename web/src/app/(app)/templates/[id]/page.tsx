@@ -636,7 +636,7 @@ export default function TemplateEditorPage() {
             className="min-w-0 flex-1 bg-transparent font-display text-lg font-bold outline-none placeholder:text-muted-foreground"
           />
           {saveStatus === 'saving' && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-          {saveStatus === 'saved' && <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-xs text-emerald-400">Saved</span>}
+          {saveStatus === 'saved' && <span className="state-success rounded-full border px-2 py-0.5 text-xs">Saved</span>}
           <button
             onClick={() => void handleStartWorkout()}
             disabled={isStartingWorkout || exercises.length === 0}

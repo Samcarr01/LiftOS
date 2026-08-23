@@ -62,7 +62,7 @@ function SetLine({
         </p>
       </div>
       {!set.is_completed && (
-        <span className="rounded-full border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.12)] px-2 py-0.5 text-xs font-medium text-[oklch(0.82_0.15_60)]">Not logged</span>
+        <span className="state-warning rounded-full border px-2 py-0.5 text-xs font-medium">Not logged</span>
       )}
     </div>
   );
@@ -95,7 +95,7 @@ function ExerciseBlock({ exercise }: { exercise: SessionDetailExercise }) {
           {exercise.prs.map((pr, index) => (
             <span
               key={`${pr.record_type}-${index}`}
-              className="inline-flex items-center gap-1 rounded-md border border-[oklch(0.80_0.16_85/0.25)] bg-[oklch(0.80_0.16_85/0.12)] px-2 py-0.5 text-xs font-semibold text-[oklch(0.85_0.15_85)]"
+              className="state-achievement inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold"
             >
               <Award className="h-3 w-3" />
               {PR_LABEL[pr.record_type]} · {formatPrValue(pr.record_type, pr.record_value)}
@@ -305,7 +305,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-500/90 text-sm font-semibold text-white transition-all duration-150 hover:bg-red-500 active:scale-[0.98] disabled:opacity-60"
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-destructive text-sm font-semibold text-destructive-foreground transition-all duration-150 hover:bg-destructive/90 active:scale-[0.98] disabled:opacity-60"
                 >
                   {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                   Delete Workout

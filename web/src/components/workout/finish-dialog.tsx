@@ -190,7 +190,7 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
               <p className="mt-0.5 text-xs text-muted-foreground">Sets Done</p>
             </div>
             <div className="rounded-xl border border-white/[0.10] bg-white/[0.06] px-3 py-3 text-center">
-              <p className={`font-display text-xl font-bold ${remainingSets === 0 ? 'text-[oklch(0.78_0.17_155)]' : 'text-[oklch(0.82_0.15_60)]'}`}>
+              <p className={`font-display text-xl font-bold ${remainingSets === 0 ? 'text-[color:var(--state-success-fg)]' : 'text-[color:var(--state-warning-fg)]'}`}>
                 {remainingSets === 0 ? 'Ready' : remainingSets}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
@@ -201,7 +201,7 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
 
           {/* Warning for open sets */}
           {remainingSets > 0 && (
-            <div className="mt-3 rounded-xl border border-[oklch(0.75_0.16_60/0.25)] bg-[oklch(0.75_0.16_60/0.08)] px-4 py-3 text-sm text-[oklch(0.82_0.15_60)]">
+            <div className="state-warning mt-3 rounded-xl border px-4 py-3 text-sm">
               {remainingSets} open set{remainingSets !== 1 ? 's' : ''} will be kept with the workout.
             </div>
           )}

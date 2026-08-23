@@ -522,8 +522,8 @@ export default function OnboardingPage() {
         {currentStep === 'summary' && (
           <div className="space-y-6">
             <div className="text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[oklch(0.72_0.19_155/0.15)]">
-                <Sparkles className="h-8 w-8 text-[oklch(0.78_0.17_155)]" />
+              <div className="state-success mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border">
+                <Sparkles className="h-8 w-8" />
               </div>
               <h1 className="mt-4 font-display text-2xl font-bold">You&apos;re all set</h1>
               <p className="mt-1 text-sm text-muted-foreground">

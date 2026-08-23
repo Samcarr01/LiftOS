@@ -286,7 +286,7 @@ export default function WorkoutPage() {
                   if (result.discarded) setShowLeaveDialog(false);
                 }}
                 disabled={discarding}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-500/90 text-sm font-semibold text-white transition-all duration-150 hover:bg-red-500 active:scale-[0.98] disabled:opacity-60 disabled:hover:bg-red-500/90"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-destructive text-sm font-semibold text-destructive-foreground transition-all duration-150 hover:bg-destructive/90 active:scale-[0.98] disabled:opacity-60 disabled:hover:bg-destructive"
               >
                 {discarding ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Discard
