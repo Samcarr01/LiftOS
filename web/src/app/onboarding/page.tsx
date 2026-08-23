@@ -78,6 +78,10 @@ const EXP_LABELS: Record<string, string> = {
   advanced: 'Advanced',
 };
 
+function markOnboardingComplete(userId: string) {
+  document.cookie = `liftos-onboarded=${encodeURIComponent(userId)}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`;
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const { setUnit } = useUnitStore();
@@ -154,6 +158,7 @@ export default function OnboardingPage() {
       if (error) throw error;
 
       setUnit(unitPreference);
+      markOnboardingComplete((await supabase.auth.getUser()).data.user!.id);
       router.replace('/?tutorial=1');
     } catch {
       toast.error('Failed to save preferences');
@@ -170,6 +175,7 @@ export default function OnboardingPage() {
       }).eq('id', (await supabase.auth.getUser()).data.user!.id);
 
       if (error) throw error;
+      markOnboardingComplete((await supabase.auth.getUser()).data.user!.id);
       router.replace('/');
     } catch {
       toast.error('Failed to save');

@@ -9,10 +9,9 @@ export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   // If Supabase is misconfigured or unreachable, redirect to login (fail closed)
-  let supabase = null;
   let user = null;
   try {
-    supabase = createServerClient(
+    const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
@@ -33,9 +32,9 @@ export async function middleware(request: NextRequest) {
       },
     );
 
-    // Refresh session — must call getUser() (not getSession()) per @supabase/ssr docs
-    const { data } = await supabase.auth.getUser();
-    user = data.user;
+    // getClaims verifies the access token locally after the JWKS has been cached.
+    const { data: claimsData } = await supabase.auth.getClaims();
+    user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
   } catch {
     // Supabase unreachable or misconfigured — treat as unauthenticated
     if (!isAuthRoute) {
@@ -60,31 +59,25 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Check onboarding status for authenticated users on non-onboarding routes
-  if (user && supabase && !isAuthRoute && !isOnboardingRoute) {
-    try {
-      const { data: userRow } = await supabase
-        .from('users')
-        .select('onboarding_completed')
-        .eq('id', user.id)
-        .single();
-
-      if (userRow && !userRow.onboarding_completed) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/onboarding';
-        return NextResponse.redirect(url);
-      }
-    } catch {
-      // If we can't check onboarding status, let them through
-    }
+  // Onboarding completion is immutable. Avoid a database round-trip on every
+  // navigation by recording it only after the onboarding update succeeds.
+  if (user && !isAuthRoute && !isOnboardingRoute && request.cookies.get('liftos-onboarded')?.value !== user.id) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/onboarding';
+    return NextResponse.redirect(url);
   }
 
   return supabaseResponse;
 }
 
 export const config = {
-  matcher: [
-    // Skip Next.js internals, static files, service worker, and SEO routes
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|icons/|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: [{
+    // Skip Next.js internals, static files, service worker, SEO routes, RSC,
+    // and router prefetches. Document requests remain auth-protected.
+    source: '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|icons/|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    missing: [
+      { type: 'header', key: 'next-router-prefetch' },
+      { type: 'header', key: 'RSC' },
+    ],
+  }],
 };

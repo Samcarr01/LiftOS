@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/store/auth-store';
 import type { HistorySessionSummary } from '@/types/app';
 import { fetchSessionPreviews } from '@/lib/workout/session-previews';
 
@@ -12,15 +13,33 @@ export interface HistoryPage {
   hasMore:  boolean;
 }
 
-export function useHistory() {
-  const [sessions, setSessions]   = useState<HistorySessionSummary[]>([]);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState<string | null>(null);
-  const [hasMore, setHasMore]     = useState(true);
-  const pageRef                   = useRef(0);
+const cachedHistoryByUser = new Map<string, { page: HistoryPage; nextPage: number }>();
 
-  const load = useCallback(async (reset = false) => {
-    setLoading(true);
+export function useHistory() {
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+  const cached = userId ? cachedHistoryByUser.get(userId) : undefined;
+  const [state, setState] = useState(() => ({
+    userId,
+    sessions: cached?.page.sessions ?? [],
+    hasMore: cached?.page.hasMore ?? true,
+    loading: cached === undefined && userId !== null,
+  }));
+  const [error, setError]         = useState<string | null>(null);
+  const pageRef                   = useRef(cached?.nextPage ?? 0);
+  const activeUserId              = useRef(userId);
+  useEffect(() => { activeUserId.current = userId; }, [userId]);
+
+  const load = useCallback(async (reset = false, options?: { silent?: boolean }) => {
+    if (!userId) {
+      setState({ userId: null, sessions: [], hasMore: true, loading: false });
+      return;
+    }
+    const userCache = cachedHistoryByUser.get(userId);
+    if (!options?.silent || userCache === undefined) {
+      setState((previous) => previous.userId === userId
+        ? { ...previous, loading: true }
+        : { userId, sessions: userCache?.page.sessions ?? [], hasMore: userCache?.page.hasMore ?? true, loading: true });
+    }
     setError(null);
     const supabase = createClient();
     const currentPage = reset ? 0 : pageRef.current;
@@ -44,8 +63,9 @@ export function useHistory() {
       .range(offset, offset + PAGE_SIZE - 1);
 
     if (queryError || !data) {
+      if (activeUserId.current !== userId) return;
       setError(queryError?.message ?? 'Failed to load history');
-      setLoading(false);
+      setState((previous) => previous.userId === userId ? { ...previous, loading: false } : previous);
       return;
     }
 
@@ -83,20 +103,29 @@ export function useHistory() {
       session.primary_result = preview?.primaryResult ?? null;
     }
 
-    if (reset) {
-      setSessions(mapped);
-      pageRef.current = 1;
-    } else {
-      setSessions((prev) => [...prev, ...mapped]);
-      pageRef.current = currentPage + 1;
-    }
+    if (activeUserId.current !== userId) return;
+    const nextSessions = reset ? mapped : [...(cachedHistoryByUser.get(userId)?.page.sessions ?? []), ...mapped];
+    const nextHasMore = data.length === PAGE_SIZE;
+    const nextPage = currentPage + 1;
+    cachedHistoryByUser.set(userId, { page: { sessions: nextSessions, hasMore: nextHasMore }, nextPage });
+    pageRef.current = nextPage;
+    setState({ userId, sessions: nextSessions, hasMore: nextHasMore, loading: false });
+  }, [userId]);
 
-    setHasMore(data.length === PAGE_SIZE);
-    setLoading(false);
-  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void load(true, { silent: cachedHistoryByUser.has(userId ?? '') });
+    });
+    return () => { cancelled = true; };
+  }, [load, userId]);
 
-  const refresh = useCallback(() => load(true), [load]);
+  const refresh = useCallback(() => load(true, { silent: true }), [load]);
+  const sessions = state.userId === userId ? state.sessions : cached?.page.sessions ?? [];
+  const loading = state.userId === userId ? state.loading : cached === undefined && userId !== null;
+  const hasMore = state.userId === userId ? state.hasMore : cached?.page.hasMore ?? true;
+  const visibleError = state.userId === userId ? error : null;
   const loadMore = useCallback(() => { if (!loading && hasMore) load(false); }, [load, loading, hasMore]);
 
-  return { sessions, loading, error, hasMore, refresh, loadMore };
+  return { sessions, loading, error: visibleError, hasMore, refresh, loadMore };
 }

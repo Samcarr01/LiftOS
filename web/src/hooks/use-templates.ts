@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
 import type { WorkoutTemplateRow, TemplateExerciseRow } from '@/types/database';
@@ -26,17 +26,28 @@ export interface UseTemplatesReturn {
   updateTemplateName: (id: string, name: string) => Promise<void>;
 }
 
+const cachedTemplatesByUser = new Map<string, TemplateWithCount[]>();
+
 export function useTemplates(): UseTemplatesReturn {
   const user = useAuthStore((s) => s.user);
+  const userId = user?.id ?? null;
   const supabase = createClient();
+  const cachedTemplates = userId ? cachedTemplatesByUser.get(userId) : undefined;
 
-  const [templates, setTemplates] = useState<TemplateWithCount[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [templates, setTemplates] = useState<TemplateWithCount[]>(cachedTemplates ?? []);
+  const [isLoading, setIsLoading] = useState(cachedTemplates === undefined);
   const [error, setError] = useState<string | null>(null);
+  const [templatesUserId, setTemplatesUserId] = useState<string | null>(userId);
+  const activeUserId = useRef(userId);
+  activeUserId.current = userId;
 
-  const fetchTemplates = useCallback(async (): Promise<void> => {
-    if (!user) return;
-    setIsLoading(true);
+  const fetchTemplates = useCallback(async (options?: { silent?: boolean }): Promise<void> => {
+    if (!user) {
+      setTemplates([]);
+      setIsLoading(false);
+      return;
+    }
+    if (!options?.silent || !cachedTemplatesByUser.has(user.id)) setIsLoading(true);
     setError(null);
     try {
       const { data: tmplData, error: tmplErr } = await supabase
@@ -67,11 +78,16 @@ export function useTemplates(): UseTemplatesReturn {
         }, {});
       }
 
-      setTemplates(rows.map((t) => ({ ...t, exercise_count: countMap[t.id] ?? 0 })));
+      const enriched = rows.map((t) => ({ ...t, exercise_count: countMap[t.id] ?? 0 }));
+      if (activeUserId.current !== user.id) return;
+      cachedTemplatesByUser.set(user.id, enriched);
+      setTemplatesUserId(user.id);
+      setTemplates(enriched);
     } catch (err: unknown) {
+      if (activeUserId.current !== user.id) return;
       setError((err as { message?: string }).message ?? 'Failed to load templates.');
     } finally {
-      setIsLoading(false);
+      if (activeUserId.current === user.id) setIsLoading(false);
     }
   }, [user, supabase]);
 
@@ -86,7 +102,12 @@ export function useTemplates(): UseTemplatesReturn {
     if (dbErr) throw dbErr;
     if (!row) throw new Error('No row returned from insert.');
     const enriched: TemplateWithCount = { ...row, exercise_count: 0 };
-    setTemplates((prev) => [enriched, ...prev]);
+    setTemplates((prev) => {
+      if (activeUserId.current !== user.id) return prev;
+      const next = [enriched, ...prev];
+      cachedTemplatesByUser.set(user.id, next);
+      return next;
+    });
     return enriched;
   }, [user, supabase]);
 
@@ -99,7 +120,12 @@ export function useTemplates(): UseTemplatesReturn {
       .eq('user_id', user.id) as { error: unknown };
 
     if (dbErr) throw dbErr;
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
+    setTemplates((prev) => {
+      if (activeUserId.current !== user.id) return prev;
+      const next = prev.filter((t) => t.id !== id);
+      cachedTemplatesByUser.set(user.id, next);
+      return next;
+    });
   }, [user, supabase]);
 
   const duplicateTemplate = useCallback(async (id: string): Promise<void> => {
@@ -142,7 +168,12 @@ export function useTemplates(): UseTemplatesReturn {
       if (copyErr) throw copyErr;
     }
 
-    setTemplates((prev) => [{ ...newTmpl, exercise_count: exercises.length }, ...prev]);
+    setTemplates((prev) => {
+      if (activeUserId.current !== user.id) return prev;
+      const next = [{ ...newTmpl, exercise_count: exercises.length }, ...prev];
+      cachedTemplatesByUser.set(user.id, next);
+      return next;
+    });
   }, [user, supabase, templates]);
 
   const togglePin = useCallback(async (id: string): Promise<void> => {
@@ -152,7 +183,12 @@ export function useTemplates(): UseTemplatesReturn {
     const newPinned = !template.is_pinned;
 
     // Optimistic update
-    setTemplates((prev) => prev.map((t) => (t.id === id ? { ...t, is_pinned: newPinned } : t)));
+    setTemplates((prev) => {
+      if (activeUserId.current !== user.id) return prev;
+      const next = prev.map((t) => (t.id === id ? { ...t, is_pinned: newPinned } : t));
+      cachedTemplatesByUser.set(user.id, next);
+      return next;
+    });
 
     const { error: dbErr } = await supabase
       .from('workout_templates')
@@ -161,14 +197,24 @@ export function useTemplates(): UseTemplatesReturn {
       .eq('user_id', user.id) as { error: unknown };
 
     if (dbErr) {
-      setTemplates((prev) => prev.map((t) => (t.id === id ? { ...t, is_pinned: !newPinned } : t)));
+      setTemplates((prev) => {
+        if (activeUserId.current !== user.id) return prev;
+        const next = prev.map((t) => (t.id === id ? { ...t, is_pinned: !newPinned } : t));
+        cachedTemplatesByUser.set(user.id, next);
+        return next;
+      });
       throw dbErr;
     }
   }, [user, supabase, templates]);
 
   const updateTemplateName = useCallback(async (id: string, name: string): Promise<void> => {
     if (!user || !name.trim()) return;
-    setTemplates((prev) => prev.map((t) => (t.id === id ? { ...t, name: name.trim() } : t)));
+    setTemplates((prev) => {
+      if (activeUserId.current !== user.id) return prev;
+      const next = prev.map((t) => (t.id === id ? { ...t, name: name.trim() } : t));
+      cachedTemplatesByUser.set(user.id, next);
+      return next;
+    });
     const { error: dbErr } = await supabase
       .from('workout_templates')
       .update({ name: name.trim() })
@@ -177,7 +223,17 @@ export function useTemplates(): UseTemplatesReturn {
     if (dbErr) throw dbErr;
   }, [user, supabase]);
 
-  useEffect(() => { void fetchTemplates(); }, [fetchTemplates]);
+  useEffect(() => {
+    const cached = userId ? cachedTemplatesByUser.get(userId) : undefined;
+    setTemplatesUserId(userId);
+    setTemplates(cached ?? []);
+    setIsLoading(cached === undefined && userId !== null);
+    setError(null);
+    void fetchTemplates({ silent: cached !== undefined });
+  }, [fetchTemplates, userId]);
 
-  return { templates, isLoading, error, fetchTemplates, createTemplate, deleteTemplate, duplicateTemplate, togglePin, updateTemplateName };
+  const visibleTemplates = templatesUserId === userId ? templates : cachedTemplates ?? [];
+  const visibleLoading = templatesUserId === userId ? isLoading : cachedTemplates === undefined && userId !== null;
+  const visibleError = templatesUserId === userId ? error : null;
+  return { templates: visibleTemplates, isLoading: visibleLoading, error: visibleError, fetchTemplates, createTemplate, deleteTemplate, duplicateTemplate, togglePin, updateTemplateName };
 }

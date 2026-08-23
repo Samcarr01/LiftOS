@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { Calendar, CalendarClock, ChevronRight, Loader2 } from 'lucide-react';
 import { useHistory } from '@/hooks/use-history';
@@ -53,17 +53,6 @@ function SessionRow({ session }: { session: HistorySessionSummary }) {
 export default function HistoryPage() {
   const { sessions, loading, error, hasMore, refresh, loadMore } = useHistory();
 
-  useEffect(() => {
-    void refresh();
-
-    function handleVisibilityChange() {
-      if (document.visibilityState === 'visible') {
-        void refresh();
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const groups = useMemo(() => groupByMonth(sessions), [sessions]);
 
