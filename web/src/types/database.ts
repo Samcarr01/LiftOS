@@ -35,6 +35,9 @@ export interface Database {
           avatar_url: string | null;
           prefill_sort_heaviest_first: boolean;
           weekly_workout_target: number;
+          xp_total: number;
+          xp_level: number;
+          session_count: number;
           training_phase: 'build' | 'maintain' | 'cut';
           training_phase_started_at: string | null;
           created_at: string;

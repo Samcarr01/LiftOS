@@ -13,10 +13,6 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
 import type { TemplateWithCount } from './use-templates';
 import type { HistorySessionSummary } from '@/types/app';
-import { TrackingSchemaValidator } from '@/lib/validation';
-
-import type { Json } from '@/types/database';
-import type { XpInputSession, XpInputPR } from '@/lib/leveling/xp';
 
 const cachedHomeDataByUser = new Map<string, HomeData>();
 
@@ -29,10 +25,10 @@ export interface HomeData {
   recentSessions:     HistorySessionSummary[];
   /** Last ~90 days of completed-session start dates, used by the streak heatmap. */
   activityDates:      { started_at: string }[];
-  /** All-time completed sessions, used by the level/XP computation. */
-  xpSessions:         XpInputSession[];
-  /** All-time PRs, used by the level/XP computation. */
-  xpPRs:              XpInputPR[];
+  /** Materialised progress maintained by database completion/PR triggers. */
+  xpTotal:            number;
+  xpLevel:            number;
+  sessionCount:       number;
 }
 
 async function fetchHomeData(): Promise<HomeData> {
@@ -46,10 +42,8 @@ async function fetchHomeData(): Promise<HomeData> {
     templatesResult,
     sessionsResult,
     activityResult,
-    xpSessionsResult,
-    xpPRsResult,
   ] = await Promise.all([
-    supabase.from('users').select('display_name, avatar_url, weekly_workout_target').single(),
+    supabase.from('users').select('display_name, avatar_url, weekly_workout_target, xp_total, xp_level, session_count').single(),
 
     supabase
       .from('workout_templates')
@@ -68,11 +62,11 @@ async function fetchHomeData(): Promise<HomeData> {
         template_name,
         is_light_session,
         workout_templates ( name ),
-        session_exercises ( id, order_index, set_entries ( count ), exercises ( name, tracking_schema ) )
+        session_exercises ( id, order_index, set_entries ( count ), exercises ( name ) )
       `)
       .not('completed_at', 'is', null)
       .order('started_at', { ascending: false })
-      .limit(10),
+      .limit(3),
 
     // Lightweight: just dates of completed sessions in the last 90 days, for
     // the heatmap. Separate query so we don't bloat the joined preview above.
@@ -83,31 +77,23 @@ async function fetchHomeData(): Promise<HomeData> {
       .gte('started_at', ninetyDaysAgo.toISOString())
       .order('started_at', { ascending: false }),
 
-    // All-time XP inputs: every completed session + every PR's session link.
-    // Tiny rows; RLS scopes to the current user automatically so this works
-    // for every user without any per-user logic.
-    supabase
-      .from('workout_sessions')
-      .select('id, started_at, is_light_session')
-      .not('completed_at', 'is', null)
-      .order('started_at', { ascending: true }),
-
-    supabase
-      .from('personal_records')
-      .select('session_id'),
   ]);
 
   const profileRow = profileResult.data as {
     display_name: string | null;
     avatar_url: string | null;
     weekly_workout_target: number | null;
+    xp_total: number;
+    xp_level: number;
+    session_count: number;
   } | null;
   const displayName  = profileRow?.display_name ?? null;
   const avatarUrl    = profileRow?.avatar_url   ?? null;
   const weeklyTarget = profileRow?.weekly_workout_target ?? 4;
+  const xpTotal = profileRow?.xp_total ?? 0;
+  const xpLevel = profileRow?.xp_level ?? 1;
+  const sessionCount = profileRow?.session_count ?? 0;
   const activityDates = (activityResult.data ?? []) as { started_at: string }[];
-  const xpSessions    = (xpSessionsResult.data ?? []) as XpInputSession[];
-  const xpPRs         = (xpPRsResult.data ?? []) as XpInputPR[];
 
   // Map templates
   const rawTemplates = (templatesResult.data ?? []) as Array<{
@@ -151,7 +137,7 @@ async function fetchHomeData(): Promise<HomeData> {
       id: string;
       order_index: number;
       set_entries: { count: number }[];
-      exercises: { name: string; tracking_schema: Json } | null;
+      exercises: { name: string } | null;
     }[];
   }>;
 
@@ -159,16 +145,8 @@ async function fetchHomeData(): Promise<HomeData> {
     // Find primary exercise (first by order_index)
     const sorted = [...(s.session_exercises ?? [])].sort((a, b) => a.order_index - b.order_index);
     let primaryName: string | null = null;
-    const primaryResult: string | null = null;
-
-    for (const se of sorted) {
-      if (!se.exercises?.name || !se.exercises?.tracking_schema) continue;
-      const parsed = TrackingSchemaValidator.safeParse(se.exercises.tracking_schema);
-      if (!parsed.success) continue;
-      primaryName = se.exercises.name;
-      // We don't have individual set values in the count query, so just show the exercise name
-      break;
-    }
+    const primaryExercise = sorted.find((se) => se.exercises?.name)?.exercises;
+    if (primaryExercise?.name) primaryName = primaryExercise.name;
 
     return {
       id:               s.id,
@@ -180,12 +158,12 @@ async function fetchHomeData(): Promise<HomeData> {
       total_sets:       s.session_exercises?.reduce((sum, se) => sum + (se.set_entries?.[0]?.count ?? 0), 0) ?? 0,
       volume_kg:        0,
       primary_exercise_name: primaryName,
-      primary_result: primaryResult,
+      primary_result: null,
       is_light_session: s.is_light_session,
     };
   });
 
-  return { displayName, avatarUrl, weeklyTarget, suggested, pinned, recentSessions, activityDates, xpSessions, xpPRs };
+  return { displayName, avatarUrl, weeklyTarget, suggested, pinned, recentSessions, activityDates, xpTotal, xpLevel, sessionCount };
 }
 
 export function useHomeData() {
