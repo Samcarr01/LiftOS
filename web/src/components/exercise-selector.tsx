@@ -34,7 +34,7 @@ export function ExerciseSelector({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<'browse' | 'create'>(defaultMode);
-  const { exercises, isLoading, createExercise } = useExercises();
+  const { exercises, isLoading, createExercise } = useExercises({ enabled: open });
 
   // Browse state
   const [search, setSearch] = useState('');

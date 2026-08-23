@@ -88,7 +88,7 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
 
-  if (!workout) return null;
+  if (!open || !workout) return null;
 
   const { totalSets, doneSets, remainingSets } = computeSummary(workout);
 
@@ -122,10 +122,11 @@ export function FinishDialog({ open, onClose }: FinishDialogProps) {
     setIsCompleting(true);
 
     try {
-      // Refresh the session before saving — the token may have expired
-      // if the user was in the gym for a long time
       const supabase = createClient();
-      await supabase.auth.refreshSession();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.expires_at && session.expires_at * 1000 - Date.now() < 120_000) {
+        await supabase.auth.refreshSession();
+      }
 
       const response = await fetch('/api/workouts/complete', {
         method: 'POST',

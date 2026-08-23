@@ -34,7 +34,7 @@ function DesktopInput({ value, onChange, field, disabled }: NumericInputProps) {
   const numVal = typeof value === 'number' ? value : 0;
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex min-h-[44px] items-center gap-1">
       <button
         type="button"
         disabled={disabled}
@@ -170,7 +170,7 @@ function MobileNumpad({
       <div className="flex-1" onClick={onCancel} />
 
       {/* Numpad panel */}
-      <div className="rounded-t-2xl border-t border-border bg-white/[0.10] backdrop-blur-2xl px-4 pt-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+      <div className="rounded-t-2xl border-t border-border bg-[oklch(0.16_0.015_260)] px-4 pt-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
         {/* Header: what is being edited, and a discoverable way out. Cancel
             sits here rather than under the keys so the pad stays as short as
             its keypad — it is the same dismissal the backdrop and Escape use,
@@ -267,42 +267,7 @@ function MobileNumpad({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function NumericInput({ value, onChange, field, disabled }: NumericInputProps) {
-  const [isMobile, setIsMobile]   = useState(false);
-  const [mounted,  setMounted]    = useState(false);
   const [numpadOpen, setNumpadOpen] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    setIsMobile(window.matchMedia('(pointer: coarse)').matches);
-  }, []);
-
-  // Before mount: render desktop input (prevents hydration mismatch)
-  if (!mounted) {
-    return (
-      <input
-        type="text"
-        inputMode="decimal"
-        aria-label={getInputLabel(field)}
-        value={value === '' ? '' : value}
-        readOnly
-        placeholder="—"
-        className="h-9 w-20 rounded-lg border border-input bg-card px-2 text-center text-base font-medium"
-      />
-    );
-  }
-
-  if (!isMobile) {
-    return (
-      <DesktopInput
-        value={value}
-        onChange={onChange}
-        field={field}
-        disabled={disabled}
-      />
-    );
-  }
-
-  // Mobile: tap to open numpad
   const displayValue = value === '' ? null : value;
 
   return (
@@ -314,8 +279,7 @@ export function NumericInput({ value, onChange, field, disabled }: NumericInputP
         aria-label={getInputLabel(field)}
         title={getInputLabel(field)}
         className={cn(
-          'flex min-h-[44px] min-w-[60px] items-center justify-center rounded-xl border border-border bg-card px-3 text-sm font-semibold',
-          'active:bg-muted transition-colors',
+          'tappable hidden min-h-[44px] min-w-[60px] items-center justify-center rounded-xl border border-border bg-card px-3 text-sm font-semibold pointer-coarse:flex',
           disabled && 'opacity-50',
         )}
       >
@@ -328,6 +292,10 @@ export function NumericInput({ value, onChange, field, disabled }: NumericInputP
           </span>
         )}
       </button>
+
+      <span className="pointer-coarse:hidden">
+        <DesktopInput value={value} onChange={onChange} field={field} disabled={disabled} />
+      </span>
 
       {numpadOpen && (
         <MobileNumpad

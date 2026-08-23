@@ -30,7 +30,7 @@ export interface UseExercisesReturn {
   deleteExercise: (id: string) => Promise<void>;
 }
 
-export function useExercises(): UseExercisesReturn {
+export function useExercises({ enabled = true }: { enabled?: boolean } = {}): UseExercisesReturn {
   const user = useAuthStore((s) => s.user);
   const supabase = createClient();
 
@@ -145,7 +145,7 @@ export function useExercises(): UseExercisesReturn {
     setExercises((prev) => prev.filter((e) => e.id !== id));
   }, [user, supabase]);
 
-  useEffect(() => { void fetchExercises(); }, [fetchExercises]);
+  useEffect(() => { if (enabled) void fetchExercises(); }, [enabled, fetchExercises]);
 
   return { exercises, isLoading, error, fetchExercises, createExercise, updateExercise, archiveExercise, deleteExercise };
 }

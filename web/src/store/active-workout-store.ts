@@ -27,13 +27,32 @@ export interface GlobalRestTimer {
 
 // ── Store interface ───────────────────────────────────────────────────────────
 
+/**
+ * One exercise's share of the read branch of Start Workout.
+ *
+ * `hydrateWorkout` now runs on the write branch alone, so the lifter reaches
+ * their exercise list without waiting on last-session snapshots or guided
+ * targets. These arrive a beat later and fill the display-only columns in.
+ */
+export interface PrefillAndSuggestionUpdate {
+  sessionExerciseId:   string;
+  lastPerformanceSets: SetValues[] | null;
+  aiSuggestion:        ActiveExerciseState['aiSuggestion'];
+  /**
+   * Positional set types from the prefill build — the previous session's shape
+   * (a leading warmup, say), which is only knowable once the snapshot lands.
+   */
+  setTypes:            SetEntry['setType'][];
+}
+
 interface ActiveWorkoutStore {
   workout:              ActiveWorkoutState | null;
   restTimer:            GlobalRestTimer;
   dismissedSuggestions: number[]; // exerciseIndex values
 
   // Lifecycle
-  hydrateWorkout:    (response: StartWorkoutResponse) => void;
+  hydrateWorkout:            (response: StartWorkoutResponse) => void;
+  applyPrefillAndSuggestions: (sessionId: string, updates: PrefillAndSuggestionUpdate[]) => void;
   clearWorkout:      () => void;
   setIsCompleting:   (v: boolean) => void;
   setIsLightSession: (v: boolean) => void;
@@ -136,7 +155,8 @@ function issuedWatermark(
 }
 
 /**
- * `localStorage`, looked up per call rather than once at module load.
+ * `localStorage`, looked up per call rather than once at module load, and
+ * written in idle time rather than inside the mutation.
  *
  * Zustand's default storage reads `window.localStorage` while the store is
  * being created, so anywhere `window` is absent at that instant — a server
@@ -144,12 +164,73 @@ function issuedWatermark(
  * middleware silently detaches itself and `useActiveWorkoutStore.persist`
  * never exists. Resolving late keeps the browser behaviour byte-identical and
  * leaves the persist API observable everywhere else.
+ *
+ * Persist wraps `set`, so the serialise-and-write happens *before* React is
+ * told anything changed: every tap of the tick used to stringify the whole
+ * workout (25–60 KB for an eight-exercise session) and block on a
+ * `localStorage` write, twice — once for the set, once for the rest timer.
+ * Deferring is safe because durability does not live here: `logSetEntry`
+ * queues every completed set into Dexie, and this copy is only crash-resume
+ * state. The last write wins per key, so coalescing loses nothing but work.
  */
+
+/** Newest value per key, waiting for the flush that will write it. */
+let pendingWrites: Record<string, string> = {};
+let flushHandle: number | null = null;
+
+function cancelScheduledFlush() {
+  if (flushHandle === null) return;
+  if (typeof globalThis.cancelIdleCallback === 'function') globalThis.cancelIdleCallback(flushHandle);
+  else clearTimeout(flushHandle);
+  flushHandle = null;
+}
+
+/** Write everything outstanding. Safe to call when nothing is outstanding. */
+function flushPendingWrites() {
+  flushHandle = null;
+  const writes = pendingWrites;
+  pendingWrites = {};
+  for (const [name, value] of Object.entries(writes)) {
+    globalThis.localStorage?.setItem(name, value);
+  }
+}
+
+/**
+ * Idle, or 400 ms from now — whichever comes first. `requestIdleCallback`'s
+ * own `timeout` gives the deadline where it exists; `setTimeout` is the
+ * deadline where it doesn't (Safari).
+ */
+function scheduleFlush() {
+  if (flushHandle !== null) return;
+  flushHandle = typeof globalThis.requestIdleCallback === 'function'
+    ? globalThis.requestIdleCallback(flushPendingWrites, { timeout: 400 })
+    : (setTimeout(flushPendingWrites, 400) as unknown as number);
+}
+
 const LAZY_LOCAL_STORAGE: StateStorage = {
-  getItem:    (name) => globalThis.localStorage?.getItem(name) ?? null,
-  setItem:    (name, value) => { globalThis.localStorage?.setItem(name, value); },
-  removeItem: (name) => { globalThis.localStorage?.removeItem(name); },
+  // Pending beats stored: a read between a write and its flush must not see
+  // the value the flush is about to replace.
+  getItem:    (name) => pendingWrites[name] ?? globalThis.localStorage?.getItem(name) ?? null,
+  setItem:    (name, value) => { pendingWrites[name] = value; scheduleFlush(); },
+  // Removal is immediate and cancels any write still queued for that key —
+  // a deferred write must never resurrect a workout the lifter discarded.
+  removeItem: (name) => { delete pendingWrites[name]; globalThis.localStorage?.removeItem(name); },
 };
+
+// Backgrounding a PWA is the one moment the deferral could cost something, so
+// both events that precede it flush synchronously. `pagehide` covers the
+// bfcache/terminate path that `visibilitychange` does not fire for on iOS.
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'hidden') return;
+    cancelScheduledFlush();
+    flushPendingWrites();
+  });
+  window.addEventListener('pagehide', () => {
+    cancelScheduledFlush();
+    flushPendingWrites();
+  });
+}
 
 // ── RIR eligibility ───────────────────────────────────────────────────────────
 // One optional rating per exercise, and it belongs to the set the lifter
@@ -253,6 +334,43 @@ export const useActiveWorkoutStore = create<ActiveWorkoutStore>()(persist((set, 
       },
       restTimer:            DEFAULT_REST,
       dismissedSuggestions: [],
+    });
+  },
+
+  /**
+   * Fill in the display-only half of a workout that was hydrated early.
+   *
+   * Late by construction, so it never overwrites the lifter. `lastPerformanceSets`
+   * and `aiSuggestion` are read-only columns and simply land; a set type only
+   * lands on a row that is still exactly as it was created — untyped, unlogged,
+   * uncompleted. A workout the lifter has already left, or a different session
+   * entirely, is not touched at all.
+   */
+  applyPrefillAndSuggestions(sessionId, updates) {
+    set((s) => {
+      if (!s.workout || s.workout.session.id !== sessionId) return {};
+
+      const bySessionExerciseId = new Map(updates.map((u) => [u.sessionExerciseId, u]));
+      let matched = false;
+
+      const exercises = s.workout.exercises.map((ex) => {
+        const update = bySessionExerciseId.get(ex.sessionExercise.id);
+        if (!update) return ex;
+        matched = true;
+
+        const sets = ex.sets.map((st, index) => {
+          const setType = update.setTypes[index];
+          const untouched = !st.isCompleted && st.loggedAt === '' && Object.keys(st.values).length === 0;
+          return setType && untouched && setType !== st.setType ? { ...st, setType } : st;
+        });
+
+        return withSets(
+          { ...ex, lastPerformanceSets: update.lastPerformanceSets, aiSuggestion: update.aiSuggestion },
+          sets,
+        );
+      });
+
+      return matched ? { workout: { ...s.workout, exercises } } : {};
     });
   },
 
