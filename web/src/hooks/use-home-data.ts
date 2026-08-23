@@ -8,14 +8,17 @@
  * via `refresh()` on pull-to-refresh.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/store/auth-store';
 import type { TemplateWithCount } from './use-templates';
 import type { HistorySessionSummary } from '@/types/app';
 import { TrackingSchemaValidator } from '@/lib/validation';
-import { summarizeSetResult, type TrackingSetLike } from '@/lib/workout/formatting';
+
 import type { Json } from '@/types/database';
 import type { XpInputSession, XpInputPR } from '@/lib/leveling/xp';
+
+const cachedHomeDataByUser = new Map<string, HomeData>();
 
 export interface HomeData {
   displayName:        string | null;
@@ -156,7 +159,7 @@ async function fetchHomeData(): Promise<HomeData> {
     // Find primary exercise (first by order_index)
     const sorted = [...(s.session_exercises ?? [])].sort((a, b) => a.order_index - b.order_index);
     let primaryName: string | null = null;
-    let primaryResult: string | null = null;
+    const primaryResult: string | null = null;
 
     for (const se of sorted) {
       if (!se.exercises?.name || !se.exercises?.tracking_schema) continue;
@@ -186,20 +189,40 @@ async function fetchHomeData(): Promise<HomeData> {
 }
 
 export function useHomeData() {
-  const [data, setData]       = useState<HomeData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+  const cachedData = userId ? cachedHomeDataByUser.get(userId) : undefined;
+  const [state, setState] = useState(() => ({ userId, data: cachedData ?? null, loading: cachedData === undefined && userId !== null }));
+  const activeUserId = useRef(userId);
+  activeUserId.current = userId;
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (options?: { silent?: boolean }) => {
+    if (!userId) {
+      setState({ userId: null, data: null, loading: false });
+      return;
+    }
+    const cached = cachedHomeDataByUser.get(userId);
+    if (!options?.silent || cached === undefined) {
+      setState((previous) => previous.userId === userId ? { ...previous, loading: true } : { userId, data: cached ?? null, loading: true });
+    }
     try {
       const result = await fetchHomeData();
-      setData(result);
+      if (activeUserId.current !== userId) return;
+      cachedHomeDataByUser.set(userId, result);
+      setState({ userId, data: result, loading: false });
     } finally {
-      setLoading(false);
+      if (activeUserId.current === userId) {
+        setState((previous) => previous.userId === userId ? { ...previous, loading: false } : previous);
+      }
     }
-  }, []);
+  }, [userId]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const cached = userId ? cachedHomeDataByUser.get(userId) : undefined;
+    setState({ userId, data: cached ?? null, loading: cached === undefined && userId !== null });
+    void load({ silent: cached !== undefined });
+  }, [load, userId]);
 
-  return { data, loading, refresh: load };
+  const data = state.userId === userId ? state.data : cachedData ?? null;
+  const loading = state.userId === userId ? state.loading : cachedData === undefined && userId !== null;
+  return { data, loading: loading && data === null, refresh: () => load({ silent: true }) };
 }

@@ -50,7 +50,7 @@ function formatToday(): string {
 function ResumeWorkoutBanner() {
   const workout = useActiveWorkoutStore((s) => s.workout);
   const clearWorkout = useActiveWorkoutStore((s) => s.clearWorkout);
-  const [hydrated, setHydrated] = useState(false);
+  const [hydrated, setHydrated] = useState(() => useActiveWorkoutStore.persist.hasHydrated());
   const [discarding, setDiscarding] = useState(false);
   const [elapsed, setElapsed] = useState('');
   const discarder = useMemo(() => {
@@ -65,12 +65,11 @@ function ResumeWorkoutBanner() {
       navigateHome: () => {},
       onError: (message) => toast.error("Couldn't discard workout", { description: message }),
     });
-  }, [workout?.session.id, clearWorkout]);
+  }, [workout, clearWorkout]);
 
   useEffect(() => {
     // Wait for Zustand persist to rehydrate from localStorage
     const unsub = useActiveWorkoutStore.persist.onFinishHydration(() => setHydrated(true));
-    if (useActiveWorkoutStore.persist.hasHydrated()) setHydrated(true);
     return unsub;
   }, []);
 
@@ -225,7 +224,7 @@ function StartWorkoutSheet({
 export default function HomePage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [starting, setStarting] = useState<string | null>(null);
-  const { data, loading, refresh } = useHomeData();
+  const { data, loading } = useHomeData();
   const { startWorkout } = useStartWorkout();
   const { hasSeenTutorial, markTutorialSeen } = useTutorialStore();
   const [showTutorial, setShowTutorial] = useState(false);
@@ -241,14 +240,6 @@ export default function HomePage() {
     }
   }, [hasSeenTutorial]);
 
-  // Refetch when returning from workout or regaining focus
-  useEffect(() => {
-    function handleVisibilityChange() {
-      if (document.visibilityState === 'visible') void refresh();
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [refresh]);
 
   async function handleQuickStart(templateId: string) {
     setStarting(templateId);
