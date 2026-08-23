@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageShell } from '@/components/layout/page-shell';
 import { useTemplates } from '@/hooks/use-templates';
 import { useStartWorkout } from '@/hooks/use-start-workout';
 import { useHomeData } from '@/hooks/use-home-data';
@@ -262,8 +263,7 @@ export default function HomePage() {
         }}
       />
     )}
-    <div className="page-shell">
-      <div className="page-content space-y-6 py-6 md:py-8">
+    <PageShell className="space-y-6">
 
         {/* ── Header ──────────────────────────────── */}
         <div className="page-reveal flex items-start justify-between gap-3">
@@ -484,7 +484,6 @@ export default function HomePage() {
             </div>
           </section>
         )}
-      </div>
 
       {sheetOpen && (
         <StartWorkoutSheet
@@ -492,7 +491,7 @@ export default function HomePage() {
           onClose={() => setSheetOpen(false)}
         />
       )}
-    </div>
+    </PageShell>
     </>
   );
 }

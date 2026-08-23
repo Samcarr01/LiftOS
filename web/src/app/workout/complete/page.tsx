@@ -13,6 +13,7 @@ import { useActiveWorkoutStore } from '@/store/active-workout-store';
 import type { CompletionPR, CompletionSummary } from '@/store/completion-store';
 import { useTierPromotion } from '@/hooks/use-tier-promotion';
 import { TierPromotionOverlay } from '@/components/home/tier-promotion-overlay';
+import { PageShell } from '@/components/layout/page-shell';
 import { createClient } from '@/lib/supabase/client';
 import {
   computeXp, levelFromXp, tierForLevel, computeSessionXp,
@@ -371,7 +372,7 @@ export default function WorkoutCompletePage() {
   }
 
   return (
-    <div className="page-shell min-h-[100dvh]">
+    <PageShell className="min-h-[100dvh] max-w-none px-0 py-0">
       <div className="relative z-10 flex min-h-[100dvh] flex-col items-center px-4 pb-8 pt-8">
       {/* Hero */}
       <div
@@ -462,7 +463,7 @@ export default function WorkoutCompletePage() {
         />
       )}
       </div>
-    </div>
+    </PageShell>
   );
 }
 

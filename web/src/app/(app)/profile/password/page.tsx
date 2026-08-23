@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { BackButton } from '@/components/ui/back-button';
+import { PageShell } from '@/components/layout/page-shell';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
@@ -48,16 +48,10 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <div className="page-shell">
-      <div className="page-content py-5 md:py-7 space-y-5">
-        <BackButton href="/profile" label="Back to profile" />
-
-        <div>
-          <h1 className="font-display text-2xl font-bold">Change Password</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            You&apos;ll need your current password to confirm it&apos;s you.
-          </p>
-        </div>
+    <PageShell title="Change Password" back="/profile">
+      <p className="text-sm text-muted-foreground">
+        You&apos;ll need your current password to confirm it&apos;s you.
+      </p>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="space-y-1.5">
@@ -114,7 +108,6 @@ export default function ChangePasswordPage() {
             Update password
           </button>
         </form>
-      </div>
-    </div>
+    </PageShell>
   );
 }

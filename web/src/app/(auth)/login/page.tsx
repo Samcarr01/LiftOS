@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Loader2, Sparkles, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
+import { PageShell } from '@/components/layout/page-shell';
 import { useAuthStore } from '@/store/auth-store';
 
 type Mode = 'signin' | 'signup' | 'forgot';
@@ -227,8 +228,16 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="page-shell relative flex min-h-[100dvh] items-center overflow-hidden px-4 py-10">
-      <div className="page-content relative grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+    <PageShell
+      className="relative grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]"
+      shellClassName="relative flex min-h-[100dvh] items-center overflow-hidden px-4 py-10"
+      overlay={
+        <div className="pointer-events-none absolute bottom-8 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/20 px-4 py-2 text-xs uppercase tracking-[0.06em] text-muted-foreground backdrop-blur md:flex">
+          <Sparkles className="h-3.5 w-3.5" />
+          LiftOS Web App
+        </div>
+      }
+    >
         <section className="page-reveal hidden lg:block">
           <span className="hero-kicker">Premium Athletic Logging</span>
           <h2 className="mt-4 font-display text-6xl font-semibold leading-none text-foreground">
@@ -261,13 +270,8 @@ export default function LoginPage() {
             <LoginForm />
           </Suspense>
         </div>
-      </div>
 
-      <div className="pointer-events-none absolute bottom-8 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/20 px-4 py-2 text-xs uppercase tracking-[0.06em] text-muted-foreground backdrop-blur md:flex">
-        <Sparkles className="h-3.5 w-3.5" />
-        LiftOS Web App
-      </div>
-    </div>
+    </PageShell>
   );
 }
 

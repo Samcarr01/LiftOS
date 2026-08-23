@@ -18,6 +18,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { BackButton } from '@/components/ui/back-button';
+import { PageShell } from '@/components/layout/page-shell';
 import { MuscleGroupBadge } from '@/components/muscle-group-badge';
 import {
   ExerciseSelector,
@@ -617,15 +618,14 @@ export default function TemplateEditorPage() {
 
   if (isFetchingName) {
     return (
-      <div className="flex flex-1 items-center justify-center">
+      <PageShell className="flex min-h-[100dvh] items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="page-shell">
-      <div className="page-content py-5 md:py-7 space-y-5">
+    <PageShell>
         {/* Compact header */}
         <div className="flex items-center gap-3">
           <BackButton />
@@ -723,7 +723,6 @@ export default function TemplateEditorPage() {
             </button>
           }
         />
-      </div>
 
       {/* Exercise config sheet */}
       <ExerciseConfigSheet
@@ -732,6 +731,6 @@ export default function TemplateEditorPage() {
         onClose={() => setConfigOpen(false)}
         onSave={handleConfigSave}
       />
-    </div>
+    </PageShell>
   );
 }

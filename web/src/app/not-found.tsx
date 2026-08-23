@@ -1,16 +1,16 @@
 import Link from 'next/link';
 import { Dumbbell } from 'lucide-react';
+import { PageShell } from '@/components/layout/page-shell';
 
 export default function NotFound() {
   return (
-    <div className="page-shell min-h-[100dvh]">
-      <div className="relative z-10 flex min-h-[100dvh] flex-col items-center justify-center gap-5 px-6 text-center">
+    <PageShell className="flex min-h-[100dvh] flex-col items-center justify-center gap-5 px-6 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/15">
         <Dumbbell className="h-8 w-8 text-primary" />
       </div>
 
       <div>
-        <h1 className="text-xl font-bold">Page not found</h1>
+        <h1 className="page-header-title normal-case">Page not found</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           That page doesn&apos;t exist — let&apos;s get back to lifting.
         </p>
@@ -22,7 +22,6 @@ export default function NotFound() {
       >
         Go home
       </Link>
-      </div>
-    </div>
+    </PageShell>
   );
 }

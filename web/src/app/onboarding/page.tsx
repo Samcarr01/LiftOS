@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { PageShell } from '@/components/layout/page-shell';
 import { BackButton } from '@/components/ui/back-button';
 import { SelectableRow } from '@/components/ui/selectable-row';
 import { useUnitStore } from '@/store/unit-store';
@@ -184,8 +185,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="page-shell min-h-dvh">
-      <div className="relative z-10 flex min-h-dvh flex-col items-center justify-center px-5 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
+    <PageShell className="flex min-h-dvh flex-col items-center justify-center px-5 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
         <div className="w-full max-w-md">
 
         {/* Progress bar (hidden on welcome and summary) */}
@@ -611,7 +611,6 @@ export default function OnboardingPage() {
           </div>
         )}
         </div>
-      </div>
-    </div>
+    </PageShell>
   );
 }

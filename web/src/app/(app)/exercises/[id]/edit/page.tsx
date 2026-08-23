@@ -4,7 +4,7 @@ import { use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { BackButton } from '@/components/ui/back-button';
+import { PageShell } from '@/components/layout/page-shell';
 import { ExerciseForm, type ExerciseFormValues } from '@/components/exercise/exercise-form';
 import { useExercises } from '@/hooks/use-exercises';
 import { TRACKING_PRESETS, type TrackingPresetKey } from '@/types/tracking';
@@ -52,14 +52,8 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
   }
 
   return (
-    <div className="page-shell">
-      <div className="mx-auto flex w-full max-w-2xl flex-col md:max-w-3xl">
-        <header className="flex items-center gap-3 px-5 pt-4 pb-2">
-          <BackButton href="/exercises" label="Back to exercises" />
-          <h1 className="font-display text-xl font-bold">Edit Exercise</h1>
-        </header>
-
-        {isLoading && !exercise ? (
+    <PageShell title="Edit Exercise" back="/exercises" className="max-w-2xl md:max-w-3xl">
+      {isLoading && !exercise ? (
           <div className="flex justify-center py-16">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
@@ -75,8 +69,7 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
             submitLabel="Save Changes"
             onSubmit={handleSubmit}
           />
-        )}
-      </div>
-    </div>
+      )}
+    </PageShell>
   );
 }

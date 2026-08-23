@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Award, BarChart3, Link2, Loader2, Trash2, Trophy } from 'lucide-react';
 import { BackButton } from '@/components/ui/back-button';
+import { PageShell } from '@/components/layout/page-shell';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { useSessionDetail } from '@/hooks/use-session-detail';
@@ -189,9 +190,8 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
   }
 
   return (
-    <div className="page-shell">
-      <div className="page-content py-5 md:py-7 space-y-5">
-        {/* Compact header */}
+    <PageShell>
+      {/* Compact header */}
         <div className="flex items-center gap-3">
           <BackButton />
           <div className="min-w-0 flex-1">
@@ -321,7 +321,6 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </PageShell>
   );
 }

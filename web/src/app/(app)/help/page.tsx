@@ -11,7 +11,7 @@ import {
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
-import { BackButton } from '@/components/ui/back-button';
+import { PageShell } from '@/components/layout/page-shell';
 import { cn } from '@/lib/utils';
 import GettingStartedTutorial from '@/components/tutorial/getting-started-tutorial';
 
@@ -93,18 +93,8 @@ export default function HelpPage() {
   }
 
   return (
-    <div className="page-shell">
-      <div className="page-content space-y-5 py-6 md:py-8">
-
-        {/* Back link */}
-        <BackButton href="/profile" label="Back to profile" />
-
-        <div>
-          <h1 className="font-display text-2xl font-bold">Help & Getting Started</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Learn how to get the most out of LiftOS.
-          </p>
-        </div>
+    <PageShell title="Help & Getting Started" back="/profile">
+      <p className="text-sm text-muted-foreground">Learn how to get the most out of LiftOS.</p>
 
         {/* Quick start tutorial replay */}
         <button
@@ -265,7 +255,6 @@ export default function HelpPage() {
         </Section>
 
         <div className="pb-8" />
-      </div>
-    </div>
+    </PageShell>
   );
 }

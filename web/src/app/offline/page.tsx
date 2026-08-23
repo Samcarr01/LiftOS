@@ -1,15 +1,15 @@
 'use client';
 
 import { WifiOff } from 'lucide-react';
+import { PageShell } from '@/components/layout/page-shell';
 
 export default function OfflinePage() {
   return (
-    <div className="page-shell min-h-dvh">
-      <div className="relative z-10 flex min-h-dvh flex-col items-center justify-center gap-4 px-6 text-center">
+    <PageShell className="flex min-h-dvh flex-col items-center justify-center gap-4 px-6 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.06] border border-white/[0.12]">
         <WifiOff className="h-8 w-8 text-muted-foreground" />
       </div>
-      <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
+      <h1 className="page-header-title normal-case text-center">
         You&apos;re Offline
       </h1>
       <p className="max-w-xs text-sm text-muted-foreground">
@@ -21,7 +21,6 @@ export default function OfflinePage() {
       >
         Try Again
       </button>
-      </div>
-    </div>
+    </PageShell>
   );
 }
