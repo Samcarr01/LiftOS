@@ -20,61 +20,31 @@ function formatVolume(value: number): string {
 }
 
 function formatVolumeTooltip(value: number): string {
-  return value >= 1000
-    ? `${value.toLocaleString('en-US')} kg`
-    : `${value}kg`;
+  return value >= 1000 ? `${value.toLocaleString('en-US')} kg` : `${value}kg`;
 }
 
 export function WeeklyVolumeTrend({ data }: Props) {
-  const chartData = data.map((d) => ({
-    label:  formatWeekLabel(d.week),
-    volume: Math.round(d.volume),
-  }));
+  const chartData = data.map((d) => ({ label: formatWeekLabel(d.week), volume: Math.round(d.volume) }));
 
   return (
     <ResponsiveContainer width="100%" height={160}>
       <AreaChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
         <defs>
           <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="oklch(0.75 0.18 55)" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="oklch(0.75 0.18 55)" stopOpacity={0.02} />
+            <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0.02} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-        <XAxis
-          dataKey="label"
-          tick={{ fontSize: 10, fill: '#a1a1aa' }}
-          tickLine={false}
-          axisLine={false}
-        />
-        <YAxis
-          tick={{ fontSize: 10, fill: '#a1a1aa' }}
-          tickLine={false}
-          axisLine={false}
-          width={45}
-          tickFormatter={formatVolume}
-        />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+        <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} />
+        <YAxis tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} width={45} tickFormatter={formatVolume} />
         <Tooltip
-          contentStyle={{
-            background:   '#1c1c2e',
-            border:       '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '8px',
-            fontSize:     12,
-            color:        '#e4e4e7',
-          }}
-          labelStyle={{ color: '#a1a1aa' }}
-          itemStyle={{ color: '#e4e4e7' }}
+          contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: 12, color: 'var(--foreground)' }}
+          labelStyle={{ color: 'var(--muted-foreground)' }}
+          itemStyle={{ color: 'var(--foreground)' }}
           formatter={(v) => [formatVolumeTooltip(v as number), 'Volume']}
         />
-        <Area
-          type="monotone"
-          dataKey="volume"
-          stroke="oklch(0.75 0.18 55)"
-          strokeWidth={2}
-          fill="url(#volumeGradient)"
-          dot={{ r: 4, fill: 'oklch(0.75 0.18 55)', strokeWidth: 0 }}
-          activeDot={{ r: 6 }}
-        />
+        <Area type="monotone" dataKey="volume" stroke="var(--chart-1)" strokeWidth={2} fill="url(#volumeGradient)" dot={{ r: 4, fill: 'var(--chart-1)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
       </AreaChart>
     </ResponsiveContainer>
   );
