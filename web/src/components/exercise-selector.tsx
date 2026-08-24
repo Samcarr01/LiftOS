@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { Search, Plus, Loader2, Dumbbell } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
@@ -43,12 +43,14 @@ export function ExerciseSelector({
   // Starting sets only persists when adding to a workout (not the library's own create).
   const showStartingSets = defaultMode !== 'create';
 
-  useEffect(() => {
-    if (!open) return;
-    setMode(defaultMode);
-    setSearch('');
-    setMuscleFilter(null);
-  }, [open, defaultMode]);
+  function handleOpenChange(nextOpen: boolean) {
+    if (nextOpen) {
+      setMode(defaultMode);
+      setSearch('');
+      setMuscleFilter(null);
+    }
+    setOpen(nextOpen);
+  }
 
   const filtered = useMemo(() => {
     let list = exercises;
@@ -96,8 +98,8 @@ export function ExerciseSelector({
   return (
     <>
       {/* Wrap trigger in a click handler since @base-ui SheetTrigger doesn't support asChild */}
-      <span onClick={() => setOpen(true)} className="contents">{trigger}</span>
-      <Sheet open={open} onOpenChange={setOpen}>
+      <span onClick={() => handleOpenChange(true)} className="contents">{trigger}</span>
+      <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent side="bottom" showCloseButton={false} className="flex !h-[100dvh] flex-col p-0">
           <SheetHeader className="border-b border-border px-4 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))]">
             <div className="flex items-center gap-3">
@@ -136,7 +138,7 @@ export function ExerciseSelector({
                     placeholder="Search your exercises"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="h-11 rounded-2xl border-white/10 bg-white/[0.06] pl-10 text-sm"
+                    className="pl-10"
                   />
                 </div>
               </div>

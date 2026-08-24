@@ -264,7 +264,6 @@ function ExerciseConfigSheet({
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="h-12 rounded-xl border-white/10 bg-white/[0.06] px-4 text-base"
             />
           </div>
 

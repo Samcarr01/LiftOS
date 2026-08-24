@@ -84,7 +84,7 @@ export function ExercisesTab() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search exercises"
-            className="h-10 rounded-xl border-white/10 bg-black/15 pl-10 text-sm"
+            className="pl-10"
           />
         </div>
 

@@ -132,7 +132,6 @@ function LoginForm() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
-            className="h-12 rounded-2xl border-white/10 bg-black/15"
           />
         </div>
 
@@ -151,7 +150,7 @@ function LoginForm() {
                 onChange={(event) => setPassword(event.target.value)}
                 required
                 minLength={6}
-                className="h-12 rounded-2xl border-white/10 bg-black/15 pr-12"
+                className="pr-12"
               />
               <button
                 type="button"
