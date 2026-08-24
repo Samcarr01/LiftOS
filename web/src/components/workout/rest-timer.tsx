@@ -23,11 +23,19 @@ function playBeep() {
 
 export function RestTimer() {
   const restTimer = useActiveWorkoutStore((s) => s.restTimer);
+
+  if (!restTimer.isRunning || !restTimer.startedAt) return null;
+
+  return <RestTimerOverlay key={restTimer.startedAt} />;
+}
+
+function RestTimerOverlay() {
+  const restTimer = useActiveWorkoutStore((s) => s.restTimer);
   const stopTimer = useActiveWorkoutStore((s) => s.stopRestTimer);
 
-  // Tick counter forces re-render every second
-  const [, setTick] = useState(0);
-  const firedRef    = useRef(false);
+  // The overlay remounts per rest period, so this starts at the exact timer start.
+  const [now, setNow] = useState(restTimer.startedAt);
+  const firedRef = useRef(false);
 
   useEffect(() => {
     if (!restTimer.isRunning) {
@@ -37,10 +45,11 @@ export function RestTimer() {
 
     firedRef.current = false;
     const id = setInterval(() => {
-      setTick((n) => n + 1);
+      const currentTime = Date.now();
+      setNow(currentTime);
 
       if (!restTimer.startedAt) return;
-      const elapsed   = Math.floor((Date.now() - restTimer.startedAt) / 1000);
+      const elapsed   = Math.floor((currentTime - restTimer.startedAt) / 1000);
       const remaining = restTimer.duration - elapsed;
 
       if (remaining <= 0 && !firedRef.current) {
@@ -49,14 +58,14 @@ export function RestTimer() {
         haptic('warn');
         setTimeout(() => stopTimer(), 1500);
       }
-    }, 500); // 500ms tick for smooth countdown
+    }, 1000); // 1Hz tick matches the mm:ss readout
 
     return () => clearInterval(id);
   }, [restTimer.isRunning, restTimer.startedAt, restTimer.duration, stopTimer]);
 
   if (!restTimer.isRunning || !restTimer.startedAt) return null;
 
-  const elapsed   = Math.floor((Date.now() - restTimer.startedAt) / 1000);
+  const elapsed   = Math.floor(((now ?? restTimer.startedAt) - restTimer.startedAt) / 1000);
   const remaining = Math.max(0, restTimer.duration - elapsed);
   const progress  = restTimer.duration > 0 ? remaining / restTimer.duration : 0;
 
@@ -74,8 +83,8 @@ export function RestTimer() {
         {/* Progress bar */}
         <div className="h-1 w-full bg-muted">
           <div
-            className={`h-1 ${barColor}`}
-            style={{ width: `${progress * 100}%`, transition: 'width 0.5s linear' }}
+            className={`h-1 w-full origin-left ${barColor}`}
+            style={{ transform: `scaleX(${progress})`, transition: 'transform 1s linear', willChange: 'transform' }}
           />
         </div>
 
