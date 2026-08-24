@@ -82,7 +82,7 @@ export default function ExercisesPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search by name, muscle group, or type"
-            className="h-11 rounded-2xl border-white/10 bg-white/[0.06] backdrop-blur-xl pl-10 text-sm"
+            className="pl-10"
           />
         </div>
 
