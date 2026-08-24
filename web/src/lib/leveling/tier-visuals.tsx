@@ -627,7 +627,6 @@ function IconFrontEffects({ tier, size, accent }: { tier: Tier; size: number; ac
                   boxShadow: `0 0 ${p.size * 2}px 1px ${colors[i % colors.length]}`,
                   animation: `tier-nebula-drift ${6 + (i % 3) * 1.5}s ease-in-out infinite`,
                   animationDelay: `${p.delay}s`,
-                  willChange: 'transform, opacity',
                 }}
               />
             ))}
@@ -701,7 +700,6 @@ function IconFrontEffects({ tier, size, accent }: { tier: Tier; size: number; ac
                 transparent 80%
               )`,
               animation: 'tier-lensing-pulse 6s ease-in-out infinite',
-              willChange: 'transform, opacity',
             }}
           />
         </>
@@ -734,7 +732,6 @@ function IconFrontEffects({ tier, size, accent }: { tier: Tier; size: number; ac
               )`,
               animation: 'tier-solar-flare 4s ease-in-out infinite',
               filter: 'blur(2px)',
-              willChange: 'transform, box-shadow',
             }}
           />
           {/* Corona rays — radiating beams */}
@@ -764,7 +761,6 @@ function IconFrontEffects({ tier, size, accent }: { tier: Tier; size: number; ac
                   animation: 'tier-corona-ray 6s ease-in-out infinite',
                   animationDelay: `${ray.delay}s`,
                   filter: 'blur(1px)',
-                  willChange: 'transform, opacity',
                 }}
               />
             </div>
@@ -1086,7 +1082,6 @@ function Orbit({
           top:  -dotSize / 2,
           background: color,
           boxShadow:  `0 0 6px 1px ${color}`,
-          willChange: 'transform',
         }}
       />
     </div>
