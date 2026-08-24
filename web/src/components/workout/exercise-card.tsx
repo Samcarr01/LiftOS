@@ -100,12 +100,12 @@ export const ExerciseCard = memo(function ExerciseCard({
   // AI target is shown in the suggestion card — don't duplicate in inputs
 
   return (
-    <div className={`premium-card page-reveal px-5 py-5 ${allComplete ? 'border-[oklch(0.72_0.19_155/0.25)] bg-[oklch(0.72_0.19_155/0.08)]' : ''}`}>
+    <div className={`premium-card page-reveal px-5 py-5 ${allComplete ? 'state-success' : ''}`}>
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2 className="truncate font-display text-lg font-bold" title={exercise.name}>{exercise.name}</h2>
-            <span className={`rounded-full px-2 py-0.5 text-sm font-semibold ${allComplete ? 'bg-[oklch(0.72_0.19_155/0.12)] text-[oklch(0.78_0.17_155)]' : 'bg-[oklch(0.75_0.18_55/0.12)] text-[oklch(0.80_0.16_55)]'}`}>
+            <span className={`rounded-full px-2 py-0.5 text-sm font-semibold ${allComplete ? 'state-success' : 'state-active'}`}>
               {completedCount}/{sets.length}
             </span>
           </div>
@@ -122,7 +122,7 @@ export const ExerciseCard = memo(function ExerciseCard({
           </div>
         </div>
         {allComplete && (
-          <span className="shrink-0 text-sm font-semibold text-[oklch(0.78_0.17_155)]">Done</span>
+          <span className="shrink-0 text-sm font-semibold text-[color:var(--state-success-fg)]">Done</span>
         )}
       </div>
 

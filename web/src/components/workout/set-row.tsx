@@ -120,8 +120,8 @@ export const SetRow = memo(function SetRow({
           ? 'rounded-xl'
           : 'rounded-2xl border border-white/8',
         set.isCompleted && (borderless
-          ? 'bg-[oklch(0.72_0.19_155/0.08)]'
-          : 'border-[oklch(0.72_0.19_155/0.25)] bg-[oklch(0.72_0.19_155/0.12)]'),
+          ? 'state-success'
+          : 'state-success'),
         !set.isCompleted && !borderless && isPrefilled && 'border-primary/15',
       )}
     >
@@ -178,7 +178,7 @@ export const SetRow = memo(function SetRow({
             'transition-[background-color,border-color] duration-150',
             'active:scale-[0.88] active:transition-none [touch-action:manipulation]',
             set.isCompleted
-              ? 'border-[oklch(0.72_0.19_155/0.25)] bg-[oklch(0.72_0.19_155)] text-white'
+              ? 'state-success text-white'
               : 'border-white/20 text-muted-foreground active:bg-primary/35 active:border-primary hover:border-primary/35 hover:bg-primary/10 hover:text-foreground',
           )}
         >

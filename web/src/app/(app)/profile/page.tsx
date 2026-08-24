@@ -651,7 +651,7 @@ export default function ProfilePage() {
             </button>
             <button
               onClick={() => void handleSignOut()}
-              className="flex h-10 flex-1 items-center justify-center rounded-xl bg-[oklch(0.65_0.20_25)] px-4 text-sm font-semibold text-white"
+              className="bg-destructive flex h-10 flex-1 items-center justify-center rounded-xl px-4 text-sm font-semibold text-destructive-foreground"
             >
               Sign out
             </button>

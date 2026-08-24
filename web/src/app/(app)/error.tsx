@@ -8,8 +8,8 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
   return (
     <div className="page-shell">
       <div className="page-content flex flex-col items-center gap-4 py-20 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/15">
-          <AlertTriangle className="h-6 w-6 text-destructive" />
+        <div className="state-destructive flex h-14 w-14 items-center justify-center rounded-2xl border">
+          <AlertTriangle className="h-6 w-6" />
         </div>
         <div>
           <p className="text-card-title">Couldn&apos;t load this screen</p>

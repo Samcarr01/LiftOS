@@ -37,7 +37,7 @@ export function SidebarNav() {
               className={cn(
                 'relative flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium transition-colors duration-150',
                 isActive
-                  ? 'bg-[oklch(0.75_0.18_55/0.15)] text-[oklch(0.80_0.16_55)]'
+                  ? 'state-active'
                   : 'text-muted-foreground hover:bg-white/[0.04] hover:text-foreground',
               )}
             >

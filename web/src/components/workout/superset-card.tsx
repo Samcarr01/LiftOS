@@ -22,9 +22,9 @@ interface SupersetCardProps {
 // Color assignments for exercises within the superset (static, no need to recreate per render)
 const EXERCISE_COLORS = [
   { bg: 'bg-primary/12', text: 'text-primary', border: 'border-primary/20' },
-  { bg: 'bg-[oklch(0.72_0.19_155/0.12)]', text: 'text-[oklch(0.78_0.17_155)]', border: 'border-[oklch(0.72_0.19_155/0.20)]' },
+  { bg: 'bg-[color:var(--state-success)]', text: 'text-[color:var(--state-success-fg)]', border: 'border-[color:var(--state-success-fg)]/25' },
   { bg: 'bg-[oklch(0.72_0.17_252/0.12)]', text: 'text-[oklch(0.78_0.15_252)]', border: 'border-[oklch(0.72_0.17_252/0.20)]' },
-  { bg: 'bg-[oklch(0.80_0.16_85/0.12)]', text: 'text-[oklch(0.85_0.15_85)]', border: 'border-[oklch(0.80_0.16_85/0.20)]' },
+  { bg: 'bg-[color:var(--state-achievement)]', text: 'text-[color:var(--state-achievement-fg)]', border: 'border-[color:var(--state-achievement-fg)]/25' },
 ];
 
 /**
@@ -113,7 +113,7 @@ export const SupersetCard = memo(function SupersetCard({ exercises, dismissedSug
     <div
       className={cn(
         'premium-card page-reveal px-5 py-5',
-        allComplete && 'border-[oklch(0.72_0.19_155/0.25)] bg-[oklch(0.72_0.19_155/0.08)]',
+        allComplete && 'state-success',
       )}
     >
       {/* Header */}
@@ -126,8 +126,8 @@ export const SupersetCard = memo(function SupersetCard({ exercises, dismissedSug
               className={cn(
                 'rounded-full px-2 py-0.5 text-sm font-semibold',
                 allComplete
-                  ? 'bg-[oklch(0.72_0.19_155/0.12)] text-[oklch(0.78_0.17_155)]'
-                  : 'bg-[oklch(0.75_0.18_55/0.12)] text-[oklch(0.80_0.16_55)]',
+                  ? 'state-success'
+                  : 'state-active',
               )}
             >
               {completedSets}/{totalSets}
@@ -148,7 +148,7 @@ export const SupersetCard = memo(function SupersetCard({ exercises, dismissedSug
           </div>
         </div>
         {allComplete && (
-          <span className="shrink-0 text-sm font-semibold text-[oklch(0.78_0.17_155)]">Done</span>
+          <span className="shrink-0 text-sm font-semibold text-[color:var(--state-success-fg)]">Done</span>
         )}
       </div>
 
@@ -164,7 +164,7 @@ export const SupersetCard = memo(function SupersetCard({ exercises, dismissedSug
               className={cn(
                 'rounded-xl border px-2.5 py-2.5',
                 roundComplete
-                  ? 'border-[oklch(0.72_0.19_155/0.20)] bg-[oklch(0.72_0.19_155/0.06)]'
+                  ? 'state-success'
                   : 'border-white/[0.08] bg-white/[0.03]',
               )}
             >
@@ -173,7 +173,7 @@ export const SupersetCard = memo(function SupersetCard({ exercises, dismissedSug
                   Round {roundIndex + 1}
                 </span>
                 {roundComplete && (
-                  <span className="text-[11px] font-semibold text-[oklch(0.78_0.17_155)]">Done</span>
+                  <span className="text-[11px] font-semibold text-[color:var(--state-success-fg)]">Done</span>
                 )}
               </div>
 
