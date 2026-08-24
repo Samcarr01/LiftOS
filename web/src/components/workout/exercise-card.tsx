@@ -105,7 +105,7 @@ export const ExerciseCard = memo(function ExerciseCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2 className="truncate font-display text-lg font-bold" title={exercise.name}>{exercise.name}</h2>
-            <span className={`rounded-full px-2 py-0.5 text-sm font-semibold ${allComplete ? 'state-success' : 'state-active'}`}>
+            <span className={`numeric rounded-full px-2 py-0.5 text-sm font-semibold ${allComplete ? 'state-success' : 'state-active'}`}>
               {completedCount}/{sets.length}
             </span>
           </div>

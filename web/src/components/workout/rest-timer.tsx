@@ -89,7 +89,7 @@ function RestTimerOverlay() {
         </div>
 
         <div className="flex items-center gap-3 px-4 py-3">
-          <span className="flex-1 text-2xl font-bold tabular-nums">{mins}:{secs}</span>
+          <span className="numeric flex-1 text-2xl font-bold">{mins}:{secs}</span>
           <span className="text-sm text-muted-foreground">Rest</span>
           <button
             onClick={stopTimer}

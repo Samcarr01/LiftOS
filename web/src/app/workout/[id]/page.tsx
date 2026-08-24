@@ -142,7 +142,7 @@ export default function WorkoutPage() {
             <div className="min-w-0 flex-1">
               <h1 className="truncate font-display text-base font-bold">{templateName}</h1>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>{savedSets}/{totalSets} sets</span>
+                <span className="numeric">{savedSets}/{totalSets} sets</span>
                 <span className="text-foreground/30">·</span>
                 <span className="flex items-center gap-1">
                   <Timer className="h-3 w-3" />
