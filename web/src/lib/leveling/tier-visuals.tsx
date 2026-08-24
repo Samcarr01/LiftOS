@@ -69,6 +69,8 @@ interface TierIconProps {
   tier: Tier;
   /** Icon bubble side length in px. */
   size: number;
+  /** Render the tier marker without its continuous decorative effects. */
+  static?: boolean;
 }
 
 /**
@@ -78,7 +80,7 @@ interface TierIconProps {
  * absolute positioning relative to the bubble center so they can extend
  * outside without breaking layout.
  */
-export function TierIcon({ tier, size }: TierIconProps) {
+export function TierIcon({ tier, size, static: isStatic = false }: TierIconProps) {
   const Icon = TIER_ICON_MAP[tier.icon];
   const iconPx = Math.round(size * 0.5);
   const accent = `oklch(${tier.color})`;
@@ -91,18 +93,18 @@ export function TierIcon({ tier, size }: TierIconProps) {
       style={{ width: size, height: size }}
     >
       {/* Effects BEHIND the icon (rings, halos, base glow) */}
-      <IconBackEffects tier={tier} size={size} />
+      {!isStatic && <IconBackEffects tier={tier} size={size} />}
 
       {/* Icon bubble itself */}
       <div
-        className={`relative z-10 flex h-full w-full items-center justify-center rounded-xl${tier.id === 'titan' || tier.id === 'apex' ? ' tier-glow-shift' : ''}`}
-        style={iconBubbleStyle(tier)}
+        className={`relative z-10 flex h-full w-full items-center justify-center rounded-xl${!isStatic && (tier.id === 'titan' || tier.id === 'apex') ? ' tier-glow-shift' : ''}`}
+        style={iconBubbleStyle(tier, isStatic)}
       >
         <Icon style={{ width: iconPx, height: iconPx }} strokeWidth={1.8} />
       </div>
 
       {/* Effects IN FRONT (sparkles in cardinal positions, foreground orbits) */}
-      <IconFrontEffects tier={tier} size={size} accent={accent} />
+      {!isStatic && <IconFrontEffects tier={tier} size={size} accent={accent} />}
     </div>
   );
 }
@@ -111,13 +113,14 @@ export function TierIcon({ tier, size }: TierIconProps) {
  * Inline style for the icon bubble itself. The simple symmetric animations
  * (pulse/breathe/glow-shift) live here because they only animate the bubble.
  */
-function iconBubbleStyle(tier: Tier): React.CSSProperties {
+function iconBubbleStyle(tier: Tier, isStatic = false): React.CSSProperties {
   const accent = `oklch(${tier.color})`;
   const base: React.CSSProperties = {
     background: `oklch(${tier.color} / 0.18)`,
     color:      accent,
     boxShadow:  `inset 0 1px 0 oklch(${tier.color} / 0.3)`,
   };
+  if (isStatic) return base;
   switch (tier.id) {
     case 'iron':
       return { ...base, animation: 'tier-pulse 3.5s ease-in-out infinite', transformOrigin: 'center' };
