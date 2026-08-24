@@ -86,7 +86,7 @@ function LoginForm() {
   const buttonLabel = mode === 'forgot' ? 'Send Reset Email' : mode === 'signup' ? 'Create Account' : 'Sign In';
 
   return (
-    <div className="w-full max-w-md rounded-2xl border border-white/[0.12] bg-white/[0.10] px-6 py-7 backdrop-blur-2xl saturate-150 sm:px-8" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 8px -2px rgba(0,0,0,0.3)' }}>
+    <div className="content-card w-full max-w-md px-6 py-7 sm:px-8">
       <div className="flex items-center gap-3">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl text-primary shadow-[0_0_20px_-4px_oklch(0.75_0.18_55/0.3)]" style={{ background: 'linear-gradient(135deg, oklch(0.75 0.18 55 / 0.18), oklch(0.65 0.16 45 / 0.12))' }}>
           <Zap className="h-6 w-6" />

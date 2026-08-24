@@ -179,7 +179,7 @@ function XpRulesCard() {
     <div className="space-y-2.5">
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left transition-colors hover:bg-white/[0.06]"
+        className="action-card px-4 py-3"
       >
         <h3 className="section-title mb-0">How XP works — 12 sources</h3>
         <span className="text-xs font-semibold text-primary">
@@ -187,7 +187,7 @@ function XpRulesCard() {
         </span>
       </button>
       {expanded && (
-        <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03]">
+        <div className="content-card overflow-hidden">
           {categories.map((cat) => {
             const catRules = rules.filter((r) => r.category === cat);
             if (catRules.length === 0) return null;

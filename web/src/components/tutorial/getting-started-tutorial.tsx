@@ -205,7 +205,7 @@ export default function GettingStartedTutorial({ onComplete, standalone }: Props
 
           {/* Illustration */}
           <div className="mb-8 flex justify-center">
-            <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-6 py-6">
+            <div className="content-card px-6 py-6">
               <StepIllustration step={step} />
             </div>
           </div>
