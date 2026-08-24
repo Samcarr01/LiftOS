@@ -70,7 +70,7 @@ export function RestTimer() {
 
   return (
     <div className="fixed bottom-16 left-4 right-4 z-40 md:bottom-6 md:left-auto md:right-6 md:w-72">
-      <div className="overflow-hidden rounded-2xl border border-white/[0.10] bg-white/[0.10] backdrop-blur-2xl shadow-xl">
+      <div className="overflow-hidden rounded-2xl border border-white/[0.10] bg-[oklch(0.10_0.012_260/0.92)] shadow-xl">
         {/* Progress bar */}
         <div className="h-1 w-full bg-muted">
           <div

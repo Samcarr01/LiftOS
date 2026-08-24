@@ -25,7 +25,7 @@ export function PwaInstallBanner() {
   if (!isInstallable || isInstalled || isDismissed || !isSecondVisit) return null;
 
   return (
-    <div className="content-card fixed inset-x-0 bottom-24 z-50 mx-4 flex items-center gap-3 px-4 py-3 md:bottom-6 md:left-auto md:right-24 md:w-80">
+    <div className="content-card fixed inset-x-0 bottom-24 z-50 mx-4 flex items-center gap-3 bg-[oklch(0.10_0.012_260/0.92)] px-4 py-3 md:bottom-6 md:left-auto md:right-24 md:w-80">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/12">
         <Smartphone className="h-4 w-4 text-primary" />
       </div>
