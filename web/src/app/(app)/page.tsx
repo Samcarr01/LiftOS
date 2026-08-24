@@ -27,6 +27,8 @@ import GettingStartedTutorial from '@/components/tutorial/getting-started-tutori
 import { StreakHeatmap } from '@/components/home/streak-heatmap';
 import { LevelChip } from '@/components/home/level-chip';
 
+const LIST_PAGE_SIZE = 20;
+
 /* ── Helpers ────────────────────────────────────────────────── */
 
 function greeting(name: string | null): string {
@@ -153,6 +155,11 @@ function StartWorkoutSheet({
   const { templates, isLoading } = useTemplates();
   const { startWorkout } = useStartWorkout();
   const [starting, setStarting] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(LIST_PAGE_SIZE);
+
+  useEffect(() => {
+    if (!open) setVisibleCount(LIST_PAGE_SIZE);
+  }, [open]);
 
   async function handleStart(templateId: string) {
     setStarting(templateId);
@@ -190,7 +197,7 @@ function StartWorkoutSheet({
             </div>
           ) : (
             <div className="space-y-2">
-              {templates.map((template) => (
+              {templates.slice(0, visibleCount).map((template) => (
                 <button
                   key={template.id}
                   onClick={() => void handleStart(template.id)}
@@ -212,6 +219,14 @@ function StartWorkoutSheet({
                   <Play className="h-4 w-4 shrink-0 text-primary opacity-60 group-hover:opacity-100" />
                 </button>
               ))}
+              {templates.length > visibleCount && (
+                <button
+                  onClick={() => setVisibleCount((count) => count + LIST_PAGE_SIZE)}
+                  className="premium-button-secondary min-h-11 w-full justify-center"
+                >
+                  Show {Math.min(LIST_PAGE_SIZE, templates.length - visibleCount)} more workouts
+                </button>
+              )}
             </div>
           )}
         </div>
