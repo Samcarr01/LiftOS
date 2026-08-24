@@ -18,7 +18,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden">
-      <div className="relative mx-auto flex h-14 max-w-md items-center justify-around overflow-hidden rounded-2xl border border-white/[0.12] bg-[oklch(0.10_0.012_260/0.92)]">
+      <div className="chrome-surface relative mx-auto flex h-14 max-w-md items-center justify-around overflow-hidden rounded-2xl border border-white/[0.12]">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
         {NAV_ITEMS.map(({ href, label, icon }) => {
           const Icon = ICONS[icon];
