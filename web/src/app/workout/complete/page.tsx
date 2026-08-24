@@ -335,7 +335,7 @@ export default function WorkoutCompletePage() {
   }, [storeResult]);
 
   const result = storeResult;
-  if (!result) return null;
+  if (!result) return <WorkoutCompleteLoading />;
 
   const { summary, newPrs, exerciseNames } = result;
   const hasPrs = newPrs.length > 0;
@@ -407,7 +407,7 @@ export default function WorkoutCompletePage() {
       </div>
 
       {/* XP Slider — between stats strip and exercises */}
-      {xpData && <XpSlider data={xpData} />}
+      {xpData ? <XpSlider data={xpData} /> : <div className="mt-6 h-[196px] w-full max-w-sm" aria-hidden />}
 
       {/* Exercises */}
       {exerciseNames.length > 0 && (
@@ -464,6 +464,26 @@ export default function WorkoutCompletePage() {
           onDismiss={() => setPromotionDismissed(true)}
         />
       )}
+      </div>
+    </PageShell>
+  );
+}
+
+function WorkoutCompleteLoading() {
+  return (
+    <PageShell className="min-h-[100dvh] max-w-none px-0 py-0">
+      <div className="flex min-h-[100dvh] flex-col items-center px-4 pb-8 pt-8" aria-busy="true" aria-label="Loading workout summary">
+        <div className="h-20 w-20 animate-pulse rounded-full bg-primary/15" />
+        <div className="mt-5 h-9 w-56 animate-pulse rounded-lg bg-white/[0.08]" />
+        <div className="mt-2 h-5 w-64 animate-pulse rounded-md bg-white/[0.06]" />
+        <div className="mt-8 grid w-full max-w-sm grid-cols-3 gap-4">
+          {[0, 1, 2].map((index) => <div key={index} className="h-[102px] animate-pulse rounded-2xl bg-white/[0.06]" />)}
+        </div>
+        <div className="mt-6 h-[196px] w-full max-w-sm animate-pulse rounded-2xl bg-white/[0.06]" />
+        <div className="mt-auto w-full max-w-sm space-y-2.5 pt-10">
+          <div className="h-12 animate-pulse rounded-2xl bg-white/[0.06]" />
+          <div className="h-12 animate-pulse rounded-2xl bg-primary/25" />
+        </div>
       </div>
     </PageShell>
   );

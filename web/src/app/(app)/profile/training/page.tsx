@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Activity, Dumbbell, Flame, Heart, Loader2, Timer, TrendingDown, TrendingUp, Trophy, Zap } from 'lucide-react';
+import { Activity, Dumbbell, Flame, Heart, Timer, TrendingDown, TrendingUp, Trophy, Zap } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { PageShell } from '@/components/layout/page-shell';
 import { SelectableRow } from '@/components/ui/selectable-row';
 import { toast } from 'sonner';
@@ -257,8 +258,17 @@ export default function TrainingPreferencesPage() {
 
   const phaseStartLabel = formatPhaseStart(phaseStartedAt);
 
+  if (!loaded) {
+    return (
+      <PageShell title="Training" back="/profile">
+        <p className="text-sm text-muted-foreground">Your goals and defaults. Saves automatically.</p>
+        <TrainingPreferencesLoading />
+      </PageShell>
+    );
+  }
+
   return (
-    <PageShell title="Training" back="/profile" action={!loaded && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}>
+    <PageShell title="Training" back="/profile">
       <p className="text-sm text-muted-foreground">Your goals and defaults. Saves automatically.</p>
 
         {/* Training phase — one selection, saved by the same autosave as
@@ -420,5 +430,24 @@ export default function TrainingPreferencesPage() {
           </div>
         </div>
     </PageShell>
+  );
+}
+
+function TrainingPreferencesLoading() {
+  return (
+    <div className="space-y-5" aria-busy="true" aria-label="Loading training preferences">
+      <section className="space-y-2.5">
+        <Skeleton className="h-5 w-32" />
+        {[0, 1, 2].map((index) => <Skeleton key={index} className="h-[76px] w-full rounded-2xl" />)}
+      </section>
+      <div className="space-y-2">
+        <Skeleton className="h-[88px] w-full rounded-2xl" />
+        {[0, 1, 2, 3].map((index) => <Skeleton key={index} className="h-[64px] w-full rounded-2xl" />)}
+      </div>
+      <section className="space-y-2.5">
+        <Skeleton className="h-5 w-14" />
+        {GOALS.map((goal) => <Skeleton key={goal.id} className="h-[64px] w-full rounded-2xl" />)}
+      </section>
+    </div>
   );
 }
