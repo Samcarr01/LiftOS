@@ -41,6 +41,7 @@ export const BlackHoleIcon = React.forwardRef<SVGSVGElement, React.ComponentProp
     </svg>
   )
 );
+BlackHoleIcon.displayName = 'BlackHoleIcon';
 
 export const TIER_ICON_MAP: Record<TierIconName, LucideIcon> = {
   Medal, Hammer, Shield, Mountain, Atom, Star, Gem, Sparkles, Crown,
@@ -94,7 +95,7 @@ export function TierIcon({ tier, size }: TierIconProps) {
 
       {/* Icon bubble itself */}
       <div
-        className="relative z-10 flex h-full w-full items-center justify-center rounded-xl"
+        className={`relative z-10 flex h-full w-full items-center justify-center rounded-xl${tier.id === 'titan' || tier.id === 'apex' ? ' tier-glow-shift' : ''}`}
         style={iconBubbleStyle(tier)}
       >
         <Icon style={{ width: iconPx, height: iconPx }} strokeWidth={1.8} />
@@ -125,8 +126,8 @@ function iconBubbleStyle(tier: Tier): React.CSSProperties {
     case 'titan':
       return {
         ...base,
-        animation: 'tier-glow-shift 4s ease-in-out infinite',
         ['--tier-accent' as string]: `oklch(${tier.color} / 0.55)`,
+        ['--tier-glow-duration' as string]: '4s',
       };
     case 'nebula':
       return {
@@ -142,8 +143,9 @@ function iconBubbleStyle(tier: Tier): React.CSSProperties {
     case 'apex':
       return {
         ...base,
-        animation: 'tier-breathe 1.8s ease-in-out infinite, tier-glow-shift 2.5s ease-in-out infinite',
+        animation: 'tier-breathe 1.8s ease-in-out infinite',
         ['--tier-accent' as string]: `oklch(${tier.color} / 0.85)`,
+        ['--tier-glow-duration' as string]: '2.5s',
       };
     default:
       return base;
@@ -830,10 +832,9 @@ export function TierCardEffects({ tier }: { tier: Tier }) {
       return (
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden>
           <div
-            className="absolute inset-0"
+            className="absolute inset-y-0 left-0 w-[200%]"
             style={{
               background: `linear-gradient(110deg, oklch(${tier.color} / 0.16), oklch(0.84 0.14 70 / 0.10), oklch(${tier.color} / 0.16))`,
-              backgroundSize: '220% 100%',
               animation: 'tier-bg-cycle 7s ease-in-out infinite',
             }}
           />
@@ -880,13 +881,12 @@ export function TierCardEffects({ tier }: { tier: Tier }) {
       return (
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden>
           <div
-            className="absolute inset-0"
+            className="absolute inset-y-0 left-0 w-[200%]"
             style={{
               background: `linear-gradient(120deg,
                 oklch(${tier.color} / 0.22),
                 oklch(0.62 0.24 280 / 0.18),
                 oklch(${tier.color} / 0.22))`,
-              backgroundSize: '220% 100%',
               animation: 'tier-bg-cycle 6s ease-in-out infinite',
             }}
           />
@@ -911,14 +911,13 @@ export function TierCardEffects({ tier }: { tier: Tier }) {
       return (
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden>
           <div
-            className="absolute inset-0"
+            className="absolute inset-y-0 left-0 w-[200%]"
             style={{
               background: `linear-gradient(120deg,
                 oklch(0.78 0.20 50 / 0.18),
                 oklch(0.75 0.22 180 / 0.20),
                 oklch(0.72 0.24 320 / 0.20),
                 oklch(0.78 0.20 50 / 0.18))`,
-              backgroundSize: '300% 300%',
               animation: 'tier-bg-hue-cycle 8s ease-in-out infinite',
             }}
           />
@@ -936,10 +935,9 @@ export function TierCardEffects({ tier }: { tier: Tier }) {
       return (
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden>
           <div
-            className="absolute inset-0"
+            className="absolute inset-y-0 left-0 w-[200%]"
             style={{
               background: `linear-gradient(135deg, oklch(${tier.color} / 0.20), oklch(0.60 0.24 240 / 0.12), transparent 70%)`,
-              backgroundSize: '200% 200%',
               animation: 'tier-bg-cycle 9s ease-in-out infinite',
             }}
           />
@@ -977,14 +975,13 @@ export function TierCardEffects({ tier }: { tier: Tier }) {
       return (
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden>
           <div
-            className="absolute inset-0"
+            className="absolute inset-y-0 left-0 w-[200%]"
             style={{
               background: `linear-gradient(110deg,
                 oklch(0.88 0.16 85 / 0.18),
                 oklch(0.85 0.14 70 / 0.12),
                 oklch(0.90 0.18 95 / 0.10),
                 oklch(0.88 0.16 85 / 0.18))`,
-              backgroundSize: '300% 100%',
               animation: 'tier-bg-cycle 5s ease-in-out infinite',
             }}
           />

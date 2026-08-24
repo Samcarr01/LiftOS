@@ -63,9 +63,9 @@ export function LevelChip({ xpTotal, xpLevel }: LevelChipProps) {
 
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
             <div
-              className="h-full rounded-full transition-[width] duration-500 ease-out"
+              className="h-full w-full origin-left rounded-full transition-transform duration-500 ease-out"
               style={{
-                width: `${Math.max(2, progressPct * 100)}%`,
+                transform: `scaleX(${Math.max(0.02, progressPct)})`,
                 background: `linear-gradient(90deg, oklch(${tier.color} / 0.6), ${accent})`,
                 boxShadow: `0 0 8px oklch(${tier.color} / 0.5)`,
               }}
