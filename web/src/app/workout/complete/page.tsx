@@ -143,17 +143,17 @@ function XpSlider({ data }: { data: XpSliderData }) {
         <div className="relative h-3 w-full overflow-hidden rounded-full bg-white/[0.06]">
           {/* Pre-session level indicator */}
           <div
-            className="absolute left-0 top-0 h-full rounded-full transition-all duration-700 ease-out"
+            className="absolute left-0 top-0 h-full w-full origin-left rounded-full transition-transform duration-700 ease-out"
             style={{
-              width: `${Math.max(2, preLevel.progressPct * 100)}%`,
+              transform: `scaleX(${Math.max(0.02, preLevel.progressPct)})`,
               background: `linear-gradient(90deg, oklch(${preTier.color} / 0.4), oklch(${preTier.color} / 0.6))`,
             }}
           />
           {/* Post-session level indicator (overlay) */}
           <div
-            className="absolute left-0 top-0 h-full rounded-full transition-all duration-1000 ease-out"
+            className="absolute left-0 top-0 h-full w-full origin-left rounded-full transition-transform duration-1000 ease-out"
             style={{
-              width: `${Math.max(2, progressPct * 100)}%`,
+              transform: `scaleX(${Math.max(0.02, progressPct)})`,
               background: `linear-gradient(90deg, oklch(${postTier.color} / 0.6), ${accent})`,
               boxShadow: `0 0 10px oklch(${postTier.color} / 0.5)`,
               animation: 'tier-soft-glow 3s ease-in-out infinite',
@@ -161,14 +161,16 @@ function XpSlider({ data }: { data: XpSliderData }) {
           />
           {/* Tier icon at current position */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 transition-all duration-1000 ease-out"
-            style={{ left: `calc(${Math.max(3, progressPct * 100)}% - 10px)` }}
+            className="absolute inset-y-0 left-0 w-full transition-transform duration-1000 ease-out"
+            style={{ transform: `translateX(calc(${Math.max(3, progressPct * 100)}% - 10px))` }}
           >
-            <div
-              className="flex h-5 w-5 items-center justify-center rounded-full"
-              style={{ background: accent, boxShadow: `0 0 8px ${accent}` }}
-            >
-              <Icon className="h-3 w-3 text-white" strokeWidth={2.5} />
+            <div className="absolute top-1/2 -translate-y-1/2">
+              <div
+                className="flex h-5 w-5 items-center justify-center rounded-full"
+                style={{ background: accent, boxShadow: `0 0 8px ${accent}` }}
+              >
+                <Icon className="h-3 w-3 text-white" strokeWidth={2.5} />
+              </div>
             </div>
           </div>
         </div>

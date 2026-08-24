@@ -153,11 +153,10 @@ export default function WorkoutPage() {
           </div>
           <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
             <div
-              className="h-full rounded-full transition-all duration-300 ease-out"
+              className="h-full w-full origin-left rounded-full transition-transform duration-300 ease-out"
               style={{
-                width: `${totalSets > 0 ? (savedSets / totalSets) * 100 : 0}%`,
+                transform: `scaleX(${totalSets > 0 ? savedSets / totalSets : 0})`,
                 background: 'linear-gradient(90deg, oklch(0.75 0.18 55), oklch(0.72 0.19 155))',
-                boxShadow: savedSets > 0 ? '0 0 8px oklch(0.75 0.18 55 / 0.4)' : 'none',
               }}
             />
           </div>

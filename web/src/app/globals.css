@@ -583,22 +583,22 @@
   50%      { filter: hue-rotate(35deg); }
 }
 
-/* glow-shift — symmetric icon halo for Titan */
+/* glow-shift — opacity-animated static icon halo for Titan */
 @keyframes tier-glow-shift {
-  0%, 100% { box-shadow: 0 0 14px -4px var(--tier-accent); }
-  50%      { box-shadow: 0 0 24px -2px var(--tier-accent); }
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.85; }
 }
 
-/* symmetric background-position cycle for color shifts (gradient/holographic) */
+/* symmetric transform cycle for oversized gradient overlays */
 @keyframes tier-bg-cycle {
-  0%, 100% { background-position: 0% 50%; }
-  50%      { background-position: 100% 50%; }
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(-50%, 0, 0); }
 }
 
-/* combined gradient + hue cycle for holographic */
+/* holographic gradient drift without per-frame background/filter paints */
 @keyframes tier-bg-hue-cycle {
-  0%, 100% { background-position: 0% 50%;   filter: hue-rotate(0deg); }
-  50%      { background-position: 100% 50%; filter: hue-rotate(45deg); }
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(-50%, 0, 0); }
 }
 
 /* seamless rotation (360deg === 0deg) — used for icon rings and conic borders */
@@ -655,8 +655,19 @@
 
 /* Tier name unfurl */
 @keyframes tier-name-reveal {
-  0%   { transform: translateY(12px); opacity: 0; letter-spacing: 0.4em; filter: blur(8px); }
-  100% { transform: translateY(0);    opacity: 1; letter-spacing: -0.02em; filter: blur(0); }
+  0%   { transform: translateY(12px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+
+.tier-glow-shift::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 24px -2px var(--tier-accent);
+  content: '';
+  opacity: 0.35;
+  pointer-events: none;
+  animation: tier-glow-shift var(--tier-glow-duration, 4s) ease-in-out infinite;
 }
 
 /* nebula — bright pulsing indigo glow: fast, vibrant */
