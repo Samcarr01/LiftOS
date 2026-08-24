@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Check, Lock, Loader2,
-  Dumbbell, Trophy, Target, Award, Sparkles, Flame, Zap, RotateCcw,
+  Dumbbell, Trophy, Target, Award, Flame, Zap, RotateCcw,
   Repeat, Star, Layers, BrainCircuit,
 } from 'lucide-react';
 import { PageShell } from '@/components/layout/page-shell';
@@ -196,7 +196,7 @@ function XpRulesCard() {
                 <div className="px-4 pt-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground/60 uppercase">
                   {cat}
                 </div>
-                {catRules.map((r, i) => (
+                {catRules.map((r) => (
                   <div
                     key={r.label}
                     className="flex items-center gap-3 px-4 py-2.5 border-t border-white/[0.06] first:border-t-0"
@@ -278,16 +278,16 @@ function TierRow({
       className="action-card relative overflow-hidden rounded-2xl px-4 py-3.5"
       style={{
         // Upcoming tiers are dimmed slightly so the eye still lands on the
-        // current one first, but their animation still plays so the
-        // escalation up the ladder is visible at a glance.
+        // current one first. Keep non-current ladder tiers static rather than
+        // continuously animating every card on the page.
         opacity: dimmed ? 0.7 : 1,
         ['--tier-accent' as string]: `oklch(${tier.color} / 0.4)`,
       }}
     >
-      <TierCardEffects tier={tier} />
+      {state === 'current' && <TierCardEffects tier={tier} />}
 
       <div className="relative flex items-center gap-3">
-        <TierIcon tier={tier} size={48} />
+        <TierIcon tier={tier} size={48} static={state !== 'current'} />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
