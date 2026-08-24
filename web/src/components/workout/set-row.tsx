@@ -178,7 +178,9 @@ export const SetRow = memo(function SetRow({
             'transition-[background-color,border-color] duration-150',
             'active:scale-[0.88] active:transition-none [touch-action:manipulation]',
             set.isCompleted
-              ? 'state-success text-white'
+              // Filled, not tinted: the tick is the one control a lifter reads
+              // mid-set, so "done" has to land without looking for it.
+              ? 'state-success-solid'
               : 'border-white/20 text-muted-foreground active:bg-primary/35 active:border-primary hover:border-primary/35 hover:bg-primary/10 hover:text-foreground',
           )}
         >

@@ -86,7 +86,7 @@
   --chart-8: oklch(0.70 0.12 280);
   --chart-9: oklch(0.78 0.10 100);
   --chart-10: oklch(0.60 0.14 180);
-  --radius: 0.5rem;
+  --radius: 1rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.75 0.18 55);
@@ -127,6 +127,10 @@
   --state-active-fg: oklch(0.80 0.16 55);
   --state-success: oklch(0.72 0.19 155 / 0.15);
   --state-success-fg: oklch(0.78 0.17 155);
+  /* Filled success — interactive toggles only (see `.state-success-solid`).
+     Passive surfaces stay on the tinted `--state-success`. */
+  --state-success-solid: oklch(0.72 0.19 155);
+  --state-success-solid-fg: oklch(0.17 0.03 155);
   --state-achievement: oklch(0.80 0.16 85 / 0.15);
   --state-achievement-fg: oklch(0.85 0.15 85);
   --state-warning: oklch(0.75 0.16 60 / 0.15);
@@ -153,7 +157,7 @@
   --chart-8: oklch(0.70 0.12 280);
   --chart-9: oklch(0.78 0.10 100);
   --chart-10: oklch(0.60 0.14 180);
-  --radius: 0.5rem;
+  --radius: 1rem;
   --sidebar: oklch(0 0 0);
   --sidebar-foreground: oklch(0.96 0.005 0);
   --sidebar-primary: oklch(0.75 0.18 55);
@@ -162,6 +166,67 @@
   --sidebar-accent-foreground: oklch(0.96 0.005 0);
   --sidebar-border: oklch(1 0 0 / 8%);
   --sidebar-ring: oklch(0.75 0.18 55);
+}
+
+/* ── Depth system ────────────────────────────────────────────────────────────
+   Shared by the card primitives and the fixed chrome surfaces below. Declared
+   outside the light/dark token blocks because the app renders dark-only and
+   these values are identical in both contexts.
+
+   Everything here is a STATIC gradient, border or shadow. Deliberately no
+   `backdrop-filter`: a blurred backdrop forces the compositor to re-sample the
+   page behind every card on each scroll frame, which is what made long lists
+   stutter. A gradient is painted once into the layer and then composited for
+   free, so the layering reads as glass without the per-frame cost.
+   ────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Top-lit sheen: brightest at the top edge, settling into the page toward
+     the bottom. Mean alpha matches the flat 7% fill it replaces, so text
+     contrast over these surfaces is unchanged. */
+  --surface-fill: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0.065) 42%,
+    rgba(255, 255, 255, 0.045) 100%
+  );
+  --surface-fill-raised: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.095) 42%,
+    rgba(255, 255, 255, 0.07) 100%
+  );
+
+  /* Four layers: a lit top edge, a shaded bottom edge, a tight contact shadow
+     and a wide ambient one. The contact shadow is what stops a card reading as
+     a flat rectangle painted on the background. */
+  --surface-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.40),
+    0 12px 28px -14px rgba(0, 0, 0, 0.65);
+  --surface-shadow-raised:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 2px 4px rgba(0, 0, 0, 0.40),
+    0 18px 36px -16px rgba(0, 0, 0, 0.70);
+  /* Grid tiles sit in the page rather than above it — edges only, no cast. */
+  --surface-shadow-flush:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+
+  /* Fixed chrome (bottom nav, sticky header, rest timer, install banner).
+     Translucent enough that content scrolling behind it registers as depth,
+     opaque enough that the chrome's own labels stay legible over anything. */
+  --chrome-fill: linear-gradient(
+    180deg,
+    oklch(0.17 0.018 260 / 0.90) 0%,
+    oklch(0.09 0.012 260 / 0.94) 100%
+  );
+  --chrome-fill-inverted: linear-gradient(
+    180deg,
+    oklch(0.12 0.015 260 / 0.96) 0%,
+    oklch(0.07 0.012 260 / 0.90) 100%
+  );
 }
 
 @layer base {
@@ -247,42 +312,46 @@
 
   .content-card {
     @apply rounded-2xl border border-white/[0.12] px-5 py-5;
-    background: rgba(255, 255, 255, 0.07);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 24px -4px rgba(0, 0, 0, 0.3);
+    background: var(--surface-fill);
+    box-shadow: var(--surface-shadow);
   }
 
   .action-card {
     @apply rounded-2xl border border-white/[0.12] px-5 py-5 cursor-pointer;
-    transition: background 150ms, border-color 150ms, box-shadow 150ms, transform 150ms;
-    background: rgba(255, 255, 255, 0.07);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 24px -4px rgba(0, 0, 0, 0.3);
+    /* `background` is left out of the transition on purpose: interpolating a
+       three-stop gradient repaints every frame, and the fill swap reads better
+       instantly anyway. Depth is what animates. */
+    transition: border-color 150ms, box-shadow 150ms, transform 150ms;
+    background: var(--surface-fill);
+    box-shadow: var(--surface-shadow);
     -webkit-tap-highlight-color: transparent;
   }
 
   .action-card:active {
     transform: scale(0.98);
-    background: rgba(255, 255, 255, 0.10);
+    background: var(--surface-fill-raised);
+    transition: none;              /* press feedback must NEVER be animated */
   }
 
   @media (hover: hover) {
     .action-card:hover {
-      background: rgba(255, 255, 255, 0.10);
+      background: var(--surface-fill-raised);
       border-color: rgba(255, 255, 255, 0.18);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 8px 32px -8px rgba(0, 0, 0, 0.4);
+      box-shadow: var(--surface-shadow-raised);
       transform: translateY(-1px);
     }
   }
 
   .stat-card {
     @apply flex flex-col items-center rounded-2xl border border-white/[0.12] px-4 py-5 text-center;
-    background: rgba(255, 255, 255, 0.07);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    background: var(--surface-fill);
+    box-shadow: var(--surface-shadow-flush);
   }
 
   .premium-card {
     @apply rounded-2xl border border-white/[0.12];
-    background: rgba(255, 255, 255, 0.07);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 24px -4px rgba(0, 0, 0, 0.3);
+    background: var(--surface-fill);
+    box-shadow: var(--surface-shadow);
   }
 
   .glass-panel {
@@ -303,17 +372,37 @@
 
   .elevated-surface {
     @apply rounded-2xl border border-white/[0.12];
-    transition: background 150ms, border-color 150ms, box-shadow 150ms;
-    background: rgba(255, 255, 255, 0.07);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 24px -4px rgba(0, 0, 0, 0.3);
+    transition: border-color 150ms, box-shadow 150ms, transform 150ms;
+    background: var(--surface-fill);
+    box-shadow: var(--surface-shadow);
   }
 
   @media (hover: hover) {
     .elevated-surface:hover {
-      background: rgba(255, 255, 255, 0.10);
+      background: var(--surface-fill-raised);
       border-color: rgba(255, 255, 255, 0.18);
+      box-shadow: var(--surface-shadow-raised);
       transform: translateY(-1px);
     }
+  }
+
+  /* ── Fixed chrome ────────────────────────────────────
+     Bottom nav, sticky workout header, rest timer and the install banner all
+     float over scrolling content. A flat 92%-opaque fill made each of them
+     read as a slab dropped on the page; a static translucent gradient lets a
+     hint of the scroll register underneath while keeping their own labels
+     legible. Static only — no `backdrop-filter` on a surface that is composited
+     over a scrolling list. */
+  .chrome-surface {
+    background: var(--chrome-fill);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 -6px 24px -12px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Top-anchored variant — the lit edge belongs at the bottom, where content
+     passes beneath it. */
+  .chrome-surface-top {
+    background: var(--chrome-fill-inverted);
+    box-shadow: 0 6px 20px -12px rgba(0, 0, 0, 0.7);
   }
 
   /* ── List rows ───────────────────────────────────── */
@@ -448,6 +537,19 @@
     background: var(--state-success);
     border-color: oklch(0.72 0.19 155 / 0.25);
     color: var(--state-success-fg);
+  }
+
+  /* Filled success — for interactive toggles that have to read as "on" from
+     arm's length mid-set (the completed-set tick). Passive surfaces that merely
+     *describe* a success keep the tinted `.state-success`, so the filled green
+     stays a signal rather than decoration.
+
+     The glyph is dark ink, not white: white on this green is ~2:1 and fails
+     WCAG 1.4.11 for a non-text control, whereas the dark ink clears 7:1. */
+  .state-success-solid {
+    background: var(--state-success-solid);
+    border-color: var(--state-success-solid);
+    color: var(--state-success-solid-fg);
   }
 
   .state-achievement {
