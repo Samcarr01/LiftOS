@@ -76,7 +76,7 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
     range,
   );
 
-  const records = usePersonalRecords(data ? [data.exercise.id] : null);
+  const { records } = usePersonalRecords(data ? [data.exercise.id] : null);
 
   if (loading) {
     return (

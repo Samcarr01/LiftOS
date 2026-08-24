@@ -48,7 +48,7 @@ function StatCard({ label, value }: { label: string; value: string }) {
 
 /** Per-exercise deep-dive: pick an exercise, see charts, stats and PRs. */
 export function ExercisesTab() {
-  const exercises = useExerciseList();
+  const { exercises, loading: exercisesLoading } = useExerciseList();
   const [exerciseId, setExerciseId] = useState<string>('');
   const [search, setSearch] = useState('');
   const [range, setRange] = useState<TimeRange>('3m');
@@ -69,7 +69,7 @@ export function ExercisesTab() {
     selectedExercise?.exerciseIds ?? null,
     range,
   );
-  const records = usePersonalRecords(selectedExercise?.exerciseIds ?? null);
+  const { records, loading: recordsLoading } = usePersonalRecords(selectedExercise?.exerciseIds ?? null);
 
   const hasWeightReps = selectedExercise?.trackingLabel.toLowerCase().includes('weight')
     && selectedExercise?.trackingLabel.toLowerCase().includes('reps');
@@ -88,8 +88,12 @@ export function ExercisesTab() {
           />
         </div>
 
-        {exercises.length === 0 ? (
+        {exercisesLoading ? (
           <Skeleton className="h-10 w-full rounded-xl" />
+        ) : exercises.length === 0 ? (
+          <div className="content-card py-6 text-center">
+            <p className="text-sm text-muted-foreground">No exercises available yet.</p>
+          </div>
         ) : (
           <select
             value={exerciseId}
@@ -183,7 +187,7 @@ export function ExercisesTab() {
                 <p className="mt-1 text-sm text-foreground">{summary.trendNote}</p>
               </div>
             </>
-          ) : records.length > 0 ? null : (
+          ) : recordsLoading || records.length > 0 ? null : (
             <div className="content-card">
               <ChartEmptyState message="No completed sessions yet for this exercise." />
             </div>
