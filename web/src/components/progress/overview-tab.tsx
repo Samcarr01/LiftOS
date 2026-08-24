@@ -26,7 +26,7 @@ const WeeklyVolumeTrend = dynamic(
 );
 const MuscleSplitChart = dynamic(
   () => import('@/components/progress/muscle-split-chart').then((m) => m.MuscleSplitChart),
-  { ssr: false, loading: () => <Skeleton className="h-[200px] w-full rounded-2xl" /> },
+  { ssr: false, loading: () => <Skeleton className="h-[320px] w-full rounded-2xl sm:h-[180px]" /> },
 );
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -242,11 +242,27 @@ export function OverviewTab() {
       {aiError && <p className="text-sm text-destructive">AI error: {aiError}</p>}
 
       {(loading || generating) && !summary ? (
-        <div className="space-y-3">
+        <div className="min-h-[800px] space-y-3">
           <GeneratingCard generating={generating} />
-          <Skeleton className="h-24 rounded-2xl" />
-          <Skeleton className="h-32 rounded-2xl" />
-          <Skeleton className="h-20 rounded-2xl" />
+          <div className="content-card space-y-3">
+            <Skeleton className="h-5 w-2/5 rounded-md" />
+            <Skeleton className="h-4 w-full rounded-md" />
+            <Skeleton className="h-4 w-11/12 rounded-md" />
+            <Skeleton className="h-4 w-4/5 rounded-md" />
+          </div>
+          <div className="content-card space-y-3">
+            <Skeleton className="h-5 w-1/3 rounded-md" />
+            <Skeleton className="h-4 w-full rounded-md" />
+            <Skeleton className="h-4 w-10/12 rounded-md" />
+            <Skeleton className="h-4 w-full rounded-md" />
+            <Skeleton className="h-4 w-3/4 rounded-md" />
+          </div>
+          <div className="content-card space-y-3">
+            <Skeleton className="h-5 w-1/3 rounded-md" />
+            <Skeleton className="h-4 w-full rounded-md" />
+            <Skeleton className="h-4 w-5/6 rounded-md" />
+            <Skeleton className="h-4 w-2/3 rounded-md" />
+          </div>
         </div>
       ) : summary ? (
         <>

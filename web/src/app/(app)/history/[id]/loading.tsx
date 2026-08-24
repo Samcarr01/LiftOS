@@ -12,9 +12,9 @@ export default function HistoryDetailLoading() {
           </div>
         </div>
         <div className="space-y-3">
-          <Skeleton className="h-16 w-full rounded-2xl" />
-          <Skeleton className="h-40 w-full rounded-2xl" />
-          <Skeleton className="h-40 w-full rounded-2xl" />
+          <Skeleton className="h-[98px] w-full rounded-2xl" />
+          <Skeleton className="h-[204px] w-full rounded-2xl" />
+          <Skeleton className="h-[304px] w-full rounded-2xl" />
         </div>
       </div>
     </div>

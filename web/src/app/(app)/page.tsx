@@ -353,7 +353,7 @@ export default function HomePage() {
 
         {/* ── Streak + Heatmap ────────────────────── */}
         {loading ? (
-          <Skeleton className="h-[180px] rounded-2xl" />
+          <Skeleton className="h-[290px] rounded-2xl" />
         ) : (data?.activityDates?.length ?? 0) > 0 ? (
           <div className="page-reveal">
             <StreakHeatmap sessions={data!.activityDates} target={data!.weeklyTarget} />
@@ -362,11 +362,14 @@ export default function HomePage() {
 
         {/* ── Your Workouts ───────────────────────── */}
         {loading ? (
-          <div className="space-y-3">
+          <section>
             <Skeleton className="h-5 w-32 rounded-md" />
-            <Skeleton className="h-[72px] w-full rounded-xl" />
-            <Skeleton className="h-[72px] w-full rounded-xl" />
-          </div>
+            <div className="mt-3 space-y-2.5">
+              {[0, 1, 2, 3].map((index) => (
+                <Skeleton key={index} className="h-[72px] w-full rounded-2xl" />
+              ))}
+            </div>
+          </section>
         ) : (data?.pinned?.length ?? 0) > 0 ? (
           <section className="page-reveal">
             <div className="mb-3 flex items-center justify-between">
