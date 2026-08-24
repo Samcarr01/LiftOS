@@ -2,13 +2,16 @@
  * Leveling system math + tier metadata.
  *
  * Pure functions only — no React, no fetch. The hook layer feeds in session +
- * PR data and gets back { total, level, tier, ... }. Storage strategy is
- * derive-on-the-fly: we don't persist XP, so tweaking formulas here applies
- * retroactively to every user on next page load (no migration needed).
+ * PR data and gets back { total, level, tier, ... }.
  *
- * The same `computeXp` function is used for every user (RLS scopes the input
- * data) so existing users will land at their correct tier the moment the
- * code ships — no per-user backfill required.
+ * Storage strategy: XP is materialised on `users` (xp_total / xp_level) by the
+ * database completion and PR triggers, so surfaces read a level instead of
+ * replaying a user's whole history. Changing a formula here therefore also
+ * means changing `recompute_user_progress` and backfilling in a migration —
+ * the two must agree or Home and Levels drift apart.
+ *
+ * `resolveLevelFromStoredProgress` is the single entry point for rendering
+ * persisted progress: xp_total is canonical, xp_level is only a hint.
  */
 
 // ── XP rules (12 sources) ─────────────────────────────────────────────────────
@@ -147,6 +150,35 @@ export function tierForLevel(level: number): Tier {
     if (level >= TIERS[i].minLevel) return TIERS[i];
   }
   return TIERS[0];
+}
+
+/** Materialised progress as persisted on `users` by the database triggers. */
+export interface StoredProgress {
+  xpTotal: number;
+  xpLevel: number;
+}
+
+export interface StoredLevelState extends LevelState {
+  tier: Tier;
+  /** True when the persisted level disagrees with the canonical XP total. */
+  isStale: boolean;
+}
+
+/**
+ * Resolve the level + tier a surface should render from persisted progress.
+ *
+ * `xp_total` is canonical: `xp_level` is a convenience column that can lag it
+ * (an older materialisation, a formula change shipped ahead of the backfill).
+ * Deriving from the total keeps Home and Levels on the same tier instead of
+ * one showing Obsidian while the other shows Titan.
+ */
+export function resolveLevelFromStoredProgress(progress: StoredProgress): StoredLevelState {
+  const state = levelFromXp(progress.xpTotal);
+  return {
+    ...state,
+    tier:    tierForLevel(state.level),
+    isStale: progress.xpLevel !== state.level,
+  };
 }
 
 // ── Computation ───────────────────────────────────────────────────────────────

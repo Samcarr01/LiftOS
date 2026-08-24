@@ -10,12 +10,12 @@ import { PageShell } from '@/components/layout/page-shell';
 import { Skeleton } from '@/components/ui/skeleton';
 import { createClient } from '@/lib/supabase/client';
 import {
-  computeXp, levelFromXp, tierForLevel, xpForLevel,
+  resolveLevelFromStoredProgress, xpForLevel,
   TIERS,
   XP_PER_SESSION, XP_PER_LIGHT_SESSION, XP_PER_TARGET_HIT, XP_PER_PR_BONUS,
   XP_HEAVY_SET_BONUS, XP_VOLUME_PR, XP_FULL_SESSION, XP_DELOAD_WEEK,
   XP_COMEBACK, XP_VARIETY_PER_EX, XP_VARIETY_CAP, XP_WEEKLY_STREAK, XP_STREAK_CAP, XP_TEMPLATE_USER,
-  type Tier, type XpInputSession, type XpInputPR, type XpBreakdown,
+  type Tier,
 } from '@/lib/leveling/xp';
 import {
   TIER_DESCRIPTIONS,
@@ -27,7 +27,7 @@ import {
 
 export default function LevelsPage() {
   const [state, setState] = useState<{
-    breakdown: XpBreakdown;
+    total:     number;
     level:     number;
     tier:      Tier;
     intoLevel: number;
@@ -39,29 +39,24 @@ export default function LevelsPage() {
     let cancelled = false;
     (async () => {
       const supabase = createClient();
-      const [usersRes, sessionsRes, prsRes] = await Promise.all([
-        supabase.from('users').select('weekly_workout_target').single(),
-        supabase
-          .from('workout_sessions')
-          .select('id, started_at, is_light_session')
-          .not('completed_at', 'is', null),
-        supabase.from('personal_records').select('session_id'),
-      ]);
+      // Read the same materialised progress Home reads, rather than recomputing
+      // from history here — two computations are two chances to disagree.
+      const usersRes = await supabase
+        .from('users')
+        .select('xp_total, xp_level')
+        .single();
 
       if (cancelled) return;
 
-      const weeklyTarget =
-        (usersRes.data as { weekly_workout_target: number | null } | null)
-          ?.weekly_workout_target ?? 4;
-      const sessions = (sessionsRes.data ?? []) as XpInputSession[];
-      const prs      = (prsRes.data ?? [])      as XpInputPR[];
+      const progressRow = usersRes.data as { xp_total: number; xp_level: number } | null;
+      const xpTotal = progressRow?.xp_total ?? 0;
+      const xpLevel = progressRow?.xp_level ?? 1;
 
-      const breakdown = computeXp(sessions, prs, weeklyTarget);
-      const ls = levelFromXp(breakdown.total);
+      const ls = resolveLevelFromStoredProgress({ xpTotal, xpLevel });
       setState({
-        breakdown,
+        total:       xpTotal,
         level:       ls.level,
-        tier:        tierForLevel(ls.level),
+        tier:        ls.tier,
         intoLevel:   ls.xpIntoLevel,
         nextLevelAt: ls.xpAtNextLevel - ls.xpAtLevel,
         progressPct: ls.progressPct,
@@ -109,7 +104,7 @@ function LevelsLoading() {
 
 function CurrentTierCard({ state }: {
   state: {
-    breakdown:   XpBreakdown;
+    total:       number;
     level:       number;
     tier:        Tier;
     intoLevel:   number;
@@ -142,7 +137,7 @@ function CurrentTierCard({ state }: {
             {state.intoLevel.toLocaleString()} / {state.nextLevelAt.toLocaleString()} XP
           </span>
           <span className="text-muted-foreground tabular-nums">
-            {state.breakdown.total.toLocaleString()} XP total
+            {state.total.toLocaleString()} XP total
           </span>
         </div>
         <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
