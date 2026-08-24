@@ -75,7 +75,7 @@ export default function HistoryPage() {
         {loading && sessions.length === 0 && !error && (
           <div className="space-y-2">
             {[...Array(5)].map((_, index) => (
-              <Skeleton key={index} className="h-14 w-full rounded-2xl" />
+              <Skeleton key={index} className="h-[90px] w-full rounded-2xl" />
             ))}
           </div>
         )}

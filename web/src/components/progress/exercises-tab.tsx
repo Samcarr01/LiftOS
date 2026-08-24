@@ -11,15 +11,15 @@ import type { TimeRange } from '@/hooks/use-progress';
 
 const TopSetChart = dynamic(
   () => import('@/components/progress/top-set-chart').then((module) => module.TopSetChart),
-  { ssr: false, loading: () => <Skeleton className="h-52 w-full rounded-[28px]" /> },
+  { ssr: false, loading: () => <Skeleton className="h-[180px] w-full rounded-[28px]" /> },
 );
 const E1rmChart = dynamic(
   () => import('@/components/progress/e1rm-chart').then((module) => module.E1rmChart),
-  { ssr: false, loading: () => <Skeleton className="h-52 w-full rounded-[28px]" /> },
+  { ssr: false, loading: () => <Skeleton className="h-[180px] w-full rounded-[28px]" /> },
 );
 const VolumeChart = dynamic(
   () => import('@/components/progress/volume-chart').then((module) => module.VolumeChart),
-  { ssr: false, loading: () => <Skeleton className="h-52 w-full rounded-[28px]" /> },
+  { ssr: false, loading: () => <Skeleton className="h-[180px] w-full rounded-[28px]" /> },
 );
 
 const TIME_RANGES: { label: string; value: TimeRange }[] = [
@@ -136,7 +136,11 @@ export function ExercisesTab() {
 
               <div className="mt-4">
                 {progressLoading ? (
-                  <Skeleton className="h-48 w-full rounded-xl" />
+                  <div className="space-y-4">
+                    <Skeleton className="h-[204px] w-full rounded-xl" />
+                    <Skeleton className="h-[204px] w-full rounded-xl" />
+                    <Skeleton className="h-[204px] w-full rounded-xl" />
+                  </div>
                 ) : points.length === 0 ? (
                   <ChartEmptyState message="No chart data yet." />
                 ) : (
@@ -162,9 +166,9 @@ export function ExercisesTab() {
           {/* Stat cards */}
           {progressLoading ? (
             <div className="grid gap-2 grid-cols-3">
-              <Skeleton className="h-16 rounded-xl" />
-              <Skeleton className="h-16 rounded-xl" />
-              <Skeleton className="h-16 rounded-xl" />
+              <Skeleton className="h-[98px] rounded-xl" />
+              <Skeleton className="h-[98px] rounded-xl" />
+              <Skeleton className="h-[98px] rounded-xl" />
             </div>
           ) : summary ? (
             <>

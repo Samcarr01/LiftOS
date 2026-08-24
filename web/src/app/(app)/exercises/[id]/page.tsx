@@ -32,15 +32,15 @@ import type { TimeRange } from '@/hooks/use-progress';
 
 const TopSetChart = dynamic(
   () => import('@/components/progress/top-set-chart').then((m) => m.TopSetChart),
-  { ssr: false, loading: () => <Skeleton className="h-52 w-full rounded-[28px]" /> },
+  { ssr: false, loading: () => <Skeleton className="h-[180px] w-full rounded-[28px]" /> },
 );
 const E1rmChart = dynamic(
   () => import('@/components/progress/e1rm-chart').then((m) => m.E1rmChart),
-  { ssr: false, loading: () => <Skeleton className="h-52 w-full rounded-[28px]" /> },
+  { ssr: false, loading: () => <Skeleton className="h-[180px] w-full rounded-[28px]" /> },
 );
 const VolumeChart = dynamic(
   () => import('@/components/progress/volume-chart').then((m) => m.VolumeChart),
-  { ssr: false, loading: () => <Skeleton className="h-52 w-full rounded-[28px]" /> },
+  { ssr: false, loading: () => <Skeleton className="h-[180px] w-full rounded-[28px]" /> },
 );
 
 const TIME_RANGES: { label: string; value: TimeRange }[] = [
