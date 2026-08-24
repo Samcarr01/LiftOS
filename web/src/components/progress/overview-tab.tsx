@@ -154,7 +154,7 @@ function LegacyInsights({ ai }: { ai: AIAnalysis }) {
         </div>
       )}
       {ai.wins && ai.wins.length > 0 && (
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
+        <div className="content-card p-4">
           <h4 className="text-sm font-semibold mb-2">Wins</h4>
           <ul className="space-y-1.5">
             {ai.wins.map((win, i) => (
@@ -167,13 +167,13 @@ function LegacyInsights({ ai }: { ai: AIAnalysis }) {
         </div>
       )}
       {ai.volume_trend_analysis && (
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
+        <div className="content-card p-4">
           <h4 className="text-sm font-semibold mb-2">Volume Trend</h4>
           <p className="text-sm text-muted-foreground leading-relaxed">{ai.volume_trend_analysis}</p>
         </div>
       )}
       {ai.focus_areas && ai.focus_areas.length > 0 && (
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
+        <div className="content-card p-4">
           <h4 className="text-sm font-semibold mb-2">Focus Areas</h4>
           <ul className="space-y-1.5">
             {ai.focus_areas.map((area, i) => (
@@ -186,7 +186,7 @@ function LegacyInsights({ ai }: { ai: AIAnalysis }) {
         </div>
       )}
       {ai.training_consistency && (
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
+        <div className="content-card p-4">
           <h4 className="text-sm font-semibold mb-2">Consistency</h4>
           <p className="text-sm text-muted-foreground">{ai.training_consistency}</p>
         </div>

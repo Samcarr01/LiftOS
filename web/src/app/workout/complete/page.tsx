@@ -121,7 +121,7 @@ function XpSlider({ data }: { data: XpSliderData }) {
   const Icon = TIER_ICON_MAP[postTier.icon];
 
   return (
-    <div className="mt-6 w-full max-w-sm rounded-2xl border border-white/[0.10] bg-white/[0.06] backdrop-blur-2xl px-4 py-4">
+    <div className="content-card mt-6 w-full max-w-sm px-4 py-4">
       {/* XP Earned Counter */}
       <div className="flex items-center justify-between mb-3">
         <p className="text-overline">XP earned this session</p>
@@ -409,7 +409,7 @@ export default function WorkoutCompletePage() {
 
       {/* Exercises */}
       {exerciseNames.length > 0 && (
-        <div className="mt-6 w-full max-w-sm rounded-2xl border border-white/[0.10] bg-white/[0.06] backdrop-blur-2xl px-4 py-4">
+        <div className="content-card mt-6 w-full max-w-sm px-4 py-4">
           <p className="text-overline mb-2">
             Exercises ({summary.exercise_count})
           </p>
@@ -479,7 +479,7 @@ function StatCard({
   staticValue?: string;
 }) {
   return (
-    <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-white/[0.10] bg-white/[0.06] backdrop-blur-2xl px-3 py-5">
+    <div className="content-card relative flex flex-col items-center justify-center overflow-hidden px-3 py-5">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
       <span className="font-display text-2xl font-bold tabular-nums">
         {staticValue !== undefined

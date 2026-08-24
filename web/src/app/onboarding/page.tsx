@@ -385,7 +385,7 @@ export default function OnboardingPage() {
             </div>
 
             {/* Custom range */}
-            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+            <div className="content-card flex items-center gap-3 px-4 py-3">
               <span className="text-sm font-medium text-muted-foreground">Custom:</span>
               <input
                 type="text"
@@ -533,7 +533,7 @@ export default function OnboardingPage() {
 
             <div className="space-y-2">
               {/* Goals */}
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+              <div className="content-card px-4 py-3">
                 <p className="text-xs font-medium text-muted-foreground">Goals</p>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {selectedGoals.map((g) => (
@@ -548,19 +548,19 @@ export default function OnboardingPage() {
               </div>
 
               {/* Experience */}
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+              <div className="content-card px-4 py-3">
                 <p className="text-xs font-medium text-muted-foreground">Experience</p>
                 <p className="mt-0.5 text-sm font-semibold">{EXP_LABELS[experienceLevel] ?? 'Not set'}</p>
               </div>
 
               {/* Weekly Target */}
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+              <div className="content-card px-4 py-3">
                 <p className="text-xs font-medium text-muted-foreground">Weekly Sessions</p>
                 <p className="mt-0.5 text-sm font-semibold">{weeklyTarget} / week</p>
               </div>
 
               {/* Rep Range */}
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+              <div className="content-card px-4 py-3">
                 <p className="text-xs font-medium text-muted-foreground">Preferred Rep Range</p>
                 <p className="mt-0.5 text-sm font-semibold">
                   {repMin > 0 && repMax > 0 ? `${repMin}–${repMax} reps` : 'Not set'}
@@ -570,13 +570,13 @@ export default function OnboardingPage() {
 
               {/* Body + Units */}
               <div className="flex gap-2">
-                <div className="flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                <div className="flex-1 content-card px-4 py-3">
                   <p className="text-xs font-medium text-muted-foreground">Body Weight</p>
                   <p className="mt-0.5 text-sm font-semibold">
                     {bodyWeight ? `${bodyWeight} ${weightInputUnit}` : '—'}
                   </p>
                 </div>
-                <div className="flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                <div className="flex-1 content-card px-4 py-3">
                   <p className="text-xs font-medium text-muted-foreground">Units</p>
                   <p className="mt-0.5 text-sm font-semibold">{unitPreference === 'kg' ? 'Kilograms' : 'Pounds'}</p>
                 </div>
