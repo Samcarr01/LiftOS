@@ -3,9 +3,7 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import {
-  levelFromXp, tierForLevel,
-} from '@/lib/leveling/xp';
+import { resolveLevelFromStoredProgress } from '@/lib/leveling/xp';
 import {
   TierIcon,
   TierCardEffects,
@@ -18,11 +16,12 @@ interface LevelChipProps {
 
 export function LevelChip({ xpTotal, xpLevel }: LevelChipProps) {
   const { tier, level, progressPct, total, intoLevel, nextLevelAt } = useMemo(() => {
-    const ls = levelFromXp(xpTotal);
-    const t = tierForLevel(xpLevel);
+    // Level and tier come from the same resolved state, so the chip can never
+    // pair a stale persisted level with the canonical XP total.
+    const ls = resolveLevelFromStoredProgress({ xpTotal, xpLevel });
     return {
-      tier:        t,
-      level:       xpLevel,
+      tier:        ls.tier,
+      level:       ls.level,
       progressPct: ls.progressPct,
       total:       xpTotal,
       intoLevel:   ls.xpIntoLevel,
