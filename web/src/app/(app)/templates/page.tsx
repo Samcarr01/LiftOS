@@ -291,7 +291,6 @@ export default function TemplatesPage() {
   const [visibleAllCount, setVisibleAllCount] = useState(LIST_PAGE_SIZE);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('create') !== '1') return;
     setAutoOpenCreate(true);

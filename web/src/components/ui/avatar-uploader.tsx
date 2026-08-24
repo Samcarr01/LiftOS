@@ -185,7 +185,7 @@ export function AvatarUploader({ userId, displayName, email, avatarUrl, onChange
       const { error } = await supabase.storage.from('avatars').upload(path, blob, {
         upsert: true,
         contentType: 'image/jpeg',
-        cacheControl: '0',
+        cacheControl: '31536000',
       });
       if (error) throw error;
       const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);

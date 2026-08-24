@@ -33,8 +33,9 @@ function RestTimerOverlay() {
   const restTimer = useActiveWorkoutStore((s) => s.restTimer);
   const stopTimer = useActiveWorkoutStore((s) => s.stopRestTimer);
 
-  // The overlay remounts per rest period, so this starts at the exact timer start.
-  const [now, setNow] = useState(restTimer.startedAt);
+  // The overlay remounts per rest period, so this starts at the full duration.
+  // Keep the time-derived value in state: React may render without a timer tick.
+  const [remaining, setRemaining] = useState(restTimer.duration);
   const firedRef = useRef(false);
 
   useEffect(() => {
@@ -44,29 +45,30 @@ function RestTimerOverlay() {
     }
 
     firedRef.current = false;
-    const id = setInterval(() => {
+    const tick = () => {
       const currentTime = Date.now();
-      setNow(currentTime);
 
       if (!restTimer.startedAt) return;
       const elapsed   = Math.floor((currentTime - restTimer.startedAt) / 1000);
-      const remaining = restTimer.duration - elapsed;
+      const nextRemaining = Math.max(0, restTimer.duration - elapsed);
+      setRemaining(nextRemaining);
 
-      if (remaining <= 0 && !firedRef.current) {
+      if (nextRemaining <= 0 && !firedRef.current) {
         firedRef.current = true;
         playBeep();
         haptic('warn');
         setTimeout(() => stopTimer(), 1500);
       }
-    }, 1000); // 1Hz tick matches the mm:ss readout
+    };
+
+    tick();
+    const id = setInterval(tick, 1000); // 1Hz tick matches the mm:ss readout
 
     return () => clearInterval(id);
   }, [restTimer.isRunning, restTimer.startedAt, restTimer.duration, stopTimer]);
 
   if (!restTimer.isRunning || !restTimer.startedAt) return null;
 
-  const elapsed   = Math.floor(((now ?? restTimer.startedAt) - restTimer.startedAt) / 1000);
-  const remaining = Math.max(0, restTimer.duration - elapsed);
   const progress  = restTimer.duration > 0 ? remaining / restTimer.duration : 0;
 
   const mins = Math.floor(remaining / 60).toString().padStart(2, '0');

@@ -26,7 +26,7 @@ const WeeklyVolumeTrend = dynamic(
 );
 const MuscleSplitChart = dynamic(
   () => import('@/components/progress/muscle-split-chart').then((m) => m.MuscleSplitChart),
-  { ssr: false, loading: () => <Skeleton className="h-[320px] w-full rounded-2xl sm:h-[180px]" /> },
+  { ssr: false, loading: () => <Skeleton className="min-h-[320px] w-full rounded-2xl sm:min-h-[228px]" /> },
 );
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -238,8 +238,9 @@ export function OverviewTab() {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">Coaching report · Last 30 Days · {periodLabel}</p>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      {aiError && <p className="text-sm text-destructive">AI error: {aiError}</p>}
+      <div role="alert" className="flex min-h-5 items-center text-sm text-destructive">
+        {error ?? (aiError ? `AI error: ${aiError}` : null)}
+      </div>
 
       {(loading || generating) && !summary ? (
         <div className="min-h-[800px] space-y-3">
