@@ -189,6 +189,12 @@
 }
 
 @layer components {
+  /* Fixed-width glyphs keep live timers and counters from shifting nearby UI. */
+  .numeric {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
   /* ── Touch feedback ──────────────────────────────────── */
 
   /* `-webkit-tap-highlight-color: transparent` on `html` inherits everywhere,

@@ -89,7 +89,7 @@ function AnimatedNumber({ value, duration = 700 }: { value: number; duration?: n
     return () => cancelAnimationFrame(raf);
   }, [value, duration]);
 
-  return <>{Math.round(display).toLocaleString()}</>;
+  return <span className="numeric inline-block min-w-[4ch] text-right">{Math.round(display).toLocaleString()}</span>;
 }
 
 // ── XP Slider Component ─────────────────────────────────────────────────────
@@ -125,7 +125,7 @@ function XpSlider({ data }: { data: XpSliderData }) {
       {/* XP Earned Counter */}
       <div className="flex items-center justify-between mb-3">
         <p className="text-overline">XP earned this session</p>
-        <span className="font-display text-lg font-bold tabular-nums" style={{ color: accent }}>
+        <span className="font-display text-lg font-bold" style={{ color: accent }}>
           +<AnimatedNumber value={sessionXp} />
         </span>
       </div>
@@ -503,7 +503,7 @@ function StatCard({
   return (
     <div className="content-card relative flex flex-col items-center justify-center overflow-hidden px-3 py-5">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-      <span className="font-display text-2xl font-bold tabular-nums">
+      <span className="font-display text-2xl font-bold">
         {staticValue !== undefined
           ? staticValue
           : <><AnimatedNumber value={value ?? 0} />{suffix ? ` ${suffix}` : ''}</>}

@@ -124,7 +124,7 @@ export const SupersetCard = memo(function SupersetCard({ exercises, dismissedSug
             <h2 className="font-display text-lg font-bold">Superset</h2>
             <span
               className={cn(
-                'rounded-full px-2 py-0.5 text-sm font-semibold',
+                'numeric rounded-full px-2 py-0.5 text-sm font-semibold',
                 allComplete
                   ? 'state-success'
                   : 'state-active',
