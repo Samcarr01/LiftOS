@@ -69,7 +69,7 @@ export function useHistory() {
       return;
     }
 
-    const mapped: HistorySessionSummary[] = data.map((row: {
+    const rows = data as unknown as Array<{
       id: string;
       started_at: string;
       completed_at: string | null;
@@ -78,7 +78,9 @@ export function useHistory() {
       is_light_session: boolean;
       workout_templates: { name: string } | null;
       session_exercises: { id: string; set_entries: { count: number }[] }[];
-    }) => ({
+    }>;
+
+    const mapped: HistorySessionSummary[] = rows.map((row) => ({
       id:               row.id,
       started_at:       row.started_at,
       completed_at:     row.completed_at,
@@ -105,7 +107,7 @@ export function useHistory() {
 
     if (activeUserId.current !== userId) return;
     const nextSessions = reset ? mapped : [...(cachedHistoryByUser.get(userId)?.page.sessions ?? []), ...mapped];
-    const nextHasMore = data.length === PAGE_SIZE;
+    const nextHasMore = rows.length === PAGE_SIZE;
     const nextPage = currentPage + 1;
     cachedHistoryByUser.set(userId, { page: { sessions: nextSessions, hasMore: nextHasMore }, nextPage });
     pageRef.current = nextPage;

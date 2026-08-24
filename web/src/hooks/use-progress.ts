@@ -158,6 +158,7 @@ function buildTrendNote(points: ProgressPoint[], schema: TrackingSchema): string
 
 export function useExerciseList() {
   const [exercises, setExercises] = useState<ExerciseOption[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const supabase = createClient();
@@ -181,27 +182,32 @@ export function useExerciseList() {
         });
 
         setExercises(groupExercisesByName(parsed));
+        setLoading(false);
       });
   }, []);
 
-  return exercises;
+  return { exercises, loading };
 }
 
 export function useProgress(exerciseIds: string[] | null, range: TimeRange) {
   const [points, setPoints] = useState<ProgressPoint[]>([]);
   const [summary, setSummary] = useState<ProgressSummary | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Enter the loading state before handling a changed exercise selection.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+
     if (!exerciseIds || exerciseIds.length === 0) {
       setPoints([]);
       setSummary(null);
+      setLoading(false);
       return;
     }
 
     const selectedExerciseIds = exerciseIds;
     let cancelled = false;
-    setLoading(true);
 
     async function fetch() {
       const supabase = createClient();
@@ -342,10 +348,16 @@ export function usePersonalRecords(exerciseIds: string[] | null) {
     record_value: number;
     achieved_at: string;
   }>>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Reset loading before the empty-selection early return and before a new request.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+
     if (!exerciseIds || exerciseIds.length === 0) {
       setRecords([]);
+      setLoading(false);
       return;
     }
 
@@ -370,8 +382,9 @@ export function usePersonalRecords(exerciseIds: string[] | null) {
         }
 
         setRecords(Array.from(bestByType.values()));
+        setLoading(false);
       });
   }, [exerciseIds]);
 
-  return records;
+  return { records, loading };
 }
