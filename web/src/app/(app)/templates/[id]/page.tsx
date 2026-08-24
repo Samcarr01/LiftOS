@@ -83,8 +83,8 @@ const SortableExerciseRow = memo(function SortableExerciseRow({
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
     transition,
-    // Promote to own layer during drag; disable expensive backdrop-blur
-    ...(isDragging ? { willChange: 'transform', backdropFilter: 'none', WebkitBackdropFilter: 'none', zIndex: 50 } : {}),
+    // The active row is the only element that continuously translates.
+    ...(isDragging ? { willChange: 'transform', zIndex: 50 } : {}),
   };
   const inSuperset = supersetPosition !== 'none';
 
@@ -93,8 +93,10 @@ const SortableExerciseRow = memo(function SortableExerciseRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'elevated-surface flex items-center gap-4 px-4 py-4',
-        isDragging && 'opacity-80 shadow-2xl ring-1 ring-primary/30',
+        isDragging
+          ? 'flex items-center gap-4 rounded-2xl border border-white/[0.12] bg-background px-4 py-4 shadow-none'
+          : 'elevated-surface flex items-center gap-4 px-4 py-4',
+        isDragging && 'opacity-80 ring-1 ring-primary/30',
         inSuperset && 'border-l-2 border-l-primary/60',
         supersetPosition === 'first' && 'rounded-b-none border-b-0',
         supersetPosition === 'middle' && 'rounded-none border-b-0',
