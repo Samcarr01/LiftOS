@@ -33,6 +33,7 @@ import { usePwaInstall } from '@/hooks/use-pwa-install';
 import { exportUserData } from '@/lib/export';
 import { getQueueSize, processQueue } from '@/lib/offline/sync-queue';
 import { AvatarUploader } from '@/components/ui/avatar-uploader';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   getTrainingStage,
   suggestStage,
@@ -214,36 +215,33 @@ export default function ProfilePage() {
   const [trainingStage, setTrainingStage] = useState<TrainingStageId>('intermediate');
   const [suggestedStage, setSuggestedStage] = useState<TrainingStageId | null>(null);
   const [stageLoaded, setStageLoaded] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
-    void supabase
-      .from('users')
-      .select('display_name, avatar_url, created_at, experience_level')
-      .single()
-      .then(({ data }) => {
-        const row = data as { display_name: string | null; avatar_url: string | null; created_at: string | null; experience_level: string | null } | null;
-        setDisplayName(row?.display_name ?? '');
-        setAvatarUrl(row?.avatar_url ?? null);
-        setMemberSince(row?.created_at ?? user.created_at ?? null);
-        const stage = (row?.experience_level as TrainingStageId) ?? 'intermediate';
-        setTrainingStage(stage);
-        setStageLoaded(true);
-      });
-
+    setProfileLoading(true);
     void Promise.all([
+      supabase
+        .from('users')
+        .select('display_name, avatar_url, created_at, experience_level')
+        .single(),
       supabase.from('workout_sessions').select('id', { count: 'exact', head: true }).not('completed_at', 'is', null),
       supabase.from('set_entries').select('id', { count: 'exact', head: true }),
-    ]).then(([sessions, sets]) => {
+      getQueueSize(),
+    ]).then(([profile, sessions, sets, queueSize]) => {
+      const row = profile.data as { display_name: string | null; avatar_url: string | null; created_at: string | null; experience_level: string | null } | null;
+      setDisplayName(row?.display_name ?? '');
+      setAvatarUrl(row?.avatar_url ?? null);
+      setMemberSince(row?.created_at ?? user.created_at ?? null);
+      const stage = (row?.experience_level as TrainingStageId) ?? 'intermediate';
+      setTrainingStage(stage);
+      setStageLoaded(true);
       setWorkoutCount(sessions.count ?? 0);
       setSetCount(sets.count ?? 0);
-    });
+      setPendingCount(queueSize);
+    }).finally(() => setProfileLoading(false));
   }, [user]);
-
-  useEffect(() => {
-    void getQueueSize().then(setPendingCount);
-  }, []);
 
   async function saveDisplayName() {
     if (!user) return;
@@ -352,6 +350,8 @@ export default function ProfilePage() {
     setSuggestedStage(suggested.id);
     toast.info(`Suggested stage: ${suggested.label} — ${suggested.description}`, { duration: 5000 });
   }
+
+  if (profileLoading) return <ProfileLoading />;
 
   return (
     <div className="page-shell">
@@ -658,6 +658,24 @@ export default function ProfilePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function ProfileLoading() {
+  return (
+    <div className="page-shell">
+      <div className="page-content space-y-5 py-5 md:py-7" aria-busy="true" aria-label="Loading profile">
+        <div className="page-header"><h1 className="page-header-title">Profile</h1></div>
+        <Skeleton className="h-[80px] w-full rounded-2xl" />
+        <Skeleton className="h-[65px] w-full rounded-xl" />
+        <section className="space-y-2"><Skeleton className="h-5 w-24" /><Skeleton className="h-[64px] w-full rounded-2xl" /></section>
+        <section className="space-y-2"><Skeleton className="h-5 w-28" /><Skeleton className="h-[250px] w-full rounded-2xl" /></section>
+        {[0, 1, 2, 3].map((index) => (
+          <section key={index} className="space-y-2"><Skeleton className="h-5 w-20" /><Skeleton className="h-[64px] w-full rounded-2xl" /></section>
+        ))}
+        <Skeleton className="mx-auto h-4 w-36" />
+      </div>
     </div>
   );
 }

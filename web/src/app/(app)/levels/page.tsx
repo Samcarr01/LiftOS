@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Check, Lock, Loader2,
+  Check, Lock,
   Dumbbell, Trophy, Target, Award, Flame, Zap, RotateCcw,
   Repeat, Star, Layers, BrainCircuit,
 } from 'lucide-react';
 import { PageShell } from '@/components/layout/page-shell';
+import { Skeleton } from '@/components/ui/skeleton';
 import { createClient } from '@/lib/supabase/client';
 import {
   computeXp, levelFromXp, tierForLevel, xpForLevel,
@@ -77,9 +78,7 @@ export default function LevelsPage() {
       </p>
 
         {state === null ? (
-          <div className="flex h-32 items-center justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
+          <LevelsLoading />
         ) : (
           <>
             <CurrentTierCard state={state} />
@@ -88,6 +87,21 @@ export default function LevelsPage() {
           </>
         )}
     </PageShell>
+  );
+}
+
+function LevelsLoading() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Loading levels">
+      <Skeleton className="h-[166px] w-full rounded-2xl" />
+      <Skeleton className="h-[52px] w-full rounded-2xl" />
+      <section className="space-y-2.5">
+        <Skeleton className="h-5 w-20" />
+        {Array.from({ length: TIERS.length }, (_, index) => (
+          <Skeleton key={index} className="h-[101px] w-full rounded-2xl" />
+        ))}
+      </section>
+    </div>
   );
 }
 
