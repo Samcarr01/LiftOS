@@ -315,15 +315,17 @@ export default function HomePage() {
         {/* ── Level Chip (your identity in the app) ───────────────────────────
             Lives above Start Workout because it represents who you are, not
             what you do next. Tap to drill into the full tier ladder. */}
-        {loading ? (
-          <Skeleton className="h-[88px] rounded-2xl" />
-        ) : (data?.sessionCount ?? 0) > 0 ? (
-          <div className="page-reveal">
-            <LevelChip
-              xpTotal={data!.xpTotal}
-              xpLevel={data!.xpLevel}
-            />
-          </div>
+        {(data?.sessionCount ?? 0) > 0 ? (
+          loading ? (
+            <Skeleton className="h-[88px] rounded-2xl" />
+          ) : (
+            <div className="page-reveal">
+              <LevelChip
+                xpTotal={data!.xpTotal}
+                xpLevel={data!.xpLevel}
+              />
+            </div>
+          )
         ) : null}
 
         {/* ── Start Workout CTA ──────────────────── */}
@@ -352,12 +354,14 @@ export default function HomePage() {
         </button>
 
         {/* ── Streak + Heatmap ────────────────────── */}
-        {loading ? (
-          <Skeleton className="h-[290px] rounded-2xl" />
-        ) : (data?.activityDates?.length ?? 0) > 0 ? (
-          <div className="page-reveal">
-            <StreakHeatmap sessions={data!.activityDates} target={data!.weeklyTarget} />
-          </div>
+        {(data?.activityDates?.length ?? 0) > 0 ? (
+          loading ? (
+            <Skeleton className="h-[290px] rounded-2xl" />
+          ) : (
+            <div className="page-reveal">
+              <StreakHeatmap sessions={data!.activityDates} target={data!.weeklyTarget} />
+            </div>
+          )
         ) : null}
 
         {/* ── Your Workouts ───────────────────────── */}
