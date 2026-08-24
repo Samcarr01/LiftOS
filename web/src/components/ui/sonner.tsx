@@ -37,6 +37,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--border-radius": "var(--radius)",
         } as React.CSSProperties
       }
+      // Keep mobile notifications clear of the fixed bottom navigation and the
+      // iOS home indicator. Desktop retains Sonner's existing placement/offset.
+      mobileOffset="calc(4.25rem + max(0.5rem, env(safe-area-inset-bottom)))"
       toastOptions={{
         classNames: {
           toast: "cn-toast",
