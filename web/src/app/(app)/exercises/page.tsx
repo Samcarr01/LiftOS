@@ -13,6 +13,8 @@ import {
   normalizeExerciseName,
 } from '@/lib/workout/formatting';
 
+const LIST_PAGE_SIZE = 20;
+
 export default function ExercisesPage() {
   const {
     exercises,
@@ -21,6 +23,7 @@ export default function ExercisesPage() {
   } = useExercises();
   const [search, setSearch] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(LIST_PAGE_SIZE);
 
   const duplicateGroups = useMemo(
     () => groupExercisesByName(exercises).filter((group) => group.duplicateCount > 1),
@@ -80,7 +83,10 @@ export default function ExercisesPage() {
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
           <Input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setVisibleCount(LIST_PAGE_SIZE);
+            }}
             placeholder="Search by name, muscle group, or type"
             className="pl-10"
           />
@@ -115,7 +121,7 @@ export default function ExercisesPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {filteredExercises.map((exercise) => {
+            {filteredExercises.slice(0, visibleCount).map((exercise) => {
               const isDuplicate = duplicateNames.has(normalizeExerciseName(exercise.name));
 
               return (
@@ -165,6 +171,14 @@ export default function ExercisesPage() {
                 </div>
               );
             })}
+            {filteredExercises.length > visibleCount && (
+              <button
+                onClick={() => setVisibleCount((count) => count + LIST_PAGE_SIZE)}
+                className="premium-button-secondary min-h-11 w-full justify-center"
+              >
+                Show {Math.min(LIST_PAGE_SIZE, filteredExercises.length - visibleCount)} more exercises
+              </button>
+            )}
           </div>
         )}
       </div>

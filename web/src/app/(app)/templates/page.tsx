@@ -28,6 +28,8 @@ import { useStartWorkout } from '@/hooks/use-start-workout';
 import { useTemplates, type TemplateWithCount } from '@/hooks/use-templates';
 import { formatDistanceToNow } from '@/lib/format-date';
 
+const LIST_PAGE_SIZE = 20;
+
 /**
  * Opens an action menu on long-press (touch) or right-click (pointer), while
  * leaving a normal tap free to navigate. `consumed()` reports whether the last
@@ -285,6 +287,8 @@ export default function TemplatesPage() {
   const [deleting, setDeleting] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [actionsFor, setActionsFor] = useState<TemplateWithCount | null>(null);
+  const [visiblePinnedCount, setVisiblePinnedCount] = useState(LIST_PAGE_SIZE);
+  const [visibleAllCount, setVisibleAllCount] = useState(LIST_PAGE_SIZE);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -373,7 +377,7 @@ export default function TemplatesPage() {
               <section>
                 <h2 className="mb-2.5 font-display text-xl font-bold">Pinned</h2>
                 <div className="space-y-2">
-                  {pinned.map((template) => (
+                  {pinned.slice(0, visiblePinnedCount).map((template) => (
                     <TemplateRow
                       key={template.id}
                       template={template}
@@ -384,6 +388,14 @@ export default function TemplatesPage() {
                     />
                   ))}
                 </div>
+                {pinned.length > visiblePinnedCount && (
+                  <button
+                    onClick={() => setVisiblePinnedCount((count) => count + LIST_PAGE_SIZE)}
+                    className="mt-3 premium-button-secondary min-h-11 w-full justify-center"
+                  >
+                    Show {Math.min(LIST_PAGE_SIZE, pinned.length - visiblePinnedCount)} more pinned workouts
+                  </button>
+                )}
               </section>
             )}
 
@@ -401,7 +413,7 @@ export default function TemplatesPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {all.map((template) => (
+                  {all.slice(0, visibleAllCount).map((template) => (
                     <TemplateRow
                       key={template.id}
                       template={template}
@@ -412,6 +424,14 @@ export default function TemplatesPage() {
                     />
                   ))}
                 </div>
+              )}
+              {all.length > visibleAllCount && (
+                <button
+                  onClick={() => setVisibleAllCount((count) => count + LIST_PAGE_SIZE)}
+                  className="mt-3 premium-button-secondary min-h-11 w-full justify-center"
+                >
+                  Show {Math.min(LIST_PAGE_SIZE, all.length - visibleAllCount)} more workouts
+                </button>
               )}
               {templates.length > 0 && (
                 <p className="mt-2.5 px-1 text-xs text-muted-foreground">Long-press a workout for more options.</p>

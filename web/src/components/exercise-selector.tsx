@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const ALL_MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Quads', 'Hamstrings', 'Glutes', 'Core', 'Calves', 'Cardio', 'Forearms'];
+const LIST_PAGE_SIZE = 20;
 
 export interface ExerciseSelectionOptions {
   defaultSetCount: number;
@@ -39,6 +40,7 @@ export function ExerciseSelector({
   // Browse state
   const [search, setSearch] = useState('');
   const [muscleFilter, setMuscleFilter] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(LIST_PAGE_SIZE);
 
   // Starting sets only persists when adding to a workout (not the library's own create).
   const showStartingSets = defaultMode !== 'create';
@@ -48,6 +50,7 @@ export function ExerciseSelector({
       setMode(defaultMode);
       setSearch('');
       setMuscleFilter(null);
+      setVisibleCount(LIST_PAGE_SIZE);
     }
     setOpen(nextOpen);
   }
@@ -137,7 +140,10 @@ export function ExerciseSelector({
                   <Input
                     placeholder="Search your exercises"
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setVisibleCount(LIST_PAGE_SIZE);
+                    }}
                     className="pl-10"
                   />
                 </div>
@@ -147,7 +153,10 @@ export function ExerciseSelector({
               <div className="relative">
                 <div className="flex gap-1.5 overflow-x-auto px-4 pb-3 no-scrollbar">
                   <button
-                    onClick={() => setMuscleFilter(null)}
+                    onClick={() => {
+                      setMuscleFilter(null);
+                      setVisibleCount(LIST_PAGE_SIZE);
+                    }}
                     className={cn('shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors',
                       muscleFilter === null ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80')}
                   >
@@ -156,7 +165,10 @@ export function ExerciseSelector({
                   {ALL_MUSCLES.map((m) => (
                     <button
                       key={m}
-                      onClick={() => setMuscleFilter(muscleFilter === m ? null : m)}
+                      onClick={() => {
+                        setMuscleFilter(muscleFilter === m ? null : m);
+                        setVisibleCount(LIST_PAGE_SIZE);
+                      }}
                       className={cn('shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors',
                         muscleFilter === m ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80')}
                     >
@@ -185,7 +197,7 @@ export function ExerciseSelector({
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {filtered.map((ex) => (
+                    {filtered.slice(0, visibleCount).map((ex) => (
                       <button
                         key={ex.id}
                         onClick={() => handleSelect(ex)}
@@ -202,6 +214,14 @@ export function ExerciseSelector({
                         )}
                       </button>
                     ))}
+                    {filtered.length > visibleCount && (
+                      <button
+                        onClick={() => setVisibleCount((count) => count + LIST_PAGE_SIZE)}
+                        className="premium-button-secondary min-h-11 w-full justify-center"
+                      >
+                        Show {Math.min(LIST_PAGE_SIZE, filtered.length - visibleCount)} more exercises
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
