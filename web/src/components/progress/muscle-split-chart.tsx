@@ -30,7 +30,7 @@ export function MuscleSplitChart({ data }: Props) {
   }, [data]);
 
   return (
-    <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
+    <div className="flex min-h-[320px] flex-col items-center gap-4 sm:min-h-[228px] sm:flex-row sm:items-start sm:gap-6">
       <div className="shrink-0">
         <ResponsiveContainer width={180} height={180}>
           <PieChart>

@@ -48,6 +48,32 @@ function formatToday(): string {
   });
 }
 
+function HomeAvatar({ avatarUrl, displayName }: { avatarUrl: string | null | undefined; displayName: string | null | undefined }) {
+  const [imageBroken, setImageBroken] = useState(false);
+  const initial = (displayName || '?')[0]?.toUpperCase() ?? '?';
+
+  return (
+    <Link
+      href="/profile"
+      aria-label="Open profile"
+      className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[oklch(0.75_0.18_55/0.12)] text-[oklch(0.80_0.16_55)] font-display text-sm font-bold transition-opacity hover:opacity-85 md:hidden"
+    >
+      {avatarUrl && !imageBroken ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={avatarUrl}
+          alt=""
+          width={40}
+          height={40}
+          decoding="async"
+          className="h-full w-full object-cover"
+          onError={() => setImageBroken(true)}
+        />
+      ) : initial}
+    </Link>
+  );
+}
+
 /* ── Resume Workout Banner ──────────────────────────────────── */
 
 function ResumeWorkoutBanner() {
@@ -295,18 +321,11 @@ export default function HomePage() {
               </>
             )}
           </div>
-          <Link
-            href="/profile"
-            aria-label="Open profile"
-            className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[oklch(0.75_0.18_55/0.12)] text-[oklch(0.80_0.16_55)] font-display text-sm font-bold transition-opacity hover:opacity-85 md:hidden"
-          >
-            {data?.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={data.avatarUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              (data?.displayName || '?')[0]?.toUpperCase() ?? '?'
-            )}
-          </Link>
+          <HomeAvatar
+            key={data?.avatarUrl ?? 'initial'}
+            avatarUrl={data?.avatarUrl}
+            displayName={data?.displayName}
+          />
         </div>
 
         {/* ── Resume in-progress workout ─────────── */}
