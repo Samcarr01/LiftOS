@@ -233,13 +233,21 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* NEVER put `overflow`, `transform`, `filter`, `backdrop-filter`,
+     `perspective`, `contain` or `will-change` on `html` or `body`.
+     `overflow-x: clip` here turned the root and the body into clipping boxes
+     (CSS Overflow 3 also promotes the other axis away from `visible` for the
+     used value). WebKit then anchors `position: fixed` descendants to the
+     body's scrolled contents instead of the visual viewport, so the mobile
+     bottom nav scrolled with the page and settled mid-screen over the workout
+     content on iOS Safari/PWA.
+     Horizontal overflow is clipped per page by `.page-shell`, which is not on
+     the bottom nav's ancestor chain. See tests/mobile-nav-viewport-anchor.spec.ts. */
   body {
     @apply bg-background text-foreground;
-    overflow-x: clip;
   }
   html {
     @apply font-sans;
-    overflow-x: clip;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
