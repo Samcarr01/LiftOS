@@ -63,14 +63,45 @@ export const TIER_DESCRIPTIONS: Record<string, string> = {
   apex:     'The summit. There is no higher tier.',
 };
 
+// ── Motion levels ────────────────────────────────────────────────────────────
+
+/**
+ * How much continuous motion a tier marker is allowed to show.
+ *
+ *   full   — the complete effect stack (corona, orbits, sparkles, card sweeps).
+ *            Reserved for the tier the lifter is actually on.
+ *   subtle — one tier-specific ambient layer around the icon. Enough to read as
+ *            alive at a glance without putting a particle fleet on every row.
+ *   none   — a completely static marker.
+ */
+export type TierMotion = 'full' | 'subtle' | 'none';
+
+export type TierLadderState = 'passed' | 'current' | 'upcoming';
+
+/**
+ * The single place the ladder decides how much motion a row gets.
+ *
+ * `upcoming` deliberately maps to `subtle`, not `none`: a locked tier is still
+ * meant to look like something worth climbing towards. Locked semantics are
+ * carried by the lock icon, the dimming and the "Unlocks at N XP" line — not by
+ * freezing the artwork. `passed` stays static so the eye is drawn forwards.
+ */
+export function tierMotionForState(state: TierLadderState): TierMotion {
+  switch (state) {
+    case 'current':  return 'full';
+    case 'upcoming': return 'subtle';
+    case 'passed':   return 'none';
+  }
+}
+
 // ── TierIcon: icon + icon-centric effects ────────────────────────────────────
 
 interface TierIconProps {
   tier: Tier;
   /** Icon bubble side length in px. */
   size: number;
-  /** Render the tier marker without its continuous decorative effects. */
-  static?: boolean;
+  /** How much continuous decoration to render. Defaults to the full stack. */
+  motion?: TierMotion;
 }
 
 /**
@@ -80,10 +111,11 @@ interface TierIconProps {
  * absolute positioning relative to the bubble center so they can extend
  * outside without breaking layout.
  */
-export function TierIcon({ tier, size, static: isStatic = false }: TierIconProps) {
+export function TierIcon({ tier, size, motion = 'full' }: TierIconProps) {
   const Icon = TIER_ICON_MAP[tier.icon];
   const iconPx = Math.round(size * 0.5);
   const accent = `oklch(${tier.color})`;
+  const full = motion === 'full';
 
   // Back layer container: same size as icon, centered effects can use
   // negative inset to extend out without affecting layout
@@ -93,19 +125,114 @@ export function TierIcon({ tier, size, static: isStatic = false }: TierIconProps
       style={{ width: size, height: size }}
     >
       {/* Effects BEHIND the icon (rings, halos, base glow) */}
-      {!isStatic && <IconBackEffects tier={tier} size={size} />}
+      {full && <IconBackEffects tier={tier} size={size} />}
+      {motion === 'subtle' && <TierAmbientEffect tier={tier} size={size} />}
 
       {/* Icon bubble itself */}
       <div
-        className={`relative z-10 flex h-full w-full items-center justify-center rounded-xl${!isStatic && (tier.id === 'titan' || tier.id === 'apex') ? ' tier-glow-shift' : ''}`}
-        style={iconBubbleStyle(tier, isStatic)}
+        className={`relative z-10 flex h-full w-full items-center justify-center rounded-xl${full && (tier.id === 'titan' || tier.id === 'apex') ? ' tier-glow-shift' : ''}`}
+        style={iconBubbleStyle(tier, !full)}
       >
         <Icon style={{ width: iconPx, height: iconPx }} strokeWidth={1.8} />
       </div>
 
       {/* Effects IN FRONT (sparkles in cardinal positions, foreground orbits) */}
-      {!isStatic && <IconFrontEffects tier={tier} size={size} accent={accent} />}
+      {full && <IconFrontEffects tier={tier} size={size} accent={accent} />}
     </div>
+  );
+}
+
+// ── Ambient effect: the one layer a locked/upcoming tier keeps ───────────────
+
+interface TierAmbient {
+  /** `halo` = pulsing radial glow, `ring` = rotating masked conic ring. */
+  shape:     'halo' | 'ring';
+  /** A keyframe already declared in globals.css. */
+  animation: 'tier-soft-glow' | 'tier-rotate' | 'tier-rotate-reverse';
+  /** Seconds. Slower than the equivalent current-tier effect. */
+  duration:  number;
+  /** Multiple of the icon size. */
+  scale:     number;
+  /** Peak alpha before the row's own dimming is applied. */
+  alpha:     number;
+  /**
+   * `L C H` override for tiers whose own colour is too dark to read as motion
+   * once the locked row's opacity is multiplied in. Defaults to `tier.color`.
+   */
+  tone?:     string;
+}
+
+/**
+ * One ambient layer per tier, echoing that tier's signature from the full
+ * stack — Steel glows, Obsidian rotates, Platinum counter-rotates, Singularity
+ * spins fast, Apex pulses fast — so a locked row still reads as *that* tier.
+ *
+ * Deliberately excluded: `filter: blur()`, `mix-blend-mode`, card-wide sweep
+ * bands and particle fleets. Those are what make the current-tier stack
+ * expensive, and paying for them on every locked row is what this layer avoids.
+ */
+const TIER_AMBIENT: Record<string, TierAmbient> = {
+  bronze:      { shape: 'halo', animation: 'tier-soft-glow',      duration: 7,   scale: 1.50, alpha: 0.34 },
+  iron:        { shape: 'halo', animation: 'tier-soft-glow',      duration: 6.5, scale: 1.50, alpha: 0.36, tone: '0.70 0.05 255' },
+  steel:       { shape: 'halo', animation: 'tier-soft-glow',      duration: 6,   scale: 1.55, alpha: 0.36 },
+  obsidian:    { shape: 'ring', animation: 'tier-rotate',         duration: 18,  scale: 1.25, alpha: 0.60, tone: '0.62 0.18 290' },
+  titan:       { shape: 'ring', animation: 'tier-rotate',         duration: 16,  scale: 1.30, alpha: 0.55 },
+  platinum:    { shape: 'ring', animation: 'tier-rotate-reverse', duration: 15,  scale: 1.30, alpha: 0.50 },
+  diamond:     { shape: 'ring', animation: 'tier-rotate',         duration: 14,  scale: 1.35, alpha: 0.55 },
+  mythic:      { shape: 'ring', animation: 'tier-rotate',         duration: 13,  scale: 1.35, alpha: 0.60 },
+  cosmic:      { shape: 'ring', animation: 'tier-rotate-reverse', duration: 12,  scale: 1.40, alpha: 0.60 },
+  nebula:      { shape: 'halo', animation: 'tier-soft-glow',      duration: 4.5, scale: 1.70, alpha: 0.45, tone: '0.68 0.26 268' },
+  singularity: { shape: 'ring', animation: 'tier-rotate',         duration: 6,   scale: 1.30, alpha: 0.65, tone: '0.85 0.16 265' },
+  apex:        { shape: 'halo', animation: 'tier-soft-glow',      duration: 3.5, scale: 1.80, alpha: 0.50 },
+};
+
+const AMBIENT_FALLBACK: TierAmbient = {
+  shape: 'halo', animation: 'tier-soft-glow', duration: 6, scale: 1.5, alpha: 0.35,
+};
+
+/** Ring cut-out. Both the standard and `-webkit-` property are set: without the
+ *  prefixed one iOS Safari paints the conic gradient as a filled disc, which
+ *  reads as a static blob rather than a turning ring. */
+const AMBIENT_RING_MASK =
+  'radial-gradient(closest-side, transparent 78%, black 80%, black 93%, transparent 95%)';
+
+export function TierAmbientEffect({ tier, size }: { tier: Tier; size: number }) {
+  const a = TIER_AMBIENT[tier.id] ?? AMBIENT_FALLBACK;
+  const tone = a.tone ?? tier.color;
+
+  if (a.shape === 'ring') {
+    return (
+      <Centered size={size * a.scale}>
+        <div
+          aria-hidden
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: `conic-gradient(from 0deg,
+              transparent 0deg,
+              oklch(${tone} / ${a.alpha}) 110deg,
+              oklch(${tone} / ${a.alpha * 0.45}) 200deg,
+              transparent 280deg,
+              transparent 360deg)`,
+            animation: `${a.animation} ${a.duration}s linear infinite`,
+            mask: AMBIENT_RING_MASK,
+            WebkitMask: AMBIENT_RING_MASK,
+          }}
+        />
+      </Centered>
+    );
+  }
+
+  return (
+    <Centered size={size * a.scale}>
+      <div
+        aria-hidden
+        className="h-full w-full rounded-full"
+        style={{
+          background: `radial-gradient(circle, oklch(${tone} / ${a.alpha}) 0%, transparent 65%)`,
+          animation: `${a.animation} ${a.duration}s ease-in-out infinite`,
+        }}
+      />
+    </Centered>
   );
 }
 
