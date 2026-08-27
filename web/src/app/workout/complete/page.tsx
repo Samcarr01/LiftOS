@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Trophy, Award, CheckCircle2, Share2, ChevronDown, ChevronUp,
-  Dumbbell, Target, Flame, Zap, Layers, BrainCircuit, Star,
+  Dumbbell, Flame, Zap, Layers, BrainCircuit,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
@@ -17,12 +17,11 @@ import { PageShell } from '@/components/layout/page-shell';
 import { createClient } from '@/lib/supabase/client';
 import {
   computeXp, levelFromXp, tierForLevel, computeSessionXp,
-  XP_PER_SESSION, XP_PER_LIGHT_SESSION, XP_HEAVY_SET_BONUS,
   XP_FULL_SESSION, XP_VARIETY_PER_EX, XP_VARIETY_CAP,
-  XP_TEMPLATE_USER, XP_PER_PR_BONUS,
-  type Tier, type XpInputSession, type XpInputPR, type XpBreakdown, type LevelState,
+  XP_PER_PR_BONUS,
+  type Tier, type XpInputSession, type XpInputPR, type LevelState,
 } from '@/lib/leveling/xp';
-import { TierIcon, TIER_ICON_MAP } from '@/lib/leveling/tier-visuals';
+import { TIER_ICON_MAP } from '@/lib/leveling/tier-visuals';
 
 const PR_LABEL: Record<CompletionPR['record_type'], string> = {
   best_weight:          'New Weight PR',
@@ -117,6 +116,10 @@ function XpSlider({ data }: { data: XpSliderData }) {
 
   const progressPct = postLevel.progressPct;
   const tierChanged = preTier.id !== postTier.id;
+  const levelSpan = Math.max(1, postLevel.xpAtNextLevel - postLevel.xpAtLevel);
+  // A level-up restarts the bar at the floor of the new level, so the "before"
+  // fill only describes the same scale while the level is unchanged.
+  const preFillPct = postLevel.level === preLevel.level ? preLevel.progressPct : 0;
 
   const Icon = TIER_ICON_MAP[postTier.icon];
 
@@ -130,22 +133,48 @@ function XpSlider({ data }: { data: XpSliderData }) {
         </span>
       </div>
 
-      {/* Progress Bar */}
+      {/* Tier + level identity — this card names the rank exactly once, here */}
+      <div className="mb-2 flex items-center gap-2">
+        <span
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+          style={{ background: `oklch(${postTier.color} / 0.18)`, color: accent }}
+        >
+          <Icon className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
+        </span>
+        <span className="text-sm font-semibold" style={{ color: accent }}>
+          {postTier.name} · Level {postLevel.level}
+        </span>
+        {tierChanged && (
+          <span className="ml-auto text-xs font-semibold text-emerald-400">↑ Tier up!</span>
+        )}
+      </div>
+
+      {/* Progress Bar — the fill's leading edge is the current position, and the
+          two labels above say the same thing in words for anyone it isn't
+          obvious to (including screen readers, via role="progressbar"). */}
       <div className="relative">
-        <div className="flex items-center justify-between text-xs mb-1.5">
-          <span className="text-muted-foreground">
-            {preTier.name} L{preLevel.level}
+        <div className="flex items-baseline justify-between text-xs mb-1.5">
+          <span className="text-muted-foreground tabular-nums">
+            {postLevel.xpIntoLevel.toLocaleString()} / {levelSpan.toLocaleString()} XP
           </span>
-          <span className="text-muted-foreground">
-            L{postLevel.level + 1}
+          <span className="text-muted-foreground tabular-nums">
+            {postLevel.xpForNextLevel.toLocaleString()} XP to Level {postLevel.level + 1}
           </span>
         </div>
-        <div className="relative h-3 w-full overflow-hidden rounded-full bg-white/[0.06]">
+        <div
+          role="progressbar"
+          aria-label={`${postTier.name} level ${postLevel.level} progress`}
+          aria-valuemin={0}
+          aria-valuemax={levelSpan}
+          aria-valuenow={postLevel.xpIntoLevel}
+          aria-valuetext={`${postLevel.xpIntoLevel.toLocaleString()} of ${levelSpan.toLocaleString()} XP toward Level ${postLevel.level + 1}`}
+          className="relative h-3 w-full overflow-hidden rounded-full bg-white/[0.06]"
+        >
           {/* Pre-session level indicator */}
           <div
             className="absolute left-0 top-0 h-full w-full origin-left rounded-full transition-transform duration-700 ease-out"
             style={{
-              transform: `scaleX(${Math.max(0.02, preLevel.progressPct)})`,
+              transform: `scaleX(${Math.max(0, preFillPct)})`,
               background: `linear-gradient(90deg, oklch(${preTier.color} / 0.4), oklch(${preTier.color} / 0.6))`,
             }}
           />
@@ -159,29 +188,6 @@ function XpSlider({ data }: { data: XpSliderData }) {
               animation: 'tier-soft-glow 3s ease-in-out infinite',
             }}
           />
-          {/* Tier icon at current position */}
-          <div
-            className="absolute inset-y-0 left-0 w-full transition-transform duration-1000 ease-out"
-            style={{ transform: `translateX(calc(${Math.max(3, progressPct * 100)}% - 10px))` }}
-          >
-            <div className="absolute top-1/2 -translate-y-1/2">
-              <div
-                className="flex h-5 w-5 items-center justify-center rounded-full"
-                style={{ background: accent, boxShadow: `0 0 8px ${accent}` }}
-              >
-                <Icon className="h-3 w-3 text-white" strokeWidth={2.5} />
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Level indicator */}
-        <div className="mt-1 text-center">
-          <span className="text-xs font-semibold" style={{ color: accent }}>
-            {postTier.name} · Level {postLevel.level}
-          </span>
-          {tierChanged && (
-            <span className="ml-1.5 text-xs text-emerald-400">↑ Tier up!</span>
-          )}
         </div>
       </div>
 
@@ -500,13 +506,27 @@ function StatCard({
   suffix?: string;
   staticValue?: string;
 }) {
+  // A unit has to stay on the numeral's line at 375px, where a card is only
+  // ~78px wide. The unit rides one step smaller so a five-digit volume plus
+  // "kg" still fits that line, and the unsuffixed cards keep their full size.
+  const hasSuffix = suffix !== '';
+
   return (
     <div className="content-card relative flex flex-col items-center justify-center overflow-hidden px-3 py-5">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-      <span className="font-display text-2xl font-bold">
+      <span
+        className={`flex max-w-full items-baseline justify-center gap-1 whitespace-nowrap font-display font-bold leading-8 ${
+          hasSuffix ? 'text-xl' : 'text-2xl'
+        }`}
+      >
         {staticValue !== undefined
           ? staticValue
-          : <><AnimatedNumber value={value ?? 0} />{suffix ? ` ${suffix}` : ''}</>}
+          : (
+            <>
+              <AnimatedNumber value={value ?? 0} />
+              {hasSuffix && <span className="text-xs font-semibold text-muted-foreground">{suffix}</span>}
+            </>
+          )}
       </span>
       <span className="mt-0.5 text-sm text-muted-foreground">{label}</span>
     </div>
