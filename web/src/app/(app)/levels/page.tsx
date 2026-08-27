@@ -21,6 +21,7 @@ import {
   TIER_DESCRIPTIONS,
   TierIcon,
   TierCardEffects,
+  tierMotionForState,
 } from '@/lib/leveling/tier-visuals';
 
 // ── Page ─────────────────────────────────────────────────────────────────────
@@ -287,16 +288,20 @@ function TierRow({
       className="action-card relative overflow-hidden rounded-2xl px-4 py-3.5"
       style={{
         // Upcoming tiers are dimmed slightly so the eye still lands on the
-        // current one first. Keep non-current ladder tiers static rather than
-        // continuously animating every card on the page.
-        opacity: dimmed ? 0.7 : 1,
+        // current one first. Dimming is the only thing this opacity does — the
+        // row still carries its ambient tier motion underneath, so a locked
+        // tier reads as something to climb towards rather than a dead card.
+        opacity: dimmed ? 0.78 : 1,
         ['--tier-accent' as string]: `oklch(${tier.color} / 0.4)`,
       }}
     >
+      {/* Card-wide effects (sweep bands, aurora, edge glow) stay current-only:
+          they are the expensive layer, and 12 of them would cost far more than
+          they add. Upcoming rows get their motion from the icon instead. */}
       {state === 'current' && <TierCardEffects tier={tier} />}
 
       <div className="relative flex items-center gap-3">
-        <TierIcon tier={tier} size={48} static={state !== 'current'} />
+        <TierIcon tier={tier} size={48} motion={tierMotionForState(state)} />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
